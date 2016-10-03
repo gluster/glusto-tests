@@ -24,7 +24,7 @@ import unittest
 
 from glusto.core import Glusto as g
 import os
-
+import random
 
 class runs_on(g.CarteTestClass):
     """Decorator providing runs_on capability for standard unittest script"""
@@ -85,7 +85,7 @@ class GlusterBaseClass(unittest.TestCase):
                 },
             'dispersed': {
                 'type': 'dispersed',
-                'disperse_count': 4,
+                'disperse_count': 6,
                 'redundancy_count': 2,
                 'transport': 'tcp'
                 },
@@ -97,13 +97,13 @@ class GlusterBaseClass(unittest.TestCase):
             'distributed-replicated': {
                 'type': 'distributed-replicated',
                 'dist_count': 2,
-                'replica_count': 2,
+                'replica_count': 3,
                 'transport': 'tcp'
                 },
             'distributed-dispersed': {
                 'type': 'distributed-dispersed',
                 'dist_count': 2,
-                'disperse_count': 4,
+                'disperse_count': 6,
                 'redundancy_count': 2,
                 'transport': 'tcp'
                 }
@@ -112,12 +112,13 @@ class GlusterBaseClass(unittest.TestCase):
         # Get the volume configuration.
         cls.volume = {}
         found_volume = False
-        if 'volumes' in g.config['gluster']:
-            for volume in g.config['gluster']['volumes']:
-                if volume['voltype']['type'] == cls.volume_type:
-                    cls.volume = volume
-                    found_volume = True
-                    break
+        if 'gluster' in g.config:
+            if 'volumes' in g.config['gluster']:
+                for volume in g.config['gluster']['volumes']:
+                    if volume['voltype']['type'] == cls.volume_type:
+                        cls.volume = volume
+                        found_volume = True
+                        break
 
         if found_volume:
             if not 'name' in cls.volume:
@@ -144,28 +145,59 @@ class GlusterBaseClass(unittest.TestCase):
                                 cls.volume_type)
                     return False
 
+        # SMB Info
+        if cls.mount_type == 'cifs' or cls.mount_type == 'smb':
+            cls.volume['smb'] = {}
+            cls.volume['smb']['enable'] = True
+            users_info_found = False
+            try:
+                if cls.volume['smb']['users_info']:
+                    users_info_found = True
+            except KeyError:
+                users_info_found = False
+
+            if not users_info_found:
+                cls.volume['smb']['users_info'] = {}
+                try:
+                    cls.volume['smb']['users_info'] = (
+                        g.config['gluster']['cluster_config']['smb']
+                        ['users_info'])
+                except KeyError:
+                    pass
+
+                if not cls.volume['smb']['users_info']:
+                    cls.volume['smb']['users_info']['root'] = {}
+                    cls.volume['smb']['users_info']['root']['password'] = (
+                        'foobar')
+
         # Define Volume variables.
         cls.volname = cls.volume['name']
         cls.servers = cls.volume['servers']
         cls.voltype = cls.volume['voltype']['type']
         cls.mnode = cls.servers[0]
+        try:
+            cls.smb_users_info = cls.volume['smb']['users_info']
+        except KeyError:
+            cls.smb_users_info = {}
 
         # Get the mount configuration.
         cls.mounts_dict_list = []
         cls.mounts = []
         found_mount = False
-        if 'mounts' in g.config['gluster']:
-            for mount in g.config['gluster']['mounts']:
-                if mount['protocol'] == cls.mount_type:
-                    if not 'volname' in mount:
-                        mount['volname'] = cls.volname
-                    if not 'server' in mount:
-                        mount['server'] = mnode
-                    if not 'mountpoint' in mount:
-                        mount['mountpoint'] = (os.path.join(
-                            "/mnt", '_'.join([cls.volname, cls.mount_type])))
-                    cls.mounts_dict_list.append(mount)
-                    found_mount = True
+        if 'gluster' in g.config:
+            if 'mounts' in g.config['gluster']:
+                for mount in g.config['gluster']['mounts']:
+                    if mount['protocol'] == cls.mount_type:
+                        if ('volname' not in mount or (not mount['volname'])):
+                            mount['volname'] = cls.volname
+                        if ('server' not in mount or (not mount['server'])):
+                            mount['server'] = mnode
+                        if ('mountpoint' not in mount or
+                                (not mount['mountpoint'])):
+                            mount['mountpoint'] = (os.path.join(
+                                "/mnt", '_'.join([cls.volname, cls.mount_type])))
+                        cls.mounts_dict_list.append(mount)
+                        found_mount = True
         if not found_mount:
             for client in g.config['clients']:
                 mount = {
@@ -180,6 +212,14 @@ class GlusterBaseClass(unittest.TestCase):
                     'options': ''
                     }
                 cls.mounts_dict_list.append(mount)
+
+        if cls.mount_type == 'cifs' or cls.mount_type == 'smb':
+            for mount in cls.mounts_dict_list:
+                if 'smbuser' not in mount:
+                    mount['smbuser'] = random.choice(cls.smb_users_info.keys())
+                    mount['smbpasswd'] = (
+                        cls.smb_users_info[mount['smbuser']]['password'])
+
         from glustolibs.gluster.mount_ops import create_mount_objs
         cls.mounts = create_mount_objs(cls.mounts_dict_list)
 

@@ -1,0 +1,269 @@
+log_file: /var/log/tests/gluster_tests.log
+log_level: DEBUG
+
+servers:
+    - server-vm1
+    - server-vm2
+    - server-vm3
+    - server-vm4
+    - server-vm5
+    - server-vm6
+    - server-vm7
+    - server-vm8
+    - server-vm9
+    - server-vm10
+    - server-vm11
+    - server-vm12
+
+clients:
+    - client-vm1
+    - client-vm2
+    - client-vm3
+    - client-vm4
+
+servers_info:
+    server-vm1: &server1
+        host: server-vm1
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm2: &server2
+        host: server-vm2
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm3: &server3
+        host: server-vm3
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm4: &server4
+        host: server-vm4
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm5: &server5
+        host: server-vm5
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm6: &server6
+        host: server-vm6
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm7: &server7
+        host: server-vm7
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm8: &server8
+        host: server-vm8
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm9: &server9
+        host: server-vm9
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm10: &server10
+        host: server-vm10
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm11: &server11
+        host: server-vm11
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm12: &server12
+        host: server-vm12
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+
+clients_info:
+    client-vm1: &client1
+        host: client-vm1
+    client-vm2: &client2
+        host: client-vm2
+        super_user: 'root'
+    client-vm3: &client3
+        host: client-vm3
+        super_user: 'Admin'
+        platform: 'windows'
+    client-vm4: &client4
+        host: client-vm4
+        super_user: 'Administrator'
+        platform: 'windows'
+
+gluster:
+    running_on_volumes: []
+    running_on_mounts: []
+
+    cluster_config:
+        smb:
+            enable: False
+            users_info:
+                'root':
+                    password: 'foobar'
+                    acl: ''
+                'user1':
+                    password: 'xyz'
+                    acl: ''
+                'user2':
+                    password: 'abc'
+                    acl: ''
+            ctdb_setup: True
+            ctdb_servers: []
+            ctdb_vips:
+                -   vip: vip1
+                    routing_prefix: '23'
+                    interface: 'eth0'
+                -   vip: vip2
+                    routing_prefix: '22'
+                    interface: 'eth0'
+            ctdb_metavol_brick_path: ''
+
+        nfs_ganesha:
+            enable: False
+            num_of_nfs_ganesha_nodes: 4
+            vips: []
+
+    volume_types:
+        distributed: &distributed
+            type: distributed
+            dist_count: 4
+            transport: tcp
+        replicated: &replicated
+            type: replicated
+            replica_count: 3
+            arbiter_count: 1
+            transport: tcp
+        distributed-replicated: &distributed-replicated
+            type: distributed-replicated
+            dist_count: 2
+            replica_count: 3
+            transport: tcp
+        dispersed: &dispersed
+            type: dispersed
+            disperse_count: 6
+            redundancy_count: 2
+            transport: tcp
+        distributed-dispersed: &distributed-dispersed
+            type: distributed-dispersed
+            dist_count: 2
+            disperse_count: 6
+            redundancy_count: 2
+            transport: tcp
+
+    slave_volumes:
+        - &slave_vol1
+            voltype: *distributed-replicated
+            servers:  [ server-vm5, server-vm6, server-vm7, server-vm8 ]
+            extra_servers: []
+            quota:
+                enable: False
+                limit_usage:
+                    path: "/"
+                    size: 100GB
+                    percent:
+                limit_objects:
+                    path: "/"
+                    number:
+                    percent:
+                alert_time:
+                soft_timeout:
+                hard_timeout:
+            inode_quota:
+                enable: False
+            bitrot:
+                enable: False
+                scrub_throttle:
+                scrub_frequency:
+
+    volumes:
+        - &vol1
+            name: testvol
+            voltype: *distributed-dispersed
+            servers: [ server-vm1, server-vm2, server-vm3, server-vm4 ]
+            extra_servers: [ server-vm9, server-vm10, server-vm11, server-vm12 ]
+            tier:
+                create_tier: False
+                tier_type: *distributed-replicated
+            quota:
+                enable: False
+                limit_usage:
+                    path: "/"
+                    size: 100GB
+                    percent:
+                limit_objects:
+                    path: "/"
+                    number:
+                    percent:
+                alert_time: 0
+                soft_timeout: 0
+                hard_timeout: 0
+            inode_quota:
+                enable: False
+            bitrot:
+                enable: False
+                scrub_throttle: 'aggressive'
+                scrub_frequency: 'hourly'
+            geo_rep:
+                create_geo_rep_session: False
+                slave_volumes: [ *slave_vol1 ]
+                user: 'root'
+                group: 'geogroup'
+                sync_mode: 'rsync'
+            options:
+                performance.readdir-ahead: "on"
+            snapshot:
+                use_snapshot: True
+                snap_jobname: 'snap_job'
+                snap_schedule: 2
+            uss:
+                enable: False
+            nfs_ganesha:
+                enable: False
+            smb:
+                enable: False
+
+    mounts:
+        - &mount1
+            protocol: 'glusterfs'
+            server: server-vm1
+            volname: testvol
+            client: &client1
+            mountpoint: ''
+            options: ''
+        - &mount2
+            protocol: 'nfs'
+            server: server-vm1
+            volname: testvol
+            client:
+                host: client-vm2
+            mountpoint: ''
+            options: ''
+            num_of_mounts: 1
+        - &mount3
+            protocol: 'smb'
+            server: server-vm2
+            volname: testvol
+            client: &client3
+            mountpoint: ''
+            options: ''
+            smbuser: 'user1'
+            smbpasswd: 'xyz'
+            num_of_mounts: 3
+        - &mount4
+            protocol: 'smb'
+            server: server-vm4
+            volname: testvol
+            client:
+                host: client-vm4
+                super_user: 'Administrator'
+                platform: 'windows'
+            mountpoint: ''
+            options: ''
+            smbuser: 'user2'
+            smbpasswd: 'abc'
+        - &mount5
+            protocol: 'cifs'
+            server: server-vm1
+            volname: testvol
+            client:
+                host: client-vm2
+            mountpoint: ''
+            options: ''
+            smbuser: 'user2'
+            smbpasswd: 'abc'

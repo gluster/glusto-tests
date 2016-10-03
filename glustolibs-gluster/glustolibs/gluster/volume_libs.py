@@ -22,7 +22,18 @@
 
 from glusto.core import Glusto as g
 import time
-from glustolibs.gluster.volume_ops import get_volume_info
+from glustolibs.gluster.lib_utils import form_bricks_list
+from glustolibs.gluster.volume_ops import (volume_create, volume_start,
+                                           set_volume_options, get_volume_info,
+                                           volume_stop, volume_delete)
+from glustolibs.gluster.tiering_ops import (add_extra_servers_to_cluster,
+                                            tier_attach,
+                                            is_tier_process_running)
+from glustolibs.gluster.quota_ops import (enable_quota, set_quota_limit_usage,
+                                          is_quota_enabled)
+from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
+from glustolibs.gluster.samba_ops import share_volume_over_smb
+from glustolibs.gluster.snap_ops import snap_delete_by_volumename
 
 
 def setup_volume(mnode, all_servers_info, volume_config, force=False):
@@ -180,6 +191,7 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
     else:
         g.log.error("Invalid volume type defined in config")
         return False
+
     # Get transport type
     if 'transport' in volume_config['voltype']:
         transpor_type = volume_config['voltype']['transport']
@@ -187,7 +199,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         transport_type = 'tcp'
 
     # get bricks_list
-    from glustolibs.gluster.lib_utils import form_bricks_list
     bricks_list = form_bricks_list(mnode=mnode, volname=volname,
                                    number_of_bricks=number_of_bricks,
                                    servers=servers,
@@ -196,8 +207,8 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         g.log.error("Number_of_bricks is greater than the unused bricks on "
                     "servers")
         return False
+
     # Create volume
-    from glustolibs.gluster.volume_ops import volume_create
     ret, out, err = volume_create(mnode=mnode, volname=volname,
                                   bricks_list=bricks_list, force=force,
                                   **kwargs)
@@ -207,7 +218,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
 
     # Start Volume
     time.sleep(2)
-    from glustolibs.gluster.volume_ops import volume_start
     ret = volume_start(mnode, volname)
     if not ret:
         g.log.error("volume start %s failed" % volname)
@@ -217,7 +227,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
     if ('tier' in volume_config and 'create_tier' in volume_config['tier'] and
             volume_config['tier']['create_tier']):
         # get servers info for tier attach
-        from glustolibs.gluster.tiering_ops import add_extra_servers_to_cluster
         if ('extra_servers' in volume_config and
                 volume_config['extra_servers']):
             extra_servers = volume_config['extra_servers']
@@ -256,7 +265,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         number_of_bricks = dist * rep
 
         # Attach Tier
-        from glustolibs.gluster.tiering_ops import tier_attach
         ret, out, err = tier_attach(mnode=mnode, volname=volname,
                                     extra_servers=extra_servers,
                                     extra_servers_info=all_servers_info,
@@ -268,7 +276,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
 
         time.sleep(30)
         # Check if tier is running
-        from glustolibs.gluster.tiering_ops import is_tier_process_running
         rc = True
         for server in extra_servers:
             ret = is_tier_process_running(server, volname)
@@ -281,7 +288,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
     # Enable Quota
     if ('quota' in volume_config and 'enable' in volume_config['quota'] and
             volume_config['quota']['enable']):
-        from glustolibs.gluster.quota_ops import enable_quota
         ret, _, _ = enable_quota(mnode=mnode, volname=volname)
         if ret != 0:
             g.log.error("Unable to set quota on the volume %s", volname)
@@ -303,7 +309,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
             size = "100GB"
 
         # Set quota_limit_usage
-        from glustolibs.gluster.quota_ops import set_quota_limit_usage
         ret, _, _ = set_quota_limit_usage(mnode=mnode, volname=volname,
                                           path=path, limit=size)
         if ret != 0:
@@ -311,7 +316,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
             return False
 
         # Check if quota is enabled
-        from glustolibs.gluster.quota_ops import is_quota_enabled
         ret = is_quota_enabled(mnode=mnode, volname=volname)
         if not ret:
             g.log.error("Quota not enabled on the volume %s", volname)
@@ -320,13 +324,11 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
     # Enable USS
     if ('uss' in volume_config and 'enable' in volume_config['uss'] and
             volume_config['uss']['enable']):
-        from glustolibs.gluster.uss_ops import enable_uss
         ret, out, err = enable_uss(mnode=mnode, volname=volname)
         if ret != 0:
             g.log.error("Unable to enable uss on the volume %s", volname)
             return False
 
-        from glustolibs.gluster.uss_ops import is_uss_enabled
         ret = is_uss_enabled(mnode=mnode, volname=volname)
         if not ret:
             g.log.error("USS is not enabled on the volume %s", volname)
@@ -342,10 +344,27 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
 ##            g.log.error("failed to set the ganesha option for %s" % volname)
 ##            return False
 
+    # Enable Samba
+    if ('smb' in volume_config and 'enable' in volume_config['smb'] and
+            volume_config['smb']['enable']):
+        smb_users_info = {}
+        if ('users_info' in volume_config['smb'] and
+                volume_config['smb']['users_info']):
+            smb_users_info = volume_config['smb']['users_info']
+        else:
+            g.log.error("SMB Users info not available in the volume config."
+                        "Unable to export volume %s as SMB Share" % volname)
+            return False
+        ret = share_volume_over_smb(mnode=mnode, volname=volname,
+                                    servers=servers,
+                                    smb_users_info=smb_users_info)
+        if not ret:
+            g.log.error("Failed to export volume %s as SMB Share" % volname)
+            return False
+
     # Set all the volume options:
     if 'options' in volume_config:
         volume_options = volume_config['options']
-        from glustolibs.gluster.volume_ops import set_volume_options
         ret = set_volume_options(mnode=mnode, volname=volname,
                                  options=volume_options)
         if not ret:
@@ -370,8 +389,6 @@ def cleanup_volume(mnode, volname):
     Example:
         cleanup_volume("abc.xyz.com", "testvol")
     """
-    from glustolibs.gluster.snap_ops import snap_delete_by_volumename
-
     volinfo = get_volume_info(mnode, volname)
     if volinfo is None or volname not in volinfo:
         g.log.info("Volume %s does not exist in %s" % (volname, mnode))
@@ -383,13 +400,11 @@ def cleanup_volume(mnode, volname):
                     "volume %s" % volname)
         return False
 
-    from glustolibs.gluster.volume_ops import volume_stop
     ret, _, _ = volume_stop(mnode, volname, force=True)
     if ret != 0:
         g.log.error("Failed to stop volume %s" % volname)
         return False
 
-    from glustolibs.gluster.volume_ops import volume_delete
     ret = volume_delete(mnode, volname)
     if not ret:
         g.log.error("Unable to cleanup the volume %s" % volname)
