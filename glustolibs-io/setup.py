@@ -17,14 +17,10 @@
 #
 import os
 from setuptools import setup, find_packages
+from distutils import dir_util
 
 version = '0.1.1'
 name = 'glustolibs-io'
-
-sharedfiles = []
-for root, dir, files in os.walk('shared_files'):
-    for file in files:
-        sharedfiles.append(os.path.join(root, file))
 
 setup(
     name=name,
@@ -49,6 +45,6 @@ setup(
     ],
     install_requires=['glusto'],
     dependency_links=['http://github.com/loadtheaccumulator/glusto/tarball/master#egg=glusto'],
-    namespace_packages = ['glustolibs'],
-    data_files=[('/usr/share/glustolibs/io', sharedfiles)]
+    namespace_packages = ['glustolibs']
 )
+dir_util.copy_tree('./shared_files', '/usr/share/glustolibs/io')
