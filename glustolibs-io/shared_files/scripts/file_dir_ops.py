@@ -29,6 +29,9 @@ import datetime
 from multiprocessing import Process
 import subprocess
 from docx import Document
+import contextlib
+import platform
+
 
 def is_root(path):
     """Check whether the given path is '/' or not
@@ -47,6 +50,7 @@ def is_root(path):
     else:
         return False
 
+
 def path_exists(path):
     """Check if path exists are not.
 
@@ -61,6 +65,27 @@ def path_exists(path):
     else:
         return False
 
+
+@contextlib.contextmanager
+def open_file_to_write(filename=None):
+    """Opens filename to write if not None else writes to stdout.
+    """
+    if filename:
+        fh = open(filename, 'w')
+    else:
+        fh = sys.stdout
+
+    try:
+        yield fh
+    finally:
+        if fh is not sys.stdout:
+            fh.close()
+
+
+def _get_current_time():
+    return datetime.datetime.now().strftime("%I:%M:%S:%p:%b_%d_%Y")
+
+
 def create_dir(dir_path):
     """Create dir if 'dir_path' does not exists
 
@@ -74,14 +99,15 @@ def create_dir(dir_path):
     if not path_exists(dir_abs_path):
         try:
             os.makedirs(dir_abs_path)
-        except (OSError,IOError) as e:
+        except (OSError, IOError) as e:
             print "Unable to create dir: %s" % dir_abs_path
             return 1
     return 0
 
+
 def create_dirs(dir_path, depth, num_of_dirs, num_of_files=0,
-             fixed_file_size=None, base_file_name='testfile',
-             file_types='txt'):
+                fixed_file_size=None, base_file_name='testfile',
+                file_types='txt'):
     """Recursively creates dirs under the dir_path with specified depth
         and num_of_dirs in each level
 
@@ -104,15 +130,24 @@ def create_dirs(dir_path, depth, num_of_dirs, num_of_files=0,
             if num_of_files != 0:
                 _create_files(dir_path, num_of_files, fixed_file_size,
                               base_file_name, file_types)
-        except (OSError,IOError) as e:
-            if not 'File exists' in e.strerror:
+        except (OSError, IOError) as e:
+            if 'File exists' not in e.strerror:
                 print "Unable to create dir '%s' : %s" % (dir_path, e.strerror)
+                with open("/tmp/file_dir_ops_create_dirs_rc", "w") as fd:
+                    try:
+                        fd.write("1")
+                        fd.flush()
+                        fd.close()
+                    except IOError as e:
+                        print ("Unable to write the rc to the "
+                               "/tmp/file_dir_ops_create_dirs_rc file")
     if depth == 0:
         return 0
     for i in range(num_of_dirs):
-        dirname="dir%d" % i
+        dirname = "dir%d" % i
         create_dirs(os.path.join(dir_path, dirname), depth - 1, num_of_dirs,
-                 num_of_files, fixed_file_size)
+                    num_of_files, fixed_file_size)
+
 
 def create_deep_dirs(args):
     """Creates Deep Directories of specified length, depth and number of dirs
@@ -133,6 +168,10 @@ def create_deep_dirs(args):
     if rc != 0:
         return rc
 
+    # Remove the file which saves the rc if already exists
+    if os.path.exists("/tmp/file_dir_ops_create_dirs_rc"):
+        os.remove("/tmp/file_dir_ops_create_dirs_rc")
+
     process_list = []
     for i in range(dirname_start_num, (dirname_start_num + dir_length)):
         num_of_dirs = random.choice(range(1, max_num_of_dirs + 1))
@@ -145,7 +184,15 @@ def create_deep_dirs(args):
 
     for each_process in process_list:
         each_process.join()
-    return 0
+
+    rc = 0
+    if os.path.exists("/tmp/file_dir_ops_create_dirs_rc"):
+        fd = open("/tmp/file_dir_ops_create_dirs_rc", "r")
+        rc = fd.read()
+        fd.close()
+        os.remove("/tmp/file_dir_ops_create_dirs_rc")
+    return int(rc)
+
 
 def create_deep_dirs_with_files(args):
     """Creates Deep Directories of specified length, depth ,number of dirs
@@ -175,6 +222,10 @@ def create_deep_dirs_with_files(args):
     if rc != 0:
         return rc
 
+    # Remove the file which saves the rc if already exists
+    if os.path.exists("/tmp/file_dir_ops_create_dirs_rc"):
+        os.remove("/tmp/file_dir_ops_create_dirs_rc")
+
     process_list = []
     for i in range(dirname_start_num, (dirname_start_num + dir_length)):
         num_of_dirs = random.choice(range(1, max_num_of_dirs + 1))
@@ -189,7 +240,13 @@ def create_deep_dirs_with_files(args):
 
     for each_process in process_list:
         each_process.join()
-    return 0
+    rc = 0
+    if os.path.exists("/tmp/file_dir_ops_create_dirs_rc"):
+        fd = open("/tmp/file_dir_ops_create_dirs_rc", "r")
+        rc = fd.read()
+        fd.close()
+        os.remove("/tmp/file_dir_ops_create_dirs_rc")
+    return int(rc)
 
 
 def _create_files(dir_path, num_of_files, fixed_file_size=None,
@@ -197,10 +254,10 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
     rc = 0
     file_types_list = file_types.split()
     file_sizes_dict = {
-        '1k' : 1024,
-        '10k' : 10240,
-        '512k' : 524288,
-        '1M' : 1048576
+        '1k': 1024,
+        '10k': 10240,
+        '512k': 524288,
+        '1M': 1048576
         }
 
     # Create dir_path
@@ -217,7 +274,7 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
             try:
                 file_size = file_sizes_dict[fixed_file_size]
             except KeyError as e:
-                print "File sizes can be  [1k, 10k, 512k, 1M]"
+                print "File sizes can be [1k, 10k, 512k, 1M]"
                 return 1
 
         type = random.choice(file_types_list)
@@ -227,12 +284,12 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
             with open(fname_abs_path, "w+") as fd:
                 try:
                     fd.write(''.join(random.choice(string.printable) for x in
-                                 range(file_size)))
+                                     range(file_size)))
                     fd.flush()
                     fd.close()
                 except IOError as e:
                     print ("Unable to write to file '%s' : %s" %
-                       (fname_abs_path, e.strerror))
+                           (fname_abs_path, e.strerror))
                     rc = 1
         elif type == 'docx':
             fname_abs_path = fname_abs_path + ".docx"
@@ -240,7 +297,7 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
                 document = Document()
                 str_to_write = string.ascii_letters + string.digits
                 file_str = (''.join(random.choice(str_to_write)
-                            for x in range(file_size)))
+                                    for x in range(file_size)))
                 p = document.add_paragraph(file_str)
                 document.save(fname_abs_path)
             except:
@@ -334,21 +391,125 @@ def ls(args):
     """Recursively list all the files/dirs under 'dir'
     """
     dir_path = os.path.abspath(args.dir)
+    log_file_name = args.log_file_name
 
     # Check if dir_path exists
     if not path_exists(dir_path):
         print "Directory '%s' does not exist" % dir_path
         return 1
 
-    for dirName, subdirList, fileList in os.walk(dir_path, topdown=False):
-        print('Dir: %s' % dirName)
-        for fname in fileList:
-            print('\t%s' % os.path.join(dirName, fname))
-
+    with open_file_to_write(log_file_name) as file_handle:
+        if log_file_name:
+            time_str = _get_current_time()
+            print >>file_handle, "Starting 'ls -R' : %s" % time_str
+        for dirName, subdirList, fileList in os.walk(dir_path):
+            print >>file_handle, ('Dir: %s' % dirName)
+            for dname in subdirList:
+                print >>file_handle, ('\t%s' % os.path.join(dirName, dname))
+            for fname in fileList:
+                print >>file_handle, ('\t%s' % os.path.join(dirName, fname))
+        if log_file_name:
+            time_str = _get_current_time()
+            print >>file_handle, "Ending 'ls -R' : %s" % time_str
     return 0
 
+
+def _get_path_stats(path):
+    """Get the stat of a specified path.
+    """
+    rc = 0
+    path = os.path.abspath(args.path)
+    file_stats = {}
+    file_stats = {}
+
+    if platform.system() == "Linux":
+        cmd = "stat -c " + "'%A %U %G' " + path
+        subp = subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                shell=True)
+        out, err = subp.communicate()
+        if subp.returncode != 0:
+            rc = 1
+        else:
+            if out:
+                out = out.split(" ")
+                file_stats['mode'] = out[0].strip()
+                file_stats['user'] = out[1].strip()
+                file_stats['group'] = out[2].strip()
+            else:
+                rc = 1
+    try:
+        stat = os.stat(path)
+        file_stats.update({
+            'atime': stat.st_atime,
+            'mtime': stat.st_mtime,
+            'ctime': stat.st_ctime,
+            'inode': stat.st_ino,
+            'stat': stat
+            })
+    except Exception as e:
+        rc = 1
+        err = "Unable to get the stat of path %s" % path
+
+    return (rc, file_stats, err)
+
+
+def get_path_stats(args):
+    """Get file/dir Stat
+    """
+    path = os.path.abspath(args.path)
+    recursive = args.recursive
+    log_file_name = args.log_file_name
+
+    # Check if dir_path exists
+    if not path_exists(path):
+        print "PATH '%s' does not exist" % path
+        return 1
+
+    file_stats = {}
+
+    if os.path.isfile(path):
+        file_stats[path] = (_get_path_stats(path))
+
+    if os.path.isdir(path):
+        if recursive:
+            for dirName, subdirList, fileList in os.walk(path, topdown=False):
+                file_stats[dirName] = (_get_path_stats(dirName))
+
+                for fname in fileList:
+                    fname_abs_path = os.path.join(dirName, fname)
+                    file_stats[fname_abs_path] = (_get_path_stats(
+                        fname_abs_path))
+        else:
+            file_stats[path] = (_get_path_stats(path))
+
+    rc = 0
+
+    with open_file_to_write(log_file_name) as file_handle:
+        if log_file_name:
+            time_str = _get_current_time()
+            print >>file_handle, "Starting 'stat %s' : %s" % (
+                path, time_str)
+        for key in file_stats.keys():
+            print >>file_handle, "\nFile: %s" % key
+            ret, file_stat, err = file_stats[key]
+            if ret != 0:
+                rc = 1
+                print >>file_handle, "\t%s" % err
+            else:
+                print >>file_handle, "\t%s" % file_stat
+        if log_file_name:
+            time_str = _get_current_time()
+            print >>file_handle, "Ending 'stat %s' : %s" % (
+                path, time_str)
+        print >>file_handle, "\n"
+
+    return rc
+
+
 if __name__ == "__main__":
-    print "Starting File/Dir Ops"
+    print "Starting File/Dir Ops: %s" % _get_current_time()
     test_start_time = datetime.datetime.now().replace(microsecond=0)
 
     parser = argparse.ArgumentParser(
@@ -486,14 +647,36 @@ if __name__ == "__main__":
         help=("Recursively list all the files/dirs under 'dir'"),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     ls_parser.add_argument(
+        '-l', '--log-file',
+        help="Redirect the output to specified log file name",
+        dest='log_file_name', default=None)
+    ls_parser.add_argument(
         'dir', metavar='DIR', type=str,
         help="Directory on which operations has to be performed")
     ls_parser.set_defaults(func=ls)
+
+    # Stat files/dirs
+    stat_parser = subparsers.add_parser(
+        'stat',
+        help=("Get files/dirs Stat"),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    stat_parser.add_argument(
+        '-R', '--recursive',
+        help="Recursively get the stat of files/dirs under given dir",
+        dest='recursive', action='store_true')
+    stat_parser.add_argument(
+        '-l', '--log-file',
+        help="Redirect the output to specified log file name",
+        dest='log_file_name', default=None)
+    stat_parser.add_argument(
+        'path', metavar='PATH', type=str,
+        help="File/Directory for which stat has to be performed")
+    stat_parser.set_defaults(func=get_path_stats)
 
     args = parser.parse_args()
     rc = args.func(args)
 
     test_end_time = datetime.datetime.now().replace(microsecond=0)
     print "Execution time: %s" % (test_end_time - test_start_time)
-    print "Ending File/Dir Ops"
+    print "Ending File/Dir Ops %s" % _get_current_time()
     sys.exit(rc)
