@@ -703,3 +703,60 @@ def volume_sync(mnode, hostname, volname="all"):
 
     cmd = "gluster volume sync %s %s --mode=script" % (hostname, volname)
     return g.run(mnode, cmd)
+
+
+def volume_list(mnode):
+    """Executes gluster volume list cli command
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    Example:
+        volume_list("abc.com")
+    """
+
+    cmd = "gluster volume list"
+    return g.run(mnode, cmd)
+
+
+def get_volume_list(mnode):
+    """Fetches the volume names in the gluster.
+       Uses xml output of volume list and parses it into to list
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+        NoneType: If there are errors
+        list: List of volume names
+
+    Example:
+        get_volume_list("abc.com")
+        >>>['testvol1', 'testvol2']
+    """
+
+    cmd = "gluster volume list --xml"
+    ret, out, _ = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("volume list returned error")
+        return None
+
+    root = etree.XML(out)
+    vol_list = []
+    for volume in root.findall("volList"):
+        for elem in volume.getchildren():
+            if elem.tag == "volume":
+                vol_list.append(elem.text)
+
+    return vol_list
