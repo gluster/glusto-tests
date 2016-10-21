@@ -210,7 +210,7 @@ class GlusterBaseClass(unittest.TestCase):
             g.log.error("clients_info not defined in the configuration file")
 
 
-class GlusterDemoClass(GlusterBaseClass):
+class GlusterVolumeBaseClass(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
