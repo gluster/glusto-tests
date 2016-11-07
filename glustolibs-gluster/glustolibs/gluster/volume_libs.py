@@ -216,6 +216,13 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         g.log.error("Unable to create volume %s" % volname)
         return False
 
+    # Set volume option nfs.disable to 'off' to start gluster-nfs server
+    cmd = "gluster volume set %s nfs.disable off" % volname
+    ret, out, err = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Unable to set the volume option nfs.disable to off.")
+        return False
+
     # Start Volume
     time.sleep(2)
     ret = volume_start(mnode, volname)
