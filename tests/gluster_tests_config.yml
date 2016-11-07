@@ -1,7 +1,9 @@
 log_file: /var/log/tests/gluster_tests.log
 log_level: DEBUG
 
-servers:
+# 'servers' is list of Hostnames/IP's of servers in the cluster.
+# This section has to be defined.
+ servers:
     - server-vm1
     - server-vm2
     - server-vm3
@@ -15,11 +17,20 @@ servers:
     - server-vm11
     - server-vm12
 
+# 'clients' is list of Hostnames/IP's of clients in the cluster.
+# This section has to be defined.
 clients:
     - client-vm1
     - client-vm2
     - client-vm3
     - client-vm4
+
+# 'servers_info' is info about each server in the cluster.
+# each server_info is a dict with 'Hostname/IP' of the server as key.
+# The info should contain the host(Hostname/IP) of server, devices to use
+# for creating bricks, brick_root i.e dirname of brick mount point.
+# Note: Use the same Hostname/IP used in the above 'servers' section.
+# This section has to be defined.
 
 servers_info:
     server-vm1: &server1
@@ -71,6 +82,12 @@ servers_info:
         devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
         brick_root: "/bricks"
 
+# 'clients_info' is info about each client in  the cluster.
+# each client_info is a dict with 'Hostname/IP' of the client as key.
+# The info should contain the host(Hostname/IP) of client, platform(Linux or
+# Windows), super_user name(Admin/Administrator/* in case of windows or root/*
+# in case of linux).
+# This section has to be defined.
 clients_info:
     client-vm1: &client1
         host: client-vm1
@@ -86,10 +103,19 @@ clients_info:
         super_user: 'Administrator'
         platform: 'windows'
 
+# This section contains details about the gluster volumes, mounts etc.
+# For defining volumes, mounts and/or anything realted to gluster, it has to be
+# under this section.
 gluster:
+
+    # This is to define what volume types and mount protocols will be run
+    # in this current test run.
     running_on_volumes: []
     running_on_mounts: []
 
+    # This section defines the details about 'nfs-ganesha' or 'samba' clusters
+    # to be created. Define this section for setting up nfs-ganesha or
+    # samba clusters.
     cluster_config:
         smb:
             enable: False
@@ -119,6 +145,10 @@ gluster:
             num_of_nfs_ganesha_nodes: 4
             vips: []
 
+    # 'volume_types' defines different volume types that we can create in
+    # gluster and we have default values assigned to each of the volume
+    # type to run the tests. This can be modified based on the
+    # test configuration. Note: The 'keys' should remain same.
     volume_types:
         distributed: &distributed
             type: distributed
@@ -146,6 +176,8 @@ gluster:
             redundancy_count: 2
             transport: tcp
 
+    # slave volumes config goes under 'slave_volumes' section. This is a list
+    # of all the slave volumes.
     slave_volumes:
         - &slave_vol1
             voltype: *distributed-replicated
@@ -171,15 +203,33 @@ gluster:
                 scrub_throttle:
                 scrub_frequency:
 
+    # 'volumes' is list of all the volumes that we need to refer in the
+    # testcases. Each item in the list is the details about the volume.
+    # The volume should have 'name', 'voltype', 'servers' info defined.
     volumes:
         - &vol1
             name: testvol
             voltype: *distributed-dispersed
             servers: [ server-vm1, server-vm2, server-vm3, server-vm4 ]
+
+    #   'extra_servers' : To be used in case of add new servers to the cluster
+    #                     in case of add-brick, replace-brick, attach-tier etc.
             extra_servers: [ server-vm9, server-vm10, server-vm11, server-vm12 ]
+
+    #   'tier' : Tiering related info. set 'create_tier' to 'true' to attach
+    #           tier during volume setup when the tests calls glusto-tests
+    #           volume_setup for setting up volume.
+    #           'tier_type' defines the tier volume type.
             tier:
                 create_tier: False
                 tier_type: *distributed-replicated
+
+    #   'quota' : Quota related info. setting 'enable' to 'True' enables quota
+    #           during volume setup when the tests calls glusto-tests
+    #           volume_setup for setting up volume.
+    #           Other details of  quota like 'limit_usage', 'limit_objects',
+    #           'alert_time', 'soft_timeout', 'hard_timeout' can be defined
+    #           in this section and referred in test cases using 'g.config'.
             quota:
                 enable: False
                 limit_usage:
@@ -195,29 +245,54 @@ gluster:
                 hard_timeout: 0
             inode_quota:
                 enable: False
+
+    # 'bitrot': Bitrot related info. setting  'enable' to 'True' will enable
+    #           bitrot during volume setup when the tests calls glusto-tests
+    #           volume_setup for setting up volume.
+    #           Other bitrot options like 'scrub_throttle', 'scrub_frequency'
+    #           and any other bitrot related info can be defined here and
+    #           referred in tets cases using 'g.config'.
             bitrot:
                 enable: False
                 scrub_throttle: 'aggressive'
                 scrub_frequency: 'hourly'
+
+    # 'options': Define volume options and it's values to be set during volume
+    #           setup when the tests calls glusto-tests volume_setup for
+    #           setting up the volume.
+            options:
+                performance.readdir-ahead: "on"
+
+    # 'snapshot': snapshot related info.
+            snapshot:
+                use_snapshot: True
+                snap_jobname: 'snap_job'
+                snap_schedule: 2
+
+    # 'uss': USS related info. setting  'enable' to 'True' will enable
+    #       USS during volume setup when the tests calls glusto-tests
+    #       volume_setup for setting up volume.
+            uss:
+                enable: False
+
+    # 'smb': setting  'enable' to 'True' will export the volume created as
+    #       'SMB' share.
+            smb:
+                enable: False
+            nfs_ganesha:
+                enable: False
             geo_rep:
                 create_geo_rep_session: False
                 slave_volumes: [ *slave_vol1 ]
                 user: 'root'
                 group: 'geogroup'
                 sync_mode: 'rsync'
-            options:
-                performance.readdir-ahead: "on"
-            snapshot:
-                use_snapshot: True
-                snap_jobname: 'snap_job'
-                snap_schedule: 2
-            uss:
-                enable: False
-            nfs_ganesha:
-                enable: False
-            smb:
-                enable: False
 
+    # 'mounts' is list of all mount points info.Each item in the list is the
+    # details about the mountpoint. i.e 'protocol', 'server', 'volname',
+    # 'client_info'('host', 'super_user', 'platform'), mountpoint,
+    # mount options.In case of cifs/smb mount 'smbuser', 'smbpasswd' is also
+    # required.
     mounts:
         - &mount1
             protocol: 'glusterfs'
