@@ -25,6 +25,12 @@ import unittest
 from glusto.core import Glusto as g
 import os
 import random
+from glustolibs.gluster.gluster_init import start_glusterd
+from glustolibs.gluster.peer_ops import (peer_probe_servers, is_peer_connected,
+                                         peer_status)
+from glustolibs.gluster.volume_libs import setup_volume, cleanup_volume
+from glustolibs.gluster.volume_ops import volume_info, volume_status
+import time
 
 class runs_on(g.CarteTestClass):
     """Decorator providing runs_on capability for standard unittest script"""
@@ -255,36 +261,57 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
 
-        # Start Glusterd
-        from glustolibs.gluster.gluster_init import start_glusterd
-        ret = start_glusterd(servers=cls.servers)
-        if not ret:
-            g.log.error("glusterd did not start on at least one server")
-            return False
+        # Validate if peer is connected from all the servers
+        for server in cls.servers:
+            ret = is_peer_connected(server, cls.servers)
+            assert (ret == True), "Validating Peers to be in Cluster Failed"
 
-        # PeerProbe servers
-        from glustolibs.gluster.peer_ops import peer_probe_servers
-        ret = peer_probe_servers(mnode=cls.servers[0], servers=cls.servers[1:])
-        if not ret:
-            g.log.error("Unable to peer probe one or more servers")
-            return False
+        # Print Peer Status from mnode
+        _, _, _ = peer_status(cls.mnode)
 
-        from glustolibs.gluster.volume_libs import setup_volume
+        # Setup Volume
         ret = setup_volume(mnode=cls.mnode,
                            all_servers_info=cls.all_servers_info,
-                           volume_config=cls.volume)
-        if not ret:
-            g.log.error("Setup volume %s failed" % cls.volname)
-            return False
+                           volume_config=cls.volume, force=True)
+        assert (ret == True), "Setup volume %s failed" % cls.volname
+        time.sleep(10)
+
+        # Print Volume Info and Status
+        _, _, _ = volume_info(cls.mnode, cls.volname)
+
+        _, _, _ = volume_status(cls.mnode, cls.volname)
+
+        # Validate if volume is exported or not
+        if 'nfs' in cls.mount_type:
+            cmd = "showmount -e localhost"
+            _, _, _ = g.run(cls.mnode, cmd)
+
+            cmd = "showmount -e localhost | grep %s" % cls.volname
+            ret, _, _ = g.run(cls.mnode, cmd)
+            assert (ret == 0), "Volume %s not exported" % cls.volname
+
+        if 'cifs' in cls.mount_type:
+            cmd = "smbclient -L localhost"
+            _, _, _ = g.run(cls.mnode, cmd)
+
+            cmd = ("smbclient -L localhost -U | grep -i -Fw gluster-%s " %
+                   cls.volname)
+            ret, _, _ = g.run(cls.mnode, cmd)
+            assert (ret == 0), ("Volume %s not accessable via SMB/CIFS share" %
+                                cls.volname)
 
         # Create Mounts
+        rc = True
         for mount_obj in cls.mounts:
             ret = mount_obj.mount()
             if not ret:
                 g.log.error("Unable to mount volume '%s:%s' on '%s:%s'" %
                             (mount_obj.server_system, mount_obj.volname,
                              mount_obj.client_system, mount_obj.mountpoint))
-                return False
+                rc = False
+        assert (rc == True), ("Mounting volume %s on few clients failed" %
+                              cls.volname)
+
 
     @classmethod
     def tearDownClass(cls, umount_vol=True, cleanup_vol=True):
@@ -304,11 +331,5 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
 
         # Cleanup volume
         if cleanup_vol:
-            from glustolibs.gluster.volume_libs import cleanup_volume
             ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
-            if not ret:
-                g.log.error("cleanup volume %s failed" % cls.volname)
-                return False
-
-        g.log.info("TEARDOWN GLUSTER VOLUME: %s on %s" % (cls.volume_type,
-                                                          cls.mount_type))
+            assert (ret == True), ("cleanup volume %s failed" % cls.volname)

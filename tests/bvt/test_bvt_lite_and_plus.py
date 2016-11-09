@@ -18,19 +18,15 @@
 import pytest
 import os
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.gluster_init import start_glusterd
-from glustolibs.gluster.peer_ops import (peer_probe_servers, is_peer_connected,
-                                         peer_status)
-from glustolibs.gluster.volume_libs import setup_volume, cleanup_volume
-from glustolibs.gluster.volume_ops import volume_info, volume_status
+from glustolibs.gluster.gluster_base_class import (GlusterVolumeBaseClass,
+                                                   runs_on)
 import time
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['glusterfs', 'nfs', 'cifs']])
-class BvtTestsClass(GlusterBaseClass):
+class BvtTestsClass(GlusterVolumeBaseClass):
     """Class containing case for : BVT Lite and BVT Plus.
 
     BVT Lite: Run the case on dis-rep volume with glusterfs, nfs, cifs
@@ -41,73 +37,10 @@ class BvtTestsClass(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        """Following are the setps in setupclass
-            - Start glusterd on all servers
-            - Peer Probe
-            - Setup the volume
-            - Mount the volume
+        """Setup Volume and Mounts.
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
         g.log.info("Starting %s:" % cls.__name__)
-
-        # Start Glusterd
-        ret = start_glusterd(servers=cls.servers)
-        assert (ret == True), "glusterd did not start on at least one server"
-
-        # PeerProbe servers
-        ret = peer_probe_servers(mnode=cls.servers[0], servers=cls.servers[1:])
-        assert (ret == True), "Unable to peer probe one or more servers"
-
-        # Validate if peer is connected from all the servers
-        for server in cls.servers:
-            ret = is_peer_connected(server, cls.servers)
-            assert (ret == True), "Validating Peers to be in Cluster Failed"
-
-        # Print Peer Status from mnode
-        _, _, _ = peer_status(cls.mnode)
-
-        # Setup Volume
-        ret = setup_volume(mnode=cls.mnode,
-                           all_servers_info=cls.all_servers_info,
-                           volume_config=cls.volume, force=True)
-        assert (ret == True), "Setup volume %s failed" % cls.volname
-        time.sleep(10)
-
-        # Print Volume Info and Status
-        _, _, _ = volume_info(cls.mnode, cls.volname)
-
-        _, _, _ = volume_status(cls.mnode, cls.volname)
-
-        # Validate if volume is exported or not
-        if 'nfs' in cls.mount_type:
-            cmd = "showmount -e localhost"
-            _, _, _ = g.run(cls.mnode, cmd)
-
-            cmd = "showmount -e localhost | grep %s" % cls.volname
-            ret, _, _ = g.run(cls.mnode, cmd)
-            assert (ret == 0), "Volume %s not exported" % cls.volname
-
-        if 'cifs' in cls.mount_type:
-            cmd = "smbclient -L localhost"
-            _, _, _ = g.run(cls.mnode, cmd)
-
-            cmd = ("smbclient -L localhost -U | grep -i -Fw gluster-%s " %
-                   cls.volname)
-            ret, _, _ = g.run(cls.mnode, cmd)
-            assert (ret == 0), ("Volume %s not accessable via SMB/CIFS share" %
-                                cls.volname)
-
-        # Create Mounts
-        rc = True
-        for mount_obj in cls.mounts:
-            ret = mount_obj.mount()
-            if not ret:
-                g.log.error("Unable to mount volume '%s:%s' on '%s:%s'" %
-                            (mount_obj.server_system, mount_obj.volname,
-                             mount_obj.client_system, mount_obj.mountpoint))
-                rc = False
-        assert (rc == True), ("Mounting volume %s on few clients failed" %
-                              cls.volname)
+        GlusterVolumeBaseClass.setUpClass.im_func(cls)
 
         # Upload io scripts
         cls.script_local_path = ("/usr/share/glustolibs/io/"
@@ -194,20 +127,4 @@ class BvtTestsClass(GlusterBaseClass):
     def tearDownClass(cls):
         """Cleanup mount and Cleanup the volume
         """
-        GlusterBaseClass.tearDownClass.im_func(cls)
-
-        # Unmount mounts
-        rc = True
-        for mount_obj in cls.mounts:
-            ret = mount_obj.unmount()
-            if not ret:
-                g.log.error("Unable to unmount volume '%s:%s' on '%s:%s'" %
-                            (mount_obj.server_system, mount_obj.volname,
-                             mount_obj.client_system, mount_obj.mountpoint))
-                rc = False
-        assert (rc == True), ("UnMounting volume %s on few clients failed" %
-                              cls.volname)
-
-        # Cleanup Volume
-        ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
-        assert (ret == True), ("cleanup volume %s failed" % cls.volname)
+        GlusterVolumeBaseClass.tearDownClass.im_func(cls)
