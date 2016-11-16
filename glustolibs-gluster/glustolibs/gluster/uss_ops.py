@@ -43,6 +43,7 @@ def enable_uss(mnode, volname):
     cmd = "gluster volume set %s features.uss enable" % volname
     return g.run(mnode, cmd)
 
+
 def disable_uss(mnode, volname):
     """Disables uss on the specified volume
 

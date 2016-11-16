@@ -21,8 +21,6 @@
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.volume_ops import volume_start, volume_stop
-import re
-import time
 
 try:
     import xml.etree.cElementTree as etree

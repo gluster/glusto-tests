@@ -21,6 +21,7 @@
 
 from glusto.core import Glusto as g
 
+
 def add_brick(mnode, volname, bricks_list, replica=None):
     """Add Bricks specified in the bricks_list to the volume.
 

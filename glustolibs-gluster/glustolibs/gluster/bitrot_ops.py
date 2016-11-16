@@ -27,11 +27,6 @@ from glustolibs.gluster.lib_utils import (get_pathinfo,
 import time
 import re
 
-try:
-    import xml.etree.cElementTree as etree
-except ImportError:
-    import xml.etree.ElementTree as etree
-
 
 # Global variables
 SCRUBBER_TIMEOUT = 100
@@ -174,7 +169,7 @@ def is_file_signed(mnode, filename, volname, expected_file_version=None):
             g.log.error("File version mismatch in signature.Filename: %s ."
                         "Expected file version: %s.Actual file version: %s"
                         % (filename, expected_file_version,
-                        actual_signature_file_version))
+                           actual_signature_file_version))
             return False
 
     actual_file_signature = ''.join(re.findall('.{16}',
@@ -185,7 +180,7 @@ def is_file_signed(mnode, filename, volname, expected_file_version=None):
         g.log.error("File signature mismatch. File name: %s . Expected "
                     "file signature: %s. Actual file signature: %s"
                     % (filename, expected_file_signature,
-                    actual_file_signature))
+                       actual_file_signature))
         return False
     return True
 
@@ -572,7 +567,7 @@ def get_scrub_status(mnode, volname):
         corrupt_list = []
         for node in temp_list:
             tmp_reg = ('Node: (\S+)\n.*Error count.*'
-                       + 'Corrupted object.*?:(.*)\n=.*')
+                       'Corrupted object.*?:(.*)\n=.*')
             m = re.search(tmp_reg, node, re.S)
             if m is None:
                 g.log.error("Mismatch in cli output when bad file"

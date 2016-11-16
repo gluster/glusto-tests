@@ -31,11 +31,6 @@ import random
 
 ONE_GB_BYTES = 1073741824.0
 
-try:
-    import xml.etree.cElementTree as etree
-except ImportError:
-    import xml.etree.ElementTree as etree
-
 
 def append_string_to_file(mnode, filename, str_to_add_in_file,
                           user="root"):
@@ -364,7 +359,7 @@ def get_servers_used_bricks_dict(mnode, servers):
         for item in list1:
             x = re.search(':(.*)/(.*)', item)
             list2 = x.group(1).strip().split(':')
-            if servers_used_bricks_dict.has_key(list2[0]):
+            if list2[0] in servers_used_bricks_dict:
                 value = servers_used_bricks_dict[list2[0]]
                 value.append(list2[1])
             else:
@@ -400,7 +395,7 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
     dict2 = get_servers_used_bricks_dict(mnode, servers)
     servers_unused_bricks_dict = OrderedDict()
     for key, value in dict1.items():
-        if dict2.has_key(key):
+        if key in dict2:
             unused_bricks = list(set(value) - set(dict2[key]))
             servers_unused_bricks_dict[key] = unused_bricks
         else:
@@ -457,8 +452,9 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
     for num in range(brick_index, brick_index + number_of_bricks):
         # current_server is the server from which brick path will be created
         current_server = servers_unused_bricks_dict.keys()[dict_index]
-        current_server_unused_bricks_list = (servers_unused_bricks_dict.values()
-                                             [dict_index])
+        current_server_unused_bricks_list = (
+                servers_unused_bricks_dict.values()[dict_index]
+                )
         brick_path = ''
         if current_server_unused_bricks_list:
             brick_path = ("%s:%s/%s_brick%s" %
@@ -476,6 +472,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
 
     return bricks_list
 
+
 def is_rhel6(servers):
     """Function to get whether the server is RHEL-6
 
@@ -491,10 +488,11 @@ def is_rhel6(servers):
     for server, ret_values in results.iteritems():
         retcode, out, err = ret_values
         if retcode != 0:
-            g.log.error("Unable to get the RHEL version on server %s" %(server,))
+            g.log.error("Unable to get the RHEL version on server %s" %
+                        (server))
             rc = False
-        if retcode == 0 and not "release 6" in out:
-            g.log.error("Server %s is not RHEL-6" %(server,))
+        if retcode == 0 and "release 6" not in out:
+            g.log.error("Server %s is not RHEL-6" % (server))
             rc = False
     return rc
 
@@ -514,10 +512,11 @@ def is_rhel7(servers):
     for server, ret_values in results.iteritems():
         retcode, out, err = ret_values
         if retcode != 0:
-            g.log.error("Unable to get the RHEL version on server %s" %(server,))
+            g.log.error("Unable to get the RHEL version on server %s" %
+                        (server))
             rc = False
-        if retcode == 0 and not "release 7" in out:
-            g.log.error("Server %s is not RHEL-7" %(server,))
+        if retcode == 0 and "release 7" not in out:
+            g.log.error("Server %s is not RHEL-7" % (server))
             rc = False
     return rc
 
@@ -541,12 +540,12 @@ def get_disk_usage(mnode, path, user="root"):
         get_disk_usage("abc.com", "/mnt/glusterfs")
     """
 
-    inst = random.randint(10,100)
+    inst = random.randint(10, 100)
     conn = g.rpyc_get_connection(mnode, user=user, instance=inst)
     if conn is None:
         g.log.error("Failed to get rpyc connection")
         return None
-    cmd = 'stat -f '+ path
+    cmd = 'stat -f ' + path
     p = conn.modules.subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE)
     out, err = p.communicate()
@@ -568,19 +567,20 @@ def get_disk_usage(mnode, path, user="root"):
     keys = ['b_size', 'b_total', 'b_free', 'b_avail', 'i_total', 'i_free']
     val = list(match.groups())
     info = dict(zip(keys, val))
-    usage_info['total'] = ((int(info['b_total']) * int(info['b_size']))
-                          / ONE_GB_BYTES)
-    usage_info['free'] = ((int(info['b_free']) * int(info['b_size']))
-                         / ONE_GB_BYTES)
-    usage_info['used_percent'] = (100 - (100.0 * usage_info['free']
-                                 / usage_info['total']))
+    usage_info['total'] = ((int(info['b_total']) * int(info['b_size'])) /
+                           ONE_GB_BYTES)
+    usage_info['free'] = ((int(info['b_free']) * int(info['b_size'])) /
+                          ONE_GB_BYTES)
+    usage_info['used_percent'] = (100 - (100.0 * usage_info['free'] /
+                                  usage_info['total']))
     usage_info['total_inode'] = int(info['i_total'])
     usage_info['free_inode'] = int(info['i_free'])
-    usage_info['used_percent_inode'] = (100 - (100.0 * usage_info['free_inode']
-                                       / usage_info['total_inode']))
+    usage_info['used_percent_inode'] = (100 - (100.0 *
+                                        usage_info['free_inode'] /
+                                        usage_info['total_inode']))
     usage_info['used'] = usage_info['total'] - usage_info['free']
     usage_info['used_inode'] = (usage_info['total_inode'] -
-                               usage_info['free_inode'])
+                                usage_info['free_inode'])
     return usage_info
 
 
@@ -636,11 +636,9 @@ def check_if_dir_is_filled(mnode, dirname, percent_to_fill,
         used = output['used_percent']
 
         if int(percent_to_fill) > int(used):
-            remaining_to_fill = int(percent_to_fill) - int(used)
-
             g.log.info("Directory %s used percent: %s"
-                       %(dirname, used))
-            if int(percent_to_fill) <=  int(used):
+                       % (dirname, used))
+            if int(percent_to_fill) <= int(used):
                 flag = 1
                 g.rpyc_close_connection(host=mnode)
                 break
@@ -657,6 +655,7 @@ def check_if_dir_is_filled(mnode, dirname, percent_to_fill,
         g.log.info("Directory is filled with given percentage")
         return True
     else:
-        g.log.info("Timeout reached before filling directory with given percentage")
+        g.log.info("Timeout reached before filling directory with given"
+                   " percentage")
         return True
     return False

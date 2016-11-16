@@ -17,7 +17,6 @@
 
 import argparse
 import random
-import subprocess
 import os
 import time
 import string
@@ -72,7 +71,7 @@ def create_dir(dir_path):
     if not path_exists(dir_abs_path):
         try:
             os.makedirs(dir_abs_path)
-        except (OSError, IOError) as e:
+        except (OSError, IOError):
             print "Unable to create dir: %s" % dir_abs_path
             return 1
     return 0
@@ -189,6 +188,7 @@ def fd_writes(args):
     for each_process in process_list:
         each_process.join()
     return 0
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

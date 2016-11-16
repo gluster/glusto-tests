@@ -21,6 +21,7 @@
 """
 from glusto.core import Glusto as g
 
+
 def start_glusterd(servers):
     """Starts glusterd on specified servers if they are not running.
 
@@ -45,6 +46,7 @@ def start_glusterd(servers):
         return False
 
     return True
+
 
 def stop_glusterd(servers):
     """Stops the glusterd on specified servers.
@@ -97,6 +99,7 @@ def restart_glusterd(servers):
 
     return True
 
+
 def is_glusterd_running(servers):
     """Checks the glusterd status on specified servers.
 
@@ -122,13 +125,14 @@ def is_glusterd_running(servers):
             g.log.error("glusterd is not running on the server %s", server)
             rc = 1
             if cmd2_results[server][0] == 0:
-                g.log.error("PID of glusterd is alive and status is not running")
+                g.log.error("PID of glusterd is alive and status is not "
+                            "running")
                 rc = -1
     return rc
 
-#TODO: THIS IS NOT IMPLEMENTED YET. PLEASE DO THIS MANUALLY
-#      TILL WE IMPLEMENT THIS PART
 
+# TODO: THIS IS NOT IMPLEMENTED YET. PLEASE DO THIS MANUALLY
+# TILL WE IMPLEMENT THIS
 def env_setup_servers(servers):
     """Set up environment on all the specified servers.
 

@@ -22,7 +22,6 @@
 import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
-from glustolibs.gluster.volume_libs import get_subvols
 
 
 def get_all_bricks(mnode, volname):
@@ -232,7 +231,7 @@ def bring_bricks_online(mnode, volname, bricks_list,
             False otherwise
     """
     rc = True
-    failed_to_brick_online_list = []
+    failed_to_bring_online_list = []
     for brick in bricks_list:
         bring_brick_online_method = random.choice(bring_bricks_online_methods)
         if bring_brick_online_method == 'glusterd_restart':
@@ -336,6 +335,7 @@ def are_bricks_online(mnode, volname, bricks_list):
 
     g.log.info("All the bricks %s are online" % bricks_list)
     return True
+
 
 def get_offline_bricks_list(mnode, volname):
     """Get list of bricks which are offline.

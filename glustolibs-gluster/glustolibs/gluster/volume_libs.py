@@ -192,12 +192,6 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         g.log.error("Invalid volume type defined in config")
         return False
 
-    # Get transport type
-    if 'transport' in volume_config['voltype']:
-        transpor_type = volume_config['voltype']['transport']
-    else:
-        transport_type = 'tcp'
-
     # get bricks_list
     bricks_list = form_bricks_list(mnode=mnode, volname=volname,
                                    number_of_bricks=number_of_bricks,
@@ -335,14 +329,14 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
             return False
 
     # Enable Ganesha
-##    if ('nfs_ganesha' in volume_config and
-##            'enable' in volume_config['nfs_ganesha'] and
-##            volume_config['nfs_ganesha']['enable']):
-##        from glustolibs.gluster.ganesha import vol_set_ganesha
-##        ret = vol_set_ganesha(mnode=mnode, volname=volname, option=True)
-##        if not ret:
-##            g.log.error("failed to set the ganesha option for %s" % volname)
-##            return False
+#    if ('nfs_ganesha' in volume_config and
+#            'enable' in volume_config['nfs_ganesha'] and
+#            volume_config['nfs_ganesha']['enable']):
+#        from glustolibs.gluster.ganesha import vol_set_ganesha
+#        ret = vol_set_ganesha(mnode=mnode, volname=volname, option=True)
+#        if not ret:
+#            g.log.error("failed to set the ganesha option for %s" % volname)
+#            return False
 
     # Enable Samba
     if ('smb' in volume_config and 'enable' in volume_config['smb'] and
@@ -479,7 +473,7 @@ def get_subvols(mnode, volname):
 
             # Disperse or Distribute-Disperse volume
             elif (cold_tier_type == 'Disperse' or
-                      cold_tier_type == 'Distributed-Disperse'):
+                  cold_tier_type == 'Distributed-Disperse'):
                 disp_count = sum([int(nums) for nums in
                                  ((volinfo[volname]["bricks"]['coldBricks']
                                   ['numberOfBricks']).split("x", 1)[1].
@@ -641,8 +635,8 @@ def get_volume_type_info(mnode, volname):
             if key in volinfo[volname]:
                 non_tiered_volume_type_info[key] = volinfo[volname][key]
             else:
-                g.log.error("Unable to find key '%s' in the volume info for the "
-                            "volume %s" % (key, volname))
+                g.log.error("Unable to find key '%s' in the volume info for "
+                            "the volume %s" % (key, volname))
                 non_tiered_volume_type_info[key] = None
         volume_type_info['volume_type_info'] = non_tiered_volume_type_info
 

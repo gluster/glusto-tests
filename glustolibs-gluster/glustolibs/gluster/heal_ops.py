@@ -19,10 +19,7 @@
     Description: Module for gluster heal operations.
 """
 
-import os
-import time
 from glusto.core import Glusto as g
-from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
 try:
     import xml.etree.cElementTree as etree
 except ImportError:

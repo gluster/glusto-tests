@@ -375,7 +375,6 @@ def is_peer_connected(mnode, servers):
     if mnode in servers:
         servers.remove(mnode)
 
-    peer_connected = True
     peer_status_list = get_peer_status(mnode)
     if peer_status_list is None:
         g.log.error("Failed to parse the peer status. Hence failed to "

@@ -17,17 +17,12 @@
 
 
 import re
-import time
 from glusto.core import Glusto as g
 from pprint import pformat
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
     import xml.etree.ElementTree as etree
-from glustolibs.gluster.mount_ops import mount_volume
-from glustolibs.gluster.gluster_init import env_setup_servers, start_glusterd
-from glustolibs.gluster.peer_ops import (peer_probe_servers,
-                                         nodes_from_pool_list)
 
 """
     This file contains the gluster volume operations like create volume,
@@ -80,7 +75,7 @@ def volume_create(mnode, volname, bricks_list, force=False, **kwargs):
         volume_create(mnode, volname, bricks_list)
     """
     replica_count = arbiter_count = stripe_count = None
-    disperse_count = disperse_data_count = redundancy_count =  None
+    disperse_count = disperse_data_count = redundancy_count = None
     transport_type = None
 
     if 'replica_count' in kwargs:
@@ -136,6 +131,7 @@ def volume_create(mnode, volname, bricks_list, force=False, **kwargs):
         cmd = cmd + " force"
 
     return g.run(mnode, cmd)
+
 
 def volume_start(mnode, volname, force=False):
     """Starts the gluster volume
@@ -235,7 +231,7 @@ def volume_delete(mnode, volname):
         bricks = [x["name"] for x in volinfo[volname]["bricks"]["brick"]
                   if "name" in x]
     ret, _, _ = g.run(mnode, "gluster volume delete %s --mode=script"
-                       % volname)
+                      % volname)
     if ret != 0:
         return False
 
@@ -658,7 +654,7 @@ def get_volume_info(mnode, volname='all'):
                                 (volinfo[volname]["bricks"][el.tag]["brick"].
                                  append(brick_info_dict))
                             else:
-                                volinfo[volname]["bricks"][el.tag][elmt.tag] = elmt.text
+                                volinfo[volname]["bricks"][el.tag][elmt.tag] = elmt.text  # noqa: E501
             elif elem.tag == "options":
                 volinfo[volname]["options"] = {}
                 for option in elem.findall("option"):

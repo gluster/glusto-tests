@@ -133,9 +133,6 @@ def create_smb_users(servers, smb_users_info, start_uid=50000):
     for smb_user in smb_users_info.keys():
         if smb_user == 'root':
             continue
-        user_add_command = ("getent passwd %d | grep %s &> /dev/null || "
-                            "useradd -u %d %s" % (uid, smb_user,
-                                                  uid, smb_user))
         for server in servers:
             # Check if user already exist with same uid
             cmd = ("getent passwd %d" % uid)

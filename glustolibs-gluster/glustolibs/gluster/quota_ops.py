@@ -20,8 +20,6 @@
 """
 
 from glusto.core import Glusto as g
-import re
-import time
 
 try:
     import xml.etree.cElementTree as etree

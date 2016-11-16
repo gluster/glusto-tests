@@ -22,7 +22,6 @@
 import os
 import argparse
 import sys
-import time
 import random
 import string
 import datetime
@@ -99,7 +98,7 @@ def create_dir(dir_path):
     if not path_exists(dir_abs_path):
         try:
             os.makedirs(dir_abs_path)
-        except (OSError, IOError) as e:
+        except (OSError, IOError):
             print "Unable to create dir: %s" % dir_abs_path
             return 1
     return 0
@@ -208,7 +207,7 @@ def create_deep_dirs_with_files(args):
     file_types = args.file_types
     try:
         fixed_file_size = args.fixed_file_size
-    except AttributeError as e:
+    except AttributeError:
         fixed_file_size = None
     base_file_name = args.base_file_name
     dirname_start_num = args.dirname_start_num
@@ -298,7 +297,7 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
                 str_to_write = string.ascii_letters + string.digits
                 file_str = (''.join(random.choice(str_to_write)
                                     for x in range(file_size)))
-                p = document.add_paragraph(file_str)
+                document.add_paragraph(file_str)
                 document.save(fname_abs_path)
             except:
                 print ("Unable to write to file '%s' : %s" %
@@ -323,7 +322,7 @@ def create_files(args):
     num_of_files = args.num_of_files
     try:
         fixed_file_size = args.fixed_file_size
-    except AttributeError as e:
+    except AttributeError:
         fixed_file_size = None
     base_file_name = args.base_file_name
     file_types = args.file_types
@@ -448,7 +447,7 @@ def _get_path_stats(path):
             'inode': stat.st_ino,
             'stat': stat
             })
-    except Exception as e:
+    except Exception:
         rc = 1
         err = "Unable to get the stat of path %s" % path
 

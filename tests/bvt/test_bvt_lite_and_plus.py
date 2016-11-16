@@ -15,12 +15,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import pytest
 import os
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterVolumeBaseClass,
                                                    runs_on)
-import time
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
@@ -47,7 +45,7 @@ class BvtTestsClass(GlusterVolumeBaseClass):
                                  "scripts/file_dir_ops.py")
         cls.script_upload_path = "/tmp/file_dir_ops.py"
         ret = os.path.exists(cls.script_local_path)
-        assert (ret == True), ("Unable to find the io scripts")
+        assert (ret is True), ("Unable to find the io scripts")
 
         for client in cls.clients:
             g.upload(client, cls.script_local_path, cls.script_upload_path)
@@ -100,7 +98,7 @@ class BvtTestsClass(GlusterVolumeBaseClass):
                             (self.mounts[i].client_system,
                              self.mounts[i].mountpoint))
                 rc = False
-        assert (rc == True), "IO failed on some of the clients"
+        assert (rc is True), "IO failed on some of the clients"
 
         # Get stat of all the files/dirs created.
         all_mounts_procs = []
@@ -118,7 +116,7 @@ class BvtTestsClass(GlusterVolumeBaseClass):
                             (self.mounts[i].client_system,
                              self.mounts[i].mountpoint))
                 rc = False
-        assert (rc == True), "Stat failed on some of the clients"
+        assert (rc is True), "Stat failed on some of the clients"
 
     def tearDown(self):
         pass

@@ -297,7 +297,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
         # Validate if peer is connected from all the servers
         for server in cls.servers:
             ret = is_peer_connected(server, cls.servers)
-            assert (ret == True), "Validating Peers to be in Cluster Failed"
+            assert (ret is True), "Validating Peers to be in Cluster Failed"
 
         # Print Peer Status from mnode
         _, _, _ = peer_status(cls.mnode)
@@ -306,7 +306,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
         ret = setup_volume(mnode=cls.mnode,
                            all_servers_info=cls.all_servers_info,
                            volume_config=cls.volume, force=True)
-        assert (ret == True), "Setup volume %s failed" % cls.volname
+        assert (ret is True), "Setup volume %s failed" % cls.volname
         time.sleep(10)
 
         # Print Volume Info and Status
@@ -342,7 +342,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                             (mount_obj.server_system, mount_obj.volname,
                              mount_obj.client_system, mount_obj.mountpoint))
                 rc = False
-        assert (rc == True), ("Mounting volume %s on few clients failed" %
+        assert (rc is True), ("Mounting volume %s on few clients failed" %
                               cls.volname)
 
     @classmethod
@@ -359,9 +359,9 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                                  mount_obj.client_system, mount_obj.mountpoint)
                                 )
                     rc = False
-            assert (rc == True), ("Unmount of all mounts are not successful")
+            assert (rc is True), ("Unmount of all mounts are not successful")
 
         # Cleanup volume
         if cleanup_vol:
             ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
-            assert (ret == True), ("cleanup volume %s failed" % cls.volname)
+            assert (ret is True), ("cleanup volume %s failed" % cls.volname)
