@@ -151,6 +151,15 @@ class GlusterBaseClass(unittest.TestCase):
                                 cls.volume_type)
                     return False
 
+        # Set volume options
+        if 'options' not in cls.volume:
+            cls.volume['options'] = {}
+
+        # Set nfs.disable to 'off' to start gluster-nfs server on start of the
+        # volume if the mount type is 'nfs'
+        if cls.mount_type == 'nfs':
+            cls.volume['options']['nfs.disable'] = 'off'
+
         # SMB Info
         if cls.mount_type == 'cifs' or cls.mount_type == 'smb':
             cls.volume['smb'] = {}
@@ -326,8 +335,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                                 (mount_obj.server_system, mount_obj.volname,
                                  mount_obj.client_system, mount_obj.mountpoint))
                     rc = False
-            if not rc:
-                return False
+            assert (rc == True), ("Unmount of all mounts are not successful")
 
         # Cleanup volume
         if cleanup_vol:
