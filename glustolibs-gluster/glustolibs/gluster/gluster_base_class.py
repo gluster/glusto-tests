@@ -25,12 +25,13 @@ import unittest
 from glusto.core import Glusto as g
 import os
 import random
-from glustolibs.gluster.gluster_init import start_glusterd
-from glustolibs.gluster.peer_ops import (peer_probe_servers, is_peer_connected,
+from glustolibs.gluster.peer_ops import (is_peer_connected,
                                          peer_status)
 from glustolibs.gluster.volume_libs import setup_volume, cleanup_volume
 from glustolibs.gluster.volume_ops import volume_info, volume_status
 import time
+import copy
+
 
 class runs_on(g.CarteTestClass):
     """Decorator providing runs_on capability for standard unittest script"""
@@ -74,6 +75,36 @@ class GlusterBaseClass(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Initialize all the variables necessary for testing Gluster
+        """
+        # Get all servers
+        cls.all_servers = None
+        if ('servers' in g.config and g.config['servers']):
+            cls.all_servers = g.config['servers']
+        else:
+            assert False, "'servers' not defined in the global config"
+
+        # Get all clients
+        cls.all_clients = None
+        if ('clients' in g.config and g.config['clients']):
+            cls.all_clients = g.config['clients']
+        else:
+            assert False, "'clients' not defined in the global config"
+
+        # Get all servers info
+        cls.all_servers_info = None
+        if ('servers_info' in g.config and g.config['servers_info']):
+            cls.all_servers_info = g.config['servers_info']
+        else:
+            assert False, "'servers_info' not defined in the global config"
+
+        # All clients_info
+        cls.all_clients_info = None
+        if ('clients_info' in g.config and g.config['clients_info']):
+            cls.all_clients_info = g.config['clients_info']
+        else:
+            assert False, "'clients_info' not defined in the global config"
+
         if cls.volume_type is None:
             cls.volume_type = "distributed"
         if cls.mount_type is None:
@@ -122,34 +153,33 @@ class GlusterBaseClass(unittest.TestCase):
             if 'volumes' in g.config['gluster']:
                 for volume in g.config['gluster']['volumes']:
                     if volume['voltype']['type'] == cls.volume_type:
-                        cls.volume = volume
+                        cls.volume = copy.deepcopy(volume)
                         found_volume = True
                         break
 
         if found_volume:
-            if not 'name' in cls.volume:
+            if 'name' not in cls.volume:
                 cls.volume['name'] = 'testvol_%s' % cls.volume_type
 
-            if 'servers' in cls.volume:
-                cls.volume['servers'] = g.config['servers']
+            if 'servers' not in cls.volume:
+                cls.volume['servers'] = cls.all_servers
 
         if not found_volume:
             cls.volume = {
                 'name': ('testvol_%s' % cls.volume_type),
-                'servers': g.config['servers']
+                'servers': cls.all_servers
                 }
             try:
                 if g.config['gluster']['volume_types'][cls.volume_type]:
                     cls.volume['voltype'] = (g.config['gluster']
                                              ['volume_types'][cls.volume_type])
-            except KeyError as e:
+            except KeyError:
                 try:
                     cls.volume['voltype'] = (default_volume_type_config
                                              [cls.volume_type])
-                except KeyError as e:
-                    g.log.error("Unable to get configs of volume type: %s",
-                                cls.volume_type)
-                    return False
+                except KeyError:
+                    assert False, ("Unable to get configs of volume type: %s",
+                                   cls.volume_type)
 
         # Set volume options
         if 'options' not in cls.volume:
@@ -162,7 +192,8 @@ class GlusterBaseClass(unittest.TestCase):
 
         # SMB Info
         if cls.mount_type == 'cifs' or cls.mount_type == 'smb':
-            cls.volume['smb'] = {}
+            if 'smb' not in cls.volume:
+                cls.volume['smb'] = {}
             cls.volume['smb']['enable'] = True
             users_info_found = False
             try:
@@ -203,25 +234,38 @@ class GlusterBaseClass(unittest.TestCase):
             if 'mounts' in g.config['gluster']:
                 for mount in g.config['gluster']['mounts']:
                     if mount['protocol'] == cls.mount_type:
-                        if ('volname' not in mount or (not mount['volname'])):
-                            mount['volname'] = cls.volname
-                        if ('server' not in mount or (not mount['server'])):
-                            mount['server'] = mnode
-                        if ('mountpoint' not in mount or
-                                (not mount['mountpoint'])):
-                            mount['mountpoint'] = (os.path.join(
-                                "/mnt", '_'.join([cls.volname, cls.mount_type])))
-                        cls.mounts_dict_list.append(mount)
+                        temp_mount = {}
+                        temp_mount['protocol'] = cls.mount_type
+                        if ('volname' in mount and mount['volname']):
+                            if mount['volname'] == cls.volname:
+                                temp_mount = copy.deepcopy(mount)
+                            else:
+                                continue
+                        else:
+                            temp_mount['volname'] = cls.volname
+                        if ('server' not in temp_mount or
+                                (not temp_mount['server'])):
+                            temp_mount['server'] = cls.mnode
+                        if ('mountpoint' not in temp_mount or
+                                (not temp_mount['mountpoint'])):
+                            temp_mount['mountpoint'] = (os.path.join(
+                                "/mnt", '_'.join([cls.volname,
+                                                  cls.mount_type])))
+                        if ('client' not in temp_mount or
+                                (not temp_mount['client'])):
+                            temp_mount['client'] = (
+                                cls.all_clients_info[
+                                    random.choice(cls.all_clients_info.keys())]
+                                )
+                        cls.mounts_dict_list.append(temp_mount)
                         found_mount = True
         if not found_mount:
-            for client in g.config['clients']:
+            for client in cls.all_clients_info.keys():
                 mount = {
                     'protocol': cls.mount_type,
                     'server': cls.mnode,
                     'volname': cls.volname,
-                    'client': {
-                        'host': client
-                        },
+                    'client': cls.all_clients_info[client],
                     'mountpoint': (os.path.join(
                         "/mnt", '_'.join([cls.volname, cls.mount_type]))),
                     'options': ''
@@ -238,31 +282,11 @@ class GlusterBaseClass(unittest.TestCase):
         from glustolibs.gluster.mount_ops import create_mount_objs
         cls.mounts = create_mount_objs(cls.mounts_dict_list)
 
-        # Get clients
+        # Defining clients from mounts.
         cls.clients = []
-        if 'clients' in g.config:
-            cls.clients = g.config['clients']
-        else:
-            for mount_dict in cls.mounts_dict_list:
-                if 'client' in mount_dict:
-                    if ('host' in mount_dict['client'] and
-                            mount_dict['client']['host']):
-                        if mount_dict['client']['host'] not in cls.clients:
-                            cls.clients.append(mount_dict['client']['host'])
-
-        # All servers info
-        cls.all_servers_info = None
-        if 'servers_info' in g.config:
-            cls.all_servers_info = g.config['servers_info']
-        else:
-            g.log.error("servers_info not defined in the configuration file")
-
-        # All clients_info
-        cls.all_clients_info = None
-        if 'clients_info' in g.config:
-            cls.all_clients_info = g.config['clients_info']
-        else:
-            g.log.error("clients_info not defined in the configuration file")
+        for mount_dict in cls.mounts_dict_list:
+            cls.clients.append(mount_dict['client']['host'])
+        cls.clients = list(set(cls.clients))
 
 
 class GlusterVolumeBaseClass(GlusterBaseClass):
@@ -321,7 +345,6 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
         assert (rc == True), ("Mounting volume %s on few clients failed" %
                               cls.volname)
 
-
     @classmethod
     def tearDownClass(cls, umount_vol=True, cleanup_vol=True):
         """unittest tearDownClass override"""
@@ -333,7 +356,8 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                 if not ret:
                     g.log.error("Unable to unmount volume '%s:%s' on '%s:%s'" %
                                 (mount_obj.server_system, mount_obj.volname,
-                                 mount_obj.client_system, mount_obj.mountpoint))
+                                 mount_obj.client_system, mount_obj.mountpoint)
+                                )
                     rc = False
             assert (rc == True), ("Unmount of all mounts are not successful")
 

@@ -544,7 +544,7 @@ def set_volume_options(mnode, volname, options):
     """
     _rc = True
     for option in options:
-        cmd = ("gluster volume set %s %s %s"
+        cmd = ("gluster volume set %s %s %s --mode=script"
                % (volname, option, options[option]))
         ret, _, _ = g.run(mnode, cmd)
         if ret != 0:
