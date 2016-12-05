@@ -1,0 +1,183 @@
+This Document talks about how to run the glusto-tests from the scratch.
+
+The testrun is divided in five phases:
+    1) Installation of OS
+    2) Setup Environment
+    3) Running the tests
+    4) Reporting
+    5) Teardown
+
+1) Installation of OS:
+    This phase is to install the OS on all the storage servers, clients.
+    Before installing the OS, determine how many servers/clients are needed
+    for testing in the current test run.
+
+    For example: In case of disperse volume 1 x (4 + 2) we need 6 bricks.
+    If we are creating one brick per storage server, then we would need 6
+    storage servers.
+
+    One of the servers/clients  can itself be the node from where glusto-tests
+    are run or you can have a separate node which acts a Glusto management node.
+
+    Once the installation of OS is successfully complete on all the machines
+    the next phase is setting up environment for running glusto-tests.
+
+2) Setup Environment:
+    - Install epel repo's on all servers and clients:
+        - Epel 7: yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        - Epel 6: yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+        - Epel 5: yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-5.noarch.rpm
+
+    - Install gluster on servers and clients:
+        - Install gluster on Servers:
+            - RPM Installation:
+                For installing gluster RPM's and dependencies refer to: http://gluster.readthedocs.io/en/latest/Install-Guide/Install/
+
+            - Compiling gluster:
+                For compiling RPMs refer to: http://gluster.readthedocs.io/en/latest/Administrator%20Guide/Compiling%20RPMS/
+
+            Minimum Gluster RPMs required on servers for running the tests:
+                - glusterfs-server
+                - glusterfs-cli
+                - glusterfs-debuginfo ( For the purpose of debugging )
+
+            Dependencies to be installed on all servers:
+                - ctdb
+                - samba
+                - samba-client
+                - samba-debuginfo
+                - samba-vfs-glusterfs
+
+        - Install gluster on Clients:
+            - Gluster Native Clients:
+                For installing the gluster client rpm's and dependencies refer to:
+                http://gluster.readthedocs.io/en/latest/Administrator%20Guide/Setting%20Up%20Clients/#gluster-native-client
+
+            - NFS: For nfs mounts, install the following dependencies:
+                - yum install nfs-utils
+
+            - CIFS: For cifs mounts, install the followind dependencies:
+                - yum install cifs-utils
+
+    - Setup Bricks on all servers:
+        - To create bricks refer to: http://gluster.readthedocs.io/en/latest/Administrator%20Guide/Setting%20Up%20Volumes/#formatting-and-mounting-bricks
+
+    - Firewall settings:
+        - For the Gluster to communicate within a cluster either the firewalls
+        have to be turned off or enable communication for each server.
+            - iptables -F
+                    or
+            - iptables -I INPUT -p all -s `<ip-address>` -j ACCEPT
+
+        - Disable IPV6
+
+    - Start glusterd on all servers:
+        - service glusterd start
+        - service glusterd status (To verify glusterd is running)
+
+    - Configure trusted pool:
+        Probe each server from one of the server to add all the servers to
+        trusted pool.
+            - gluster peer probe <hostname/IP>
+
+    - NFS:
+        - Enable rpcbind to start on boot on all servers
+            - chkconfig rpcbind on
+
+        - Start rpcbind service on all servers:
+            - service rpcbind start
+            - service rpcbind status (To verify rpcbind is running)
+
+    - SMB:
+        - Enable Samba to start on boot on all servers.
+            - chkconfig smb on
+
+        - Start smb on  all the servers.
+            - service smb start
+            - service smb status (To verify smb is running)
+
+        - Create smb users on all servers with same name, uid
+            - useradd -u <uid> <smb_user>
+            - smbpasswd -a <smb_user>
+
+    - Setup Glusto , glusto-tests on the node from where you would want to
+        run the gluster tests. This can be one of the server or client or
+        a different machine which acts as glusto-tests management node:
+
+        -   Install Glusto on glusto-tests management node:
+            - pip install
+                # pip install --upgrade git+git://github.com/loadtheaccumulator/glusto.git
+
+                                           or
+            - git clone
+                # git clone https://github.com/loadtheaccumulator/glusto.git
+                # cd glusto
+                # python setup.py
+
+            Refer to: http://glusto.readthedocs.io/en/latest/userguide/install.html
+
+        - Install glustolibs-gluster, glustolibs-io on glusto-tests management
+            node:
+            # git clone http://review.gluster.org/glusto-tests
+            # cd glusto-tests/glustolibs-gluster
+            # python setup.py install
+            # cd glusto-tests/glustolibs-io
+            # python setup.py install
+
+        - Creating the config file on glusto-tests management node:
+            - Create config file containing info about the servers, clients,
+            volumes, mounts. Config file should have the following sections:
+                - servers: List of all the servers Hostnames/IP in the cluster
+                - clients: List of all the clients Hostname/IP
+                - servers_info: Dict of servers info with server Hostname/IP as key
+                - clients_info: Dict of clients info with client Hostname/IP as key
+
+            Please refer to example config file under tests directory in
+            glusto-tests repo. The example config file is in yaml format and
+            defines sections which provides info about the gluster cluster.
+
+            We can use any 'glusto' framework supported formats for writing
+            the config files.
+            Refer : http://glusto.readthedocs.io/en/latest/userguide/configurable.html
+
+            NOTE: If peer probe is done with Hostname, the each item in the
+            servers list should be Hostnames or if IP addresses of servers are
+            used for peer probe, each item in the servers list
+            should be IP addresses.
+
+        - Setup passwordless ssh from the glusto-tests management node to all
+            servers and clients.
+
+        - Install glusto-tests dependencies on all clients.
+            - yum install python-pip libxml2-devel libxslt-devel gcc python-devel
+            - pip install python-docx
+
+        - Install glusto-tests dependencies on all servers:
+
+3) Running the tests:
+    - cd glusto-tests
+    - glusto-tests are run using the 'glusto' command available after installing
+    the glusto framework. The various options to run tests as provided by
+    glusto framework:
+
+    To run PyUnit tests:
+        # glusto -c 'config.yml' -d 'tests'
+        # glusto -c 'config.yml unittest_list.yml' -u
+
+    To run PyTest tests:
+        - To run all tests that are marked with tag 'bvt'.
+        # glusto -c 'config.yml' --pytest='-v -x tests -m bvt'
+
+        - To run a single test case
+        # glusto -c 'config.yml' --pytest='-v -s -k test_demo1"
+
+    To run Nose tests:
+        # glusto -c 'config.yml' --nosetests='-v -w tests'
+
+    Refer: http://glusto.readthedocs.io/en/latest/userguide/glusto.html#options-for-running-unit-tests
+
+4) Reporting: TBD
+
+5) Teardown: TBD
+
+
