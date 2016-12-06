@@ -1,0 +1,4 @@
+# this file is required for readthedocs autoapi gen
+git+https://github.com/loadtheaccumulator/glusto.git
+git+https://github.com/gluster/glusto-tests.git#subdirectory=glustolibs-gluster
+#git+https://github.com/gluster/glusto-tests.git#subdirectory=glustolibs-io
