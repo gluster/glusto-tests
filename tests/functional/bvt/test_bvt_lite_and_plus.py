@@ -45,7 +45,8 @@ class BvtTestsClass(GlusterVolumeBaseClass):
                                  "scripts/file_dir_ops.py")
         cls.script_upload_path = "/tmp/file_dir_ops.py"
         ret = os.path.exists(cls.script_local_path)
-        assert (ret is True), ("Unable to find the io scripts")
+        if not ret:
+            raise Exception("Unable to find the io scripts")
 
         for client in cls.clients:
             g.upload(client, cls.script_local_path, cls.script_upload_path)

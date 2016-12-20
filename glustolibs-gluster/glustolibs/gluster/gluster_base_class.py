@@ -29,6 +29,7 @@ from glustolibs.gluster.peer_ops import (is_peer_connected,
                                          peer_status)
 from glustolibs.gluster.volume_libs import setup_volume, cleanup_volume
 from glustolibs.gluster.volume_ops import volume_info, volume_status
+from glustolibs.gluster.exceptions import ExecutionError, ConfigError
 import time
 import copy
 
@@ -82,28 +83,30 @@ class GlusterBaseClass(unittest.TestCase):
         if ('servers' in g.config and g.config['servers']):
             cls.all_servers = g.config['servers']
         else:
-            assert False, "'servers' not defined in the global config"
+            raise ConfigError("'servers' not defined in the global config")
 
         # Get all clients
         cls.all_clients = None
         if ('clients' in g.config and g.config['clients']):
             cls.all_clients = g.config['clients']
         else:
-            assert False, "'clients' not defined in the global config"
+            raise ConfigError("'clients' not defined in the global config")
 
         # Get all servers info
         cls.all_servers_info = None
         if ('servers_info' in g.config and g.config['servers_info']):
             cls.all_servers_info = g.config['servers_info']
         else:
-            assert False, "'servers_info' not defined in the global config"
+            raise ConfigError("'servers_info' not defined in the global "
+                              "config")
 
         # All clients_info
         cls.all_clients_info = None
         if ('clients_info' in g.config and g.config['clients_info']):
             cls.all_clients_info = g.config['clients_info']
         else:
-            assert False, "'clients_info' not defined in the global config"
+            raise ConfigError("'clients_info' not defined in the global "
+                              "config")
 
         if cls.volume_type is None:
             cls.volume_type = "distributed"
@@ -178,8 +181,8 @@ class GlusterBaseClass(unittest.TestCase):
                     cls.volume['voltype'] = (default_volume_type_config
                                              [cls.volume_type])
                 except KeyError:
-                    assert False, ("Unable to get configs of volume type: %s",
-                                   cls.volume_type)
+                    raise ConfigError("Unable to get configs of volume type: "
+                                      "%s", cls.volume_type)
 
         # Set volume options
         if 'options' not in cls.volume:
@@ -297,7 +300,9 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
         # Validate if peer is connected from all the servers
         for server in cls.servers:
             ret = is_peer_connected(server, cls.servers)
-            assert (ret is True), "Validating Peers to be in Cluster Failed"
+            if not ret:
+                raise ExecutionError("Validating Peers to be in Cluster "
+                                     "Failed")
 
         # Print Peer Status from mnode
         _, _, _ = peer_status(cls.mnode)
@@ -306,7 +311,8 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
         ret = setup_volume(mnode=cls.mnode,
                            all_servers_info=cls.all_servers_info,
                            volume_config=cls.volume, force=True)
-        assert (ret is True), "Setup volume %s failed" % cls.volname
+        if not ret:
+            raise ExecutionError("Setup volume %s failed" % cls.volname)
         time.sleep(10)
 
         # Print Volume Info and Status
@@ -321,7 +327,8 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
 
             cmd = "showmount -e localhost | grep %s" % cls.volname
             ret, _, _ = g.run(cls.mnode, cmd)
-            assert (ret == 0), "Volume %s not exported" % cls.volname
+            if not ret:
+                raise ExecutionError("Volume %s not exported" % cls.volname)
 
         if 'cifs' in cls.mount_type:
             cmd = "smbclient -L localhost"
@@ -330,8 +337,9 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
             cmd = ("smbclient -L localhost -U | grep -i -Fw gluster-%s " %
                    cls.volname)
             ret, _, _ = g.run(cls.mnode, cmd)
-            assert (ret == 0), ("Volume %s not accessable via SMB/CIFS share" %
-                                cls.volname)
+            if not ret:
+                raise ExecutionError("Volume %s not accessable via SMB/CIFS "
+                                     "share" % cls.volname)
 
         # Create Mounts
         rc = True
@@ -342,8 +350,9 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                             (mount_obj.server_system, mount_obj.volname,
                              mount_obj.client_system, mount_obj.mountpoint))
                 rc = False
-        assert (rc is True), ("Mounting volume %s on few clients failed" %
-                              cls.volname)
+        if not rc:
+            raise ExecutionError("Mounting volume %s on few clients failed" %
+                                 cls.volname)
 
     @classmethod
     def tearDownClass(cls, umount_vol=True, cleanup_vol=True):
@@ -359,9 +368,12 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                                  mount_obj.client_system, mount_obj.mountpoint)
                                 )
                     rc = False
-            assert (rc is True), ("Unmount of all mounts are not successful")
+            if not rc:
+                raise ExecutionError("Unmount of all mounts are not "
+                                     "successful")
 
         # Cleanup volume
         if cleanup_vol:
             ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
-            assert (ret is True), ("cleanup volume %s failed" % cls.volname)
+            if not ret:
+                raise ExecutionError("cleanup volume %s failed" % cls.volname)
