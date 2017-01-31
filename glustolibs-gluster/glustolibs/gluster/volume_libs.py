@@ -25,7 +25,8 @@ import time
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            set_volume_options, get_volume_info,
-                                           volume_stop, volume_delete)
+                                           volume_stop, volume_delete,
+                                           volume_info, volume_status)
 from glustolibs.gluster.tiering_ops import (add_extra_servers_to_cluster,
                                             tier_attach,
                                             is_tier_process_running)
@@ -34,6 +35,8 @@ from glustolibs.gluster.quota_ops import (enable_quota, set_quota_limit_usage,
 from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.samba_ops import share_volume_over_smb
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
+from glustolibs.gluster.brick_libs import are_bricks_online, get_all_bricks
+from glustolibs.gluster.heal_libs import are_all_self_heal_daemons_are_online
 
 
 def setup_volume(mnode, all_servers_info, volume_config, force=False):
@@ -203,9 +206,9 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         return False
 
     # Create volume
-    ret, out, err = volume_create(mnode=mnode, volname=volname,
-                                  bricks_list=bricks_list, force=force,
-                                  **kwargs)
+    ret, _, _ = volume_create(mnode=mnode, volname=volname,
+                              bricks_list=bricks_list, force=force,
+                              **kwargs)
     if ret != 0:
         g.log.error("Unable to create volume %s" % volname)
         return False
@@ -259,11 +262,11 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         number_of_bricks = dist * rep
 
         # Attach Tier
-        ret, out, err = tier_attach(mnode=mnode, volname=volname,
-                                    extra_servers=extra_servers,
-                                    extra_servers_info=all_servers_info,
-                                    num_bricks_to_add=number_of_bricks,
-                                    replica=rep)
+        ret, _, _ = tier_attach(mnode=mnode, volname=volname,
+                                extra_servers=extra_servers,
+                                extra_servers_info=all_servers_info,
+                                num_bricks_to_add=number_of_bricks,
+                                replica=rep)
         if ret != 0:
             g.log.error("Unable to attach tier")
             return False
@@ -318,7 +321,7 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
     # Enable USS
     if ('uss' in volume_config and 'enable' in volume_config['uss'] and
             volume_config['uss']['enable']):
-        ret, out, err = enable_uss(mnode=mnode, volname=volname)
+        ret, _, _ = enable_uss(mnode=mnode, volname=volname)
         if ret != 0:
             g.log.error("Unable to enable uss on the volume %s", volname)
             return False
@@ -403,6 +406,93 @@ def cleanup_volume(mnode, volname):
     if not ret:
         g.log.error("Unable to cleanup the volume %s" % volname)
         return False
+    return True
+
+
+def is_volume_exported(mnode, volname, share_type):
+    """Checks whether the volume is exported as nfs or cifs share
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+        volname (str): volume name
+        share_type (str): nfs or cifs
+
+    Returns:
+        bool: If volume is exported returns True. False Otherwise.
+    """
+    if 'nfs' in share_type:
+        cmd = "showmount -e localhost"
+        _, _, _ = g.run(mnode, cmd)
+
+        cmd = "showmount -e localhost | grep %s" % volname
+        ret, _, _ = g.run(mnode, cmd)
+        if ret != 0:
+            return False
+        else:
+            return True
+
+    if 'cifs' in share_type:
+        cmd = "smbclient -L localhost"
+        _, _, _ = g.run(mnode, cmd)
+
+        cmd = ("smbclient -L localhost -U | grep -i -Fw gluster-%s " %
+               volname)
+        ret, _, _ = g.run(mnode, cmd)
+        if ret != 0:
+            return False
+        else:
+            return True
+    return True
+
+
+def log_volume_info_and_status(mnode, volname):
+    """Logs volume info and status
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+        volname (str): volume name
+
+    Returns:
+        bool: Returns True if getting volume info and status is successful.
+            False Otherwise.
+    """
+    ret, _, _ = volume_info(mnode, volname)
+    if ret != 0:
+        return False
+
+    ret, _, _ = volume_status(mnode, volname)
+    if ret != 0:
+        return False
+
+    return True
+
+
+def verify_all_process_of_volume_are_online(mnode, volname):
+    """Verifies whether all the processes of volume are online
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+        volname (str): volume name
+
+    Returns:
+        bool: Returns True if all the processes of volume are online.
+            False Otherwise.
+    """
+    # Verify all the  brick process are online
+    bricks_list = get_all_bricks(mnode, volname)
+    if not bricks_list:
+        return False
+
+    ret = are_bricks_online(mnode, volname, bricks_list)
+    if not ret:
+        return False
+
+    # Verify all self-heal-daemons are running for non-distribute volumes.
+    if not is_distribute_volume(mnode, volname):
+        ret = are_all_self_heal_daemons_are_online(mnode, volname)
+        if not ret:
+            return False
+
     return True
 
 
