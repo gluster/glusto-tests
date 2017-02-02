@@ -1,11 +1,13 @@
 This Document talks about how to run the glusto-tests from the scratch.
 
-The testrun is divided in five phases:
+The testrun is divided in several phases:
     1) Installation of OS
-    2) Setup Environment
-    3) Running the tests
-    4) Reporting
-    5) Teardown
+    2) Setup glusto-tests management node
+    3) Setup Servers/Clients Environment
+    4) Install glusto-tests dependencies
+    5) Running the tests
+    6) Reporting
+    7) Teardown
 
 1) Installation of OS:
     This phase is to install the OS on all the storage servers, clients.
@@ -22,11 +24,93 @@ The testrun is divided in five phases:
     Once the installation of OS is successfully complete on all the machines
     the next phase is setting up environment for running glusto-tests.
 
-2) Setup Environment:
+
+2) Setup Management Node to run glusto-tests:
+    - Install Glusto , glusto-tests on the node from where you would want to
+        run the gluster tests. This can be one of the server or client or
+        a different machine. For references we call this node as
+        glusto-tests management node:
+
+        - Install epel repo's on all servers and clients:
+            - Epel 7:
+                # yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+            - Epel 6:
+                # yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+            - Epel 5:
+                # yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-5.noarch.rpm
+
+        - Install and Upgrade python-pip
+            # yum -y install python-pip
+            # pip install --upgrade pip
+
+        -   Install Glusto on glusto-tests management node:
+            - pip install
+                # pip install --upgrade git+git://github.com/loadtheaccumulator/glusto.git
+
+                                           or
+            - git clone
+                # git clone https://github.com/loadtheaccumulator/glusto.git
+                # cd glusto
+                # python setup.py
+
+            Refer to: http://glusto.readthedocs.io/en/latest/userguide/install.html
+
+        - Install glustolibs-gluster, glustolibs-io on glusto-tests management node
+            # git clone git@github.com:gluster/glusto-tests.git
+            # cd glusto-tests/glustolibs-gluster
+            # python setup.py install
+            # cd glusto-tests/glustolibs-io
+            # python setup.py install
+
+    - Creating the config file on glusto-tests management node:
+        - Create config file containing info about the servers, clients,
+        volumes, mounts. Config file should have the following sections:
+            - servers: List of all the servers Hostnames/IP in the cluster
+            - clients: List of all the clients Hostname/IP
+            - servers_info: Dict of servers info with server Hostname/IP as key
+            - clients_info: Dict of clients info with client Hostname/IP as key
+
+        Please refer to example config file under tests directory in
+        glusto-tests repo. The example config file is in yaml format and
+        defines sections which provides info about the gluster cluster.
+
+        We can use any 'glusto' framework supported formats for writing
+        the config files.
+        Refer : http://glusto.readthedocs.io/en/latest/userguide/configurable.html
+
+        NOTE: If peer probe is done with Hostname, the each item in the
+        servers list should be Hostnames or if IP addresses of servers are
+        used for peer probe, each item in the servers list
+        should be IP addresses.
+
+    - Setup passwordless ssh from the glusto-tests management node to all
+        servers and clients.
+
+    - Install ansible ( Optional ) and creating ansible hosts file:
+        - Install ansible
+            # yum -y install ansible
+
+        - Create ansible hosts file.
+            Example ansible hosts file:
+                [servers]
+                abc.xyz.eng.company.com
+                def.xyz.eng.company.com
+
+                [clients]
+                lmn.xyz.eng.company.com
+
+                [all:children]
+                servers
+                clients
+
+3) Setup Servers/Clients Environment:
     - Install epel repo's on all servers and clients:
-        - Epel 7: yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-        - Epel 6: yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-        - Epel 5: yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-5.noarch.rpm
+        - Epel 7:
+            # yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        - Epel 6:
+            # yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+        - Epel 5:
+            # yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-5.noarch.rpm
 
     - Install gluster on servers and clients:
         - Install gluster on Servers:
@@ -100,61 +184,16 @@ The testrun is divided in five phases:
             - useradd -u <uid> <smb_user>
             - smbpasswd -a <smb_user>
 
-    - Setup Glusto , glusto-tests on the node from where you would want to
-        run the gluster tests. This can be one of the server or client or
-        a different machine which acts as glusto-tests management node:
+4) Install glusto-tests dependencies:
 
-        -   Install Glusto on glusto-tests management node:
-            - pip install
-                # pip install --upgrade git+git://github.com/loadtheaccumulator/glusto.git
+    - Install glusto-tests dependencies on all clients.
+        - yum install python-pip libxml2-devel libxslt-devel gcc python-devel
+        - pip install python-docx
 
-                                           or
-            - git clone
-                # git clone https://github.com/loadtheaccumulator/glusto.git
-                # cd glusto
-                # python setup.py
+    - Install glusto-tests dependencies on all servers:
 
-            Refer to: http://glusto.readthedocs.io/en/latest/userguide/install.html
 
-        - Install glustolibs-gluster, glustolibs-io on glusto-tests management
-            node:
-            # git clone http://review.gluster.org/glusto-tests
-            # cd glusto-tests/glustolibs-gluster
-            # python setup.py install
-            # cd glusto-tests/glustolibs-io
-            # python setup.py install
-
-        - Creating the config file on glusto-tests management node:
-            - Create config file containing info about the servers, clients,
-            volumes, mounts. Config file should have the following sections:
-                - servers: List of all the servers Hostnames/IP in the cluster
-                - clients: List of all the clients Hostname/IP
-                - servers_info: Dict of servers info with server Hostname/IP as key
-                - clients_info: Dict of clients info with client Hostname/IP as key
-
-            Please refer to example config file under tests directory in
-            glusto-tests repo. The example config file is in yaml format and
-            defines sections which provides info about the gluster cluster.
-
-            We can use any 'glusto' framework supported formats for writing
-            the config files.
-            Refer : http://glusto.readthedocs.io/en/latest/userguide/configurable.html
-
-            NOTE: If peer probe is done with Hostname, the each item in the
-            servers list should be Hostnames or if IP addresses of servers are
-            used for peer probe, each item in the servers list
-            should be IP addresses.
-
-        - Setup passwordless ssh from the glusto-tests management node to all
-            servers and clients.
-
-        - Install glusto-tests dependencies on all clients.
-            - yum install python-pip libxml2-devel libxslt-devel gcc python-devel
-            - pip install python-docx
-
-        - Install glusto-tests dependencies on all servers:
-
-3) Running the tests:
+5) Running the tests:
     - cd glusto-tests
     - glusto-tests are run using the 'glusto' command available after installing
     the glusto framework. The various options to run tests as provided by
@@ -176,8 +215,8 @@ The testrun is divided in five phases:
 
     Refer: http://glusto.readthedocs.io/en/latest/userguide/glusto.html#options-for-running-unit-tests
 
-4) Reporting: TBD
+6) Reporting: TBD
 
-5) Teardown: TBD
+7) Teardown: TBD
 
 
