@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,6 +18,7 @@
     Description: Helper library for io modules.
 """
 import os
+import subprocess
 from glusto.core import Glusto as g
 
 
@@ -35,7 +35,7 @@ def collect_mounts_arequal(mounts):
             arequal-checksum for a mount would be 'None' when failed to
             collect arequal for that mount.
     """
-    if not isinstance(mounts, list):
+    if isinstance(mounts, str):
         mounts = [mounts]
 
     # Collect arequal-checksum from all mounts
@@ -70,7 +70,7 @@ def log_mounts_info(mounts):
     Args:
         mounts (list): List of all GlusterMount objs.
     """
-    if not isinstance(mounts, list):
+    if isinstance(mounts, str):
         mounts = [mounts]
 
     g.log.info("Start logging mounts information:")
@@ -108,7 +108,7 @@ def get_mounts_stat(mounts):
         bool: True if recursively getting stat from all mounts is successful.
             False otherwise.
     """
-    if not isinstance(mounts, list):
+    if isinstance(mounts, str):
         mounts = [mounts]
 
     g.log.info("Start getting stat of the mountpoint recursively")
@@ -143,17 +143,19 @@ def list_all_files_and_dirs_mounts(mounts):
         bool: True if listing file and dirs on mounts is successful.
             False otherwise.
     """
-    if not isinstance(mounts, list):
+    if isinstance(mounts, str):
         mounts = [mounts]
+
+    ignore_dirs_list = [".trashcan"]
+    ignore_dirs = "\|".join(ignore_dirs_list)
 
     g.log.info("Start Listing mounts files and dirs")
     all_mounts_procs = []
     for mount_obj in mounts:
         g.log.info("Listing files and dirs on %s:%s", mount_obj.client_system,
                    mount_obj.mountpoint)
-        cmd = ("find %s" % (mount_obj.mountpoint))
-        proc = g.run_async(mount_obj.client_system, cmd,
-                           user=mount_obj.user)
+        cmd = ("find %s | grep -ve '%s'" % (mount_obj.mountpoint, ignore_dirs))
+        proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
     _rc = True
     for i, proc in enumerate(all_mounts_procs):
@@ -180,10 +182,10 @@ def validate_io_procs(all_mounts_procs, mounts):
     Returns:
         bool: True if IO is successful on all mounts. False otherwise.
     """
-    if not isinstance(all_mounts_procs, list):
+    if isinstance(all_mounts_procs, subprocess.Popen):
         all_mounts_procs = [all_mounts_procs]
 
-    if not isinstance(mounts, list):
+    if isinstance(mounts, str):
         mounts = [mounts]
 
     _rc = True
@@ -202,6 +204,39 @@ def validate_io_procs(all_mounts_procs, mounts):
     return _rc
 
 
+def wait_for_io_to_complete(all_mounts_procs, mounts):
+    """Waits for IO to complete
+
+    Args:
+        all_mounts_procs (list): List of open connection descriptor as
+            returned by g.run_async method.
+        mounts (list): List of all GlusterMount objs on which process were
+            started.
+
+    Returns:
+        bool: True if IO is complete on all mounts. False otherwise.
+    """
+    if isinstance(all_mounts_procs, subprocess.Popen):
+        all_mounts_procs = [all_mounts_procs]
+
+    if isinstance(mounts, str):
+        mounts = [mounts]
+
+    _rc = True
+    for i, proc in enumerate(all_mounts_procs):
+        g.log.info("Waiting for IO to be complete on %s:%s",
+                   mounts[i].client_system, mounts[i].mountpoint)
+        ret, _, _ = proc.async_communicate()
+        if ret != 0:
+            g.log.error("IO Not complete on %s:%s", mounts[i].client_system,
+                        mounts[i].mountpoint)
+            _rc = False
+        else:
+            g.log.info("IO is complete on %s:%s", mounts[i].client_system,
+                       mounts[i].mountpoint)
+    return _rc
+
+
 def cleanup_mounts(mounts):
     """Removes all the data from all the mountpoints
 
@@ -211,7 +246,7 @@ def cleanup_mounts(mounts):
     Returns:
         bool: True if cleanup is successful on all mounts. False otherwise.
     """
-    if not isinstance(mounts, list):
+    if isinstance(mounts, str):
         mounts = [mounts]
 
     g.log.info("Start cleanup mounts")
