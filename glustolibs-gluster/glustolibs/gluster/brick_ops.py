@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -15,14 +14,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    Description: Module for gluster brick operations
-"""
+""" Description: Module for gluster brick operations """
 
 from glusto.core import Glusto as g
 
 
-def add_brick(mnode, volname, bricks_list, replica=None):
+def add_brick(mnode, volname, bricks_list, force=False, **kwargs):
     """Add Bricks specified in the bricks_list to the volume.
 
     Args:
@@ -31,8 +28,14 @@ def add_brick(mnode, volname, bricks_list, replica=None):
         bricks_list (list): List of bricks to be added
 
     Kwargs:
-        replica (int): Replica count to increase the replica count of
-            the volume.
+        force (bool): If this option is set to True, then add brick command
+            will get executed with force option. If it is set to False,
+            then add brick command will get executed without force option
+
+        **kwargs
+            The keys, values in kwargs are:
+                - replica_count : (int)|None
+                - arbiter_count : (int)|None
 
     Returns:
         tuple: Tuple containing three elements (ret, out, err).
@@ -45,17 +48,32 @@ def add_brick(mnode, volname, bricks_list, replica=None):
             The third element 'err' is of type 'str' and is the stderr value
             of the command execution.
     """
-    if replica is None:
-        cmd = ("gluster volume add-brick %s %s" %
-               (volname, ' '.join(bricks_list)))
-    else:
-        cmd = ("gluster volume add-brick %s replica %d %s" %
-               (volname, int(replica), ' '.join(bricks_list)))
+    replica_count = arbiter_count = None
+
+    if 'replica_count' in kwargs:
+        replica_count = int(kwargs['replica_count'])
+
+        if 'arbiter_count' in kwargs:
+            arbiter_count = int(kwargs['arbiter_count'])
+
+    replica = arbiter = ''
+
+    if replica_count is not None:
+        replica = "replica %d" % replica_count
+
+        if arbiter_count is not None:
+            arbiter = "arbiter %d" % arbiter_count
+
+    force_value = ''
+    if force:
+        force_value = "force"
+
+    cmd = ("gluster volume add-brick %s %s %s %s %s" %
+           (volname, replica, arbiter, ' '.join(bricks_list), force_value))
 
     return g.run(mnode, cmd)
 
 
-# remove_brick
 def remove_brick(mnode, volname, bricks_list, option, replica=None):
     """Remove bricks specified in the bricks_list from the volume.
 
@@ -94,7 +112,6 @@ def remove_brick(mnode, volname, bricks_list, option, replica=None):
     return g.run(mnode, cmd)
 
 
-# replace_brick
 def replace_brick(mnode, volname, src_brick, dst_brick):
     """Replace src brick with dst brick from the volume.
 

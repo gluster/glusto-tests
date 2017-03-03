@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -15,9 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    Description: Module for gluster brick related helper functions.
-"""
+""" Description: Module for gluster brick related helper functions. """
 
 import random
 from glusto.core import Glusto as g
@@ -39,7 +36,7 @@ def get_all_bricks(mnode, volname):
     """
     volinfo = get_volume_info(mnode, volname)
     if volinfo is None:
-        g.log.error("Unable to get the volinfo of %s." % volname)
+        g.log.error("Unable to get the volinfo of %s.", volname)
         return None
 
     if 'Tier' in volinfo[volname]['typeStr']:
@@ -63,15 +60,15 @@ def get_all_bricks(mnode, volname):
                     all_bricks.append(brick['name'])
                 else:
                     g.log.error("brick %s doesn't have the key 'name' "
-                                "for the volume: %s" % (brick, volname))
+                                "for the volume: %s", brick, volname)
                     return None
             return all_bricks
         else:
             g.log.error("Bricks not found in Bricks section of volume "
-                        "info for the volume %s" % volname)
+                        "info for the volume %s", volname)
             return None
     else:
-        g.log.error("Bricks not found for the volume %s" % volname)
+        g.log.error("Bricks not found for the volume %s", volname)
         return None
 
 
@@ -88,11 +85,11 @@ def get_hot_tier_bricks(mnode, volname):
     """
     volinfo = get_volume_info(mnode, volname)
     if volinfo is None:
-        g.log.error("Unable to get the volinfo of %s." % volname)
+        g.log.error("Unable to get the volinfo of %s.", volname)
         return None
 
     if 'Tier' not in volinfo[volname]['typeStr']:
-        g.log.error("Volume %s is not a tiered volume" % volname)
+        g.log.error("Volume %s is not a tiered volume", volname)
         return None
 
     hot_tier_bricks = []
@@ -104,15 +101,15 @@ def get_hot_tier_bricks(mnode, volname):
                         hot_tier_bricks.append(brick['name'])
                     else:
                         g.log.error("brick %s doesn't have the key 'name' "
-                                    "for the volume: %s" % (brick, volname))
+                                    "for the volume: %s", brick, volname)
                         return None
             else:
                 g.log.error("Bricks not found in hotBricks section of volume "
-                            "info for the volume %s" % volname)
+                            "info for the volume %s", volname)
                 return None
         return hot_tier_bricks
     else:
-        g.log.error("Bricks not found for the volume %s" % volname)
+        g.log.error("Bricks not found for the volume %s", volname)
         return None
 
 
@@ -129,11 +126,11 @@ def get_cold_tier_bricks(mnode, volname):
     """
     volinfo = get_volume_info(mnode, volname)
     if volinfo is None:
-        g.log.error("Unable to get the volinfo of %s." % volname)
+        g.log.error("Unable to get the volinfo of %s.", volname)
         return None
 
     if 'Tier' not in volinfo[volname]['typeStr']:
-        g.log.error("Volume %s is not a tiered volume" % volname)
+        g.log.error("Volume %s is not a tiered volume", volname)
         return None
 
     cold_tier_bricks = []
@@ -145,20 +142,20 @@ def get_cold_tier_bricks(mnode, volname):
                         cold_tier_bricks.append(brick['name'])
                     else:
                         g.log.error("brick %s doesn't have the key 'name' "
-                                    "for the volume: %s" % (brick, volname))
+                                    "for the volume: %s", brick, volname)
                         return None
             else:
                 g.log.error("Bricks not found in coldBricks section of volume "
-                            "info for the volume %s" % volname)
+                            "info for the volume %s", volname)
                 return None
         return cold_tier_bricks
     else:
-        g.log.error("Bricks not found for the volume %s" % volname)
+        g.log.error("Bricks not found for the volume %s", volname)
         return None
 
 
 def bring_bricks_offline(volname, bricks_list,
-                         bring_bricks_offline_methods=['service_kill']):
+                         bring_bricks_offline_methods=None):
     """Bring the bricks specified in the bricks_list offline.
 
     Args:
@@ -176,7 +173,12 @@ def bring_bricks_offline(volname, bricks_list,
         bool : True on successfully bringing all bricks offline.
             False otherwise
     """
-    rc = True
+    if bring_bricks_offline_methods is None:
+        bring_bricks_offline_methods = ['service_kill']
+    elif isinstance(bring_bricks_offline_methods, str):
+        bring_bricks_offline_methods = [bring_bricks_offline_methods]
+
+    _rc = True
     failed_to_bring_offline_list = []
     for brick in bricks_list:
         bring_brick_offline_method = (random.choice
@@ -189,26 +191,25 @@ def bring_bricks_offline(volname, bricks_list,
                         (volname, brick_node, brick_path))
             ret, _, _ = g.run(brick_node, kill_cmd)
             if ret != 0:
-                g.log.error("Unable to kill the brick %s" % brick)
+                g.log.error("Unable to kill the brick %s", brick)
                 failed_to_bring_offline_list.append(brick)
-                rc = False
+                _rc = False
         else:
-            g.log.error("Invalid method '%s' to bring brick offline" %
+            g.log.error("Invalid method '%s' to bring brick offline",
                         bring_brick_offline_method)
             return False
 
-    if not rc:
-        g.log.error("Unable to bring some of the bricks %s offline" %
+    if not _rc:
+        g.log.error("Unable to bring some of the bricks %s offline",
                     failed_to_bring_offline_list)
         return False
 
-    g.log.info("All the bricks : %s are brought offline" % bricks_list)
+    g.log.info("All the bricks : %s are brought offline", bricks_list)
     return True
 
 
 def bring_bricks_online(mnode, volname, bricks_list,
-                        bring_bricks_online_methods=['glusterd_restart',
-                                                     'volume_start_force']):
+                        bring_bricks_online_methods=None):
     """Bring the bricks specified in the bricks_list online.
 
     Args:
@@ -230,39 +231,45 @@ def bring_bricks_online(mnode, volname, bricks_list,
         bool : True on successfully bringing all bricks online.
             False otherwise
     """
-    rc = True
+    if bring_bricks_online_methods is None:
+        bring_bricks_online_methods = ['glusterd_restart',
+                                       'volume_start_force']
+    elif isinstance(bring_bricks_online_methods, str):
+        bring_bricks_online_methods = [bring_bricks_online_methods]
+
+    _rc = True
     failed_to_bring_online_list = []
     for brick in bricks_list:
         bring_brick_online_method = random.choice(bring_bricks_online_methods)
         if bring_brick_online_method == 'glusterd_restart':
             bring_brick_online_command = "service glusterd restart"
-            brick_node, brick_path = brick.split(":")
+            brick_node, _ = brick.split(":")
             ret, _, _ = g.run(brick_node, bring_brick_online_command)
             if ret != 0:
-                g.log.error("Unable to restart glusterd on node %s" %
-                            (brick_node))
-                rc = False
+                g.log.error("Unable to restart glusterd on node %s",
+                            brick_node)
+                _rc = False
                 failed_to_bring_online_list.append(brick)
         elif bring_brick_online_method == 'volume_start_force':
             bring_brick_online_command = ("gluster volume start %s force" %
                                           volname)
             ret, _, _ = g.run(mnode, bring_brick_online_command)
             if ret != 0:
-                g.log.error("Unable to start the volume %s with force option" %
-                            (volname))
-                rc = False
+                g.log.error("Unable to start the volume %s with force option",
+                            volname)
+                _rc = False
             else:
                 break
         else:
-            g.log.error("Invalid method '%s' to bring brick online" %
+            g.log.error("Invalid method '%s' to bring brick online",
                         bring_brick_online_method)
             return False
-    if not rc:
-        g.log.error("Unable to bring some of the bricks %s online" %
+    if not _rc:
+        g.log.error("Unable to bring some of the bricks %s online",
                     failed_to_bring_online_list)
         return False
 
-    g.log.info("All the bricks : %s are brought online" % bricks_list)
+    g.log.info("All the bricks : %s are brought online", bricks_list)
     return True
 
 
@@ -278,26 +285,26 @@ def are_bricks_offline(mnode, volname, bricks_list):
         bool : True if all bricks offline. False otherwise.
         NoneType: None on failure in getting volume status
     """
-    rc = True
+    _rc = True
     online_bricks_list = []
     volume_status = get_volume_status(mnode, volname)
     if not volume_status:
-        g.log.error("Unable to check if bricks are offline for the volume %s" %
+        g.log.error("Unable to check if bricks are offline for the volume %s",
                     volname)
         return None
     for brick in bricks_list:
         brick_node, brick_path = brick.split(":")
         status = int(volume_status[volname][brick_node][brick_path]['status'])
         if status != 0:
-            g.log.error("BRICK : %s is not offline" % (brick))
+            g.log.error("BRICK : %s is not offline", brick)
             online_bricks_list.append(brick)
-            rc = False
-    if not rc:
-        g.log.error("Some of the bricks %s are not offline" %
+            _rc = False
+    if not _rc:
+        g.log.error("Some of the bricks %s are not offline",
                     online_bricks_list)
         return False
 
-    g.log.info("All the bricks in %s are offline" % bricks_list)
+    g.log.info("All the bricks in %s are offline", bricks_list)
     return True
 
 
@@ -313,27 +320,27 @@ def are_bricks_online(mnode, volname, bricks_list):
         bool : True if all bricks online. False otherwise.
         NoneType: None on failure in getting volume status
     """
-    rc = True
+    _rc = True
     offline_bricks_list = []
     volume_status = get_volume_status(mnode, volname)
     if not volume_status:
-        g.log.error("Unable to check if bricks are online for the volume %s" %
+        g.log.error("Unable to check if bricks are online for the volume %s",
                     volname)
         return None
     for brick in bricks_list:
         brick_node, brick_path = brick.split(":")
         status = int(volume_status[volname][brick_node][brick_path]['status'])
         if status != 1:
-            g.log.error("BRICK : %s is not online" % (brick))
+            g.log.error("BRICK : %s is not online", brick)
             offline_bricks_list.append(brick)
-            rc = False
+            _rc = False
 
-    if not rc:
-        g.log.error("Some of the bricks %s are not online" %
+    if not _rc:
+        g.log.error("Some of the bricks %s are not online",
                     offline_bricks_list)
         return False
 
-    g.log.info("All the bricks %s are online" % bricks_list)
+    g.log.info("All the bricks %s are online", bricks_list)
     return True
 
 
@@ -351,7 +358,7 @@ def get_offline_bricks_list(mnode, volname):
     offline_bricks_list = []
     volume_status = get_volume_status(mnode, volname)
     if not volume_status:
-        g.log.error("Unable to get offline bricks_list for the volume %s" %
+        g.log.error("Unable to get offline bricks_list for the volume %s",
                     volname)
         return None
 
@@ -379,7 +386,7 @@ def get_online_bricks_list(mnode, volname):
     online_bricks_list = []
     volume_status = get_volume_status(mnode, volname)
     if not volume_status:
-        g.log.error("Unable to get online bricks_list for the volume %s" %
+        g.log.error("Unable to get online bricks_list for the volume %s",
                     volname)
         return None
 
@@ -402,13 +409,13 @@ def delete_bricks(bricks_list):
     Returns:
         bool : True if all the bricks are deleted. False otherwise.
     """
-    rc = True
+    _rc = True
     for brick in bricks_list:
         brick_node, brick_path = brick.split(":")
         _, _, _ = g.run(brick_node, "rm -rf %s" % brick_path)
-        ret, out, err = g.run(brick_node, "ls %s" % brick_path)
+        ret, _, _ = g.run(brick_node, "ls %s" % brick_path)
         if ret == 0:
-            g.log.error("Unable to delete brick %s on node %s" %
-                        (brick_path, brick_node))
-            rc = False
-    return rc
+            g.log.error("Unable to delete brick %s on node %s",
+                        brick_path, brick_node)
+            _rc = False
+    return _rc

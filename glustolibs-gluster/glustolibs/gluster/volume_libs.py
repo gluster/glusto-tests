@@ -14,9 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-    Description: Module for gluster volume related helper functions.
-"""
+""" Description: Module for gluster volume related helper functions. """
 
 
 from glusto.core import Glusto as g
@@ -26,7 +24,8 @@ from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            set_volume_options, get_volume_info,
                                            volume_stop, volume_delete,
                                            volume_info, volume_status,
-                                           get_volume_options)
+                                           get_volume_options,
+                                           get_volume_list)
 from glustolibs.gluster.tiering_ops import (add_extra_servers_to_cluster,
                                             tier_attach,
                                             is_tier_process_running)
@@ -36,6 +35,29 @@ from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
 from glustolibs.gluster.brick_libs import are_bricks_online, get_all_bricks
 from glustolibs.gluster.heal_libs import are_all_self_heal_daemons_are_online
+from glustolibs.gluster.brick_ops import add_brick
+
+
+def volume_exists(mnode, volname):
+    """Check if volume already exists
+
+    Args:
+        mnode (str): Node on which commands has to be executed
+        volname (str): Name of the volume.
+
+    Returns:
+        NoneType: If there are errors
+        bool : True if volume exists. False Otherwise
+    """
+    volume_list = get_volume_list(mnode)
+    if volume_list is None:
+        g.log.error("'gluster volume list' on node %s Failed", mnode)
+        return None
+
+    if volname in volume_list:
+        return True
+    else:
+        return False
 
 
 def setup_volume(mnode, all_servers_info, volume_config, force=False):
@@ -482,6 +504,7 @@ def get_subvols(mnode, volname):
     """
 
     subvols = {
+        'is_tier': False,
         'hot_tier_subvols': [],
         'cold_tier_subvols': [],
         'volume_subvols': []
@@ -490,6 +513,9 @@ def get_subvols(mnode, volname):
     if volinfo is not None:
         voltype = volinfo[volname]['typeStr']
         if voltype == 'Tier':
+            # Set is_tier to True
+            subvols['is_tier'] = True
+
             # Get hot tier subvols
             hot_tier_type = (volinfo[volname]["bricks"]
                              ['hotBricks']['hotBrickType'])
@@ -1092,4 +1118,138 @@ def enable_and_validate_volume_options(mnode, volname, volume_options_list,
         g.log.info("%s is enabled on the volume %s", option, volname)
         time.sleep(time_delay)
 
+    return True
+
+
+def expand_volume(mnode, volname, servers, all_servers_info, force=False,
+                  add_to_hot_tier=False, **kwargs):
+    """Forms list of bricks to add and adds those bricks to the volume.
+
+    Args:
+        mnode (str): Node on which commands has to be executed
+        volname (str): volume name
+        servers (list): List of servers in the storage pool.
+        all_servers_info (dict): Information about all servers.
+        example :
+            all_servers_info = {
+                'abc.lab.eng.xyz.com': {
+                    'host': 'abc.lab.eng.xyz.com',
+                    'brick_root': '/bricks',
+                    'devices': ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde']
+                    },
+                'def.lab.eng.xyz.com':{
+                    'host': 'def.lab.eng.xyz.com',
+                    'brick_root': '/bricks',
+                    'devices': ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde']
+                    }
+                }
+    Kwargs:
+        force (bool): If this option is set to True, then add-brick command
+            will get executed with force option. If it is set to False,
+            then add-brick command will get executed without force option
+
+        add_to_hot_tier (bool): True If bricks are to be added to hot_tier.
+            False otherwise. Defaults to False.
+
+        **kwargs
+            The keys, values in kwargs are:
+                - replica_count : (int)|None
+                - arbiter_count : (int)|None
+                - distribute_count: (int)|None
+
+    Returns:
+        bool: True of expanding volumes is successful.
+            False otherwise.
+    """
+    # Check whether we need to increase the replica count of the volume
+    if 'replica_count' in kwargs:
+        new_replica_count = int(kwargs['replica_count'])
+
+        # Get replica count info.
+        replica_count_info = get_replica_count(mnode, volname)
+
+        # Get Subvols
+        subvols_info = get_subvols(mnode, volname)
+
+        # Calculate number of bricks to add
+        if subvols_info['is_tier']:
+            if add_to_hot_tier:
+                num_of_subvols = len(subvols_info['hot_tier_subvols'])
+                current_replica_count = (
+                    int(replica_count_info['hot_tier_replica_count']))
+            else:
+                num_of_subvols = len(subvols_info['cold_tier_subvols'])
+                current_replica_count = (
+                    int(replica_count_info['cold_tier_replica_count']))
+        else:
+            num_of_subvols = len(subvols_info['volume_subvols'])
+            current_replica_count = (
+                int(replica_count_info['volume_replica_count']))
+
+        if num_of_subvols == 0:
+            g.log.error("No Sub-Volumes available for the volume %s."
+                        "Hence cannot proceed with add-brick", volname)
+            return False
+
+        if new_replica_count <= current_replica_count:
+            g.log.error("Provided replica count '%d' is less than or equal to "
+                        "the Existing replica count '%d' of the volume %s. "
+                        "Hence cannot proceed with add-brick",
+                        new_replica_count, current_replica_count, volname)
+            return False
+
+        num_of_bricks_to_add = (
+            (new_replica_count - current_replica_count) * num_of_subvols)
+
+    else:
+        # Check if the volume has to be expanded by n distribute count.
+        if 'distribute_count' in kwargs:
+            distribute_count_to_add = int(kwargs['distribute_count'])
+        else:
+            distribute_count_to_add = 1
+
+        # Get Number of bricks per subvolume.
+        bricks_per_subvol_dict = get_num_of_bricks_per_subvol(mnode, volname)
+
+        # Get number of bricks to add.
+        if bricks_per_subvol_dict['is_tier']:
+            if add_to_hot_tier:
+                num_of_bricks_per_subvol = (
+                    bricks_per_subvol_dict['hot_tier_num_of_bricks_per_subvol']
+                    )
+            else:
+                num_of_bricks_per_subvol = (
+                    bricks_per_subvol_dict
+                    ['cold_tier_num_of_bricks_per_subvol']
+                    )
+        else:
+            num_of_bricks_per_subvol = (
+                bricks_per_subvol_dict['volume_num_of_bricks_per_subvol'])
+
+        if num_of_bricks_per_subvol is None:
+            g.log.error("Number of bricks per subvol is None. "
+                        "Something majorly went wrong on the voluem %s",
+                        volname)
+            return False
+
+        num_of_bricks_to_add = (
+            num_of_bricks_per_subvol * distribute_count_to_add)
+
+    # Form bricks list to add bricks to the volume.
+    bricks_list = form_bricks_list(mnode=mnode, volname=volname,
+                                   number_of_bricks=num_of_bricks_to_add,
+                                   servers=servers,
+                                   servers_info=all_servers_info)
+    if not bricks_list:
+        g.log.error("Number of bricks is greater than the unused bricks on "
+                    "servers. Hence failed to perform add-brick operation")
+        return False
+
+    # Add bricks to the volume
+    ret, out, err = add_brick(mnode, volname, bricks_list, force=force,
+                              **kwargs)
+    if ret != 0:
+        g.log.error("Failed to add bricks to the volume: %s", err)
+        return False
+    g.log.info("Successfully added bricks to the volume: %s", out)
     return True
