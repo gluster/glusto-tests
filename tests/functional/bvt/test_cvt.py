@@ -23,17 +23,16 @@
             - add-brick
             - rebalance
             - set volume options which changes the client graphs
+            - enable quota
+            - collecting snapshot
         TODO:
             - remove-brick
             - n/w failure followed by heal
             - replace-brick
-            - enable quota
-            - collecting snapshot
             - attach-tier, detach-tier
 """
-
-import pytest
 import time
+import pytest
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterVolumeBaseClass,
                                                    runs_on)
@@ -45,9 +44,16 @@ from glustolibs.gluster.volume_libs import (log_volume_info_and_status,
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_rebalance_to_complete,
                                               rebalance_status)
+from glustolibs.gluster.quota_ops import (enable_quota, disable_quota,
+                                          set_quota_limit_usage,
+                                          is_quota_enabled,
+                                          get_quota_list)
+from glustolibs.gluster.snap_ops import (snap_create, get_snap_list,
+                                         snap_activate, snap_deactivate)
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import (validate_io_procs, log_mounts_info,
                                  list_all_files_and_dirs_mounts,
+                                 view_snaps_from_mount,
                                  wait_for_io_to_complete)
 from glustolibs.gluster.exceptions import ExecutionError
 
@@ -266,6 +272,220 @@ class TestGlusterVolumeSetSanity(GlusterBasicFeaturesSanityBaseClass):
                               volume_options_list))
         g.log.info("Successfully enabled all the volume options: %s",
                    volume_options_list)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # List all files and dirs created
+        g.log.info("List all files and directories:")
+        ret = list_all_files_and_dirs_mounts(self.mounts)
+        self.assertTrue(ret, "Failed to list all files and dirs")
+        g.log.info("Listing all files and directories is successful")
+
+
+@runs_on([['replicated', 'distributed', 'distributed-replicated',
+           'dispersed', 'distributed-dispersed'],
+          ['glusterfs', 'nfs', 'cifs']])
+class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
+    """ Sanity tests for Gluster Quota
+    """
+    @pytest.mark.bvt_cvt
+    def test_quota_enable_disable_enable_when_io_in_progress(self):
+        """Enable, Disable and Re-enable Quota on the volume when IO is
+            in progress.
+        """
+        # Enable Quota
+        g.log.info("Enabling quota on the volume %s", self.volname)
+        ret, _, _ = enable_quota(self.mnode, self.volname)
+        self.assertEqual(ret, 0, ("Failed to enable quota on the volume %s",
+                                  self.volname))
+        g.log.info("Successfully enabled quota on the volume %s", self.volname)
+
+        # Check if quota is enabled
+        g.log.info("Validate Quota is enabled on the volume %s", self.volname)
+        ret = is_quota_enabled(self.mnode, self.volname)
+        self.assertTrue(ret, ("Quota is not enabled on the volume %s",
+                              self.volname))
+        g.log.info("Successfully Validated quota is enabled on volume %s",
+                   self.volname)
+
+        # Path to set quota limit
+        path = "/"
+
+        # Set Quota limit on the root of the volume
+        g.log.info("Set Quota Limit on the path %s of the volume %s",
+                   path, self.volname)
+        ret, _, _ = set_quota_limit_usage(self.mnode, self.volname,
+                                          path=path, limit="1GB")
+        self.assertEqual(ret, 0, ("Failed to set quota limit on path %s of "
+                                  " the volume %s", path, self.volname))
+        g.log.info("Successfully set the Quota limit on %s of the volume %s",
+                   path, self.volname)
+
+        # get_quota_list
+        g.log.info("Get Quota list for path %s of the volume %s",
+                   path, self.volname)
+        quota_list = get_quota_list(self.mnode, self.volname, path=path)
+        self.assertIsNotNone(quota_list, ("Failed to get the quota list for "
+                                          "path %s of the volume %s",
+                                          path, self.volname))
+        self.assertIn(path, quota_list.keys(),
+                      ("%s not part of the ""quota list %s even if "
+                       "it is set on the volume %s", path,
+                       quota_list, self.volname))
+        g.log.info("Successfully listed path %s in the quota list %s of the "
+                   "volume %s", path, quota_list, self.volname)
+
+        # Disable quota
+        g.log.info("Disable quota on the volume %s", self.volname)
+        ret, _, _ = disable_quota(self.mnode, self.volname)
+        self.assertEqual(ret, 0, ("Failed to disable quota on the volume %s",
+                                  self.volname))
+        g.log.info("Successfully disabled quota on the volume %s",
+                   self.volname)
+
+        # Check if quota is still enabled (expected : Disabled)
+        g.log.info("Validate Quota is enabled on the volume %s", self.volname)
+        ret = is_quota_enabled(self.mnode, self.volname)
+        self.assertFalse(ret, ("Quota is still enabled on the volume %s "
+                               "(expected: Disable) ", self.volname))
+        g.log.info("Successfully Validated quota is disabled on volume %s",
+                   self.volname)
+
+        # Enable Quota
+        g.log.info("Enabling quota on the volume %s", self.volname)
+        ret, _, _ = enable_quota(self.mnode, self.volname)
+        self.assertEqual(ret, 0, ("Failed to enable quota on the volume %s",
+                                  self.volname))
+        g.log.info("Successfully enabled quota on the volume %s", self.volname)
+
+        # Check if quota is enabled
+        g.log.info("Validate Quota is enabled on the volume %s", self.volname)
+        ret = is_quota_enabled(self.mnode, self.volname)
+        self.assertTrue(ret, ("Quota is not enabled on the volume %s",
+                              self.volname))
+        g.log.info("Successfully Validated quota is enabled on volume %s",
+                   self.volname)
+
+        # get_quota_list
+        g.log.info("Get Quota list for path %s of the volume %s",
+                   path, self.volname)
+        quota_list = get_quota_list(self.mnode, self.volname, path=path)
+        self.assertIsNotNone(quota_list, ("Failed to get the quota list for "
+                                          "path %s of the volume %s",
+                                          path, self.volname))
+        self.assertIn(path, quota_list.keys(),
+                      ("%s not part of the quota list %s even if "
+                       "it is set on the volume %s", path,
+                       quota_list, self.volname))
+        g.log.info("Successfully listed path %s in the quota list %s of the "
+                   "volume %s", path, quota_list, self.volname)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # List all files and dirs created
+        g.log.info("List all files and directories:")
+        ret = list_all_files_and_dirs_mounts(self.mounts)
+        self.assertTrue(ret, "Failed to list all files and dirs")
+        g.log.info("Listing all files and directories is successful")
+
+
+@runs_on([['replicated', 'distributed', 'distributed-replicated',
+           'dispersed', 'distributed-dispersed'],
+          ['glusterfs', 'nfs', 'cifs']])
+class TestSnapshotSanity(GlusterBasicFeaturesSanityBaseClass):
+    """ Sanity tests for Gluster Snapshots
+    """
+    @pytest.mark.bvt_cvt
+    def test_snapshot_basic_commands_when_io_in_progress(self):
+        """Create, List, Activate, Enable USS (User Serviceable Snapshot),
+            Viewing Snap of the volume from mount, De-Activate
+            when IO is in progress.
+        """
+        snap_name = "snap_cvt"
+        # Create Snapshot
+        g.log.info("Creating snapshot %s of the volume %s",
+                   snap_name, self.volname)
+        ret, _, _ = snap_create(self.mnode, self.volname, snap_name)
+        self.assertEqual(ret, 0, ("Failed to create snapshot with name %s "
+                                  " of the volume %s", snap_name,
+                                  self.volname))
+        g.log.info("Successfully created snapshot %s of the volume %s",
+                   snap_name, self.volname)
+
+        # List Snapshot
+        g.log.info("Listing the snapshot created for the volume %s",
+                   self.volname)
+        snap_list = get_snap_list(self.mnode)
+        self.assertIsNotNone(snap_list, "Unable to get the Snapshot list")
+        self.assertIn(snap_name, snap_list,
+                      ("snapshot %s not listed in Snapshot list", snap_name))
+        g.log.info("Successfully listed snapshot %s in gluster snapshot list",
+                   snap_name)
+
+        # Activate the snapshot
+        g.log.info("Activating snapshot %s of the volume %s",
+                   snap_name, self.volname)
+        ret, _, _ = snap_activate(self.mnode, snap_name)
+        self.assertEqual(ret, 0, ("Failed to activate snapshot with name %s "
+                                  " of the volume %s", snap_name,
+                                  self.volname))
+        g.log.info("Successfully activated snapshot %s of the volume %s",
+                   snap_name, self.volname)
+
+        # Enable USS on the volume.
+        uss_options = ["features.uss"]
+        if self.mount_type == "cifs":
+            uss_options.append("features.show-snapshot-directory")
+        g.log.info("Enable uss options %s on the volume %s", uss_options,
+                   self.volname)
+        ret = enable_and_validate_volume_options(self.mnode, self.volname,
+                                                 uss_options,
+                                                 time_delay=30)
+        self.assertTrue(ret, ("Unable to enable uss options %s on volume %s",
+                              uss_options, self.volname))
+        g.log.info("Successfully enabled uss options %s on the volume: %s",
+                   uss_options, self.volname)
+
+        # Viewing snapshot from mount
+        g.log.info("Viewing Snapshot %s from mounts:", snap_name)
+        ret = view_snaps_from_mount(self.mounts, snap_name)
+        self.assertTrue(ret, ("Failed to View snap %s from mounts", snap_name))
+        g.log.info("Successfully viewed snap %s from mounts", snap_name)
+
+        # De-Activate the snapshot
+        g.log.info("Deactivating snapshot %s of the volume %s",
+                   snap_name, self.volname)
+        ret, _, _ = snap_deactivate(self.mnode, snap_name)
+        self.assertEqual(ret, 0, ("Failed to deactivate snapshot with name %s "
+                                  " of the volume %s", snap_name,
+                                  self.volname))
+        g.log.info("Successfully deactivated snapshot %s of the volume %s",
+                   snap_name, self.volname)
+
+        # Viewing snapshot from mount (.snaps shouldn't be listed from mount)
+        for mount_obj in self.mounts:
+            g.log.info("Viewing Snapshot %s from mount %s:%s", snap_name,
+                       mount_obj.client_system, mount_obj.mountpoint)
+            ret = view_snaps_from_mount(mount_obj, snap_name)
+            self.assertFalse(ret, ("Still able to View snap %s from mount "
+                                   "%s:%s", snap_name,
+                                   mount_obj.client_system,
+                                   mount_obj.mountpoint))
+            g.log.info("%s not listed under .snaps from mount %s:%s",
+                       snap_name, mount_obj.client_system,
+                       mount_obj.mountpoint)
+        g.log.info("%s not listed under .snaps from mounts after "
+                   "deactivating ", snap_name)
 
         # Validate IO
         g.log.info("Wait for IO to complete and validate IO ...")

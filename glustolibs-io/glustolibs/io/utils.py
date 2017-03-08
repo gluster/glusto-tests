@@ -20,6 +20,7 @@
 import os
 import subprocess
 from glusto.core import Glusto as g
+from glustolibs.gluster.mount_ops import GlusterMount
 
 
 def collect_mounts_arequal(mounts):
@@ -35,7 +36,7 @@ def collect_mounts_arequal(mounts):
             arequal-checksum for a mount would be 'None' when failed to
             collect arequal for that mount.
     """
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     # Collect arequal-checksum from all mounts
@@ -70,7 +71,7 @@ def log_mounts_info(mounts):
     Args:
         mounts (list): List of all GlusterMount objs.
     """
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     g.log.info("Start logging mounts information:")
@@ -108,7 +109,7 @@ def get_mounts_stat(mounts):
         bool: True if recursively getting stat from all mounts is successful.
             False otherwise.
     """
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     g.log.info("Start getting stat of the mountpoint recursively")
@@ -143,7 +144,7 @@ def list_all_files_and_dirs_mounts(mounts):
         bool: True if listing file and dirs on mounts is successful.
             False otherwise.
     """
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     ignore_dirs_list = [".trashcan"]
@@ -170,6 +171,61 @@ def list_all_files_and_dirs_mounts(mounts):
     return _rc
 
 
+def view_snaps_from_mount(mounts, snaps):
+    """View snaps from the mountpoint under ".snaps" directory
+
+    Args:
+        mounts (list): List of all GlusterMount objs.
+        snaps (list): List of snaps to be viewed from '.snaps' directory
+
+    Returns:
+        bool: True if viewing all snaps under '.snaps' directory is successful
+            from all mounts. False otherwise
+    """
+    if isinstance(mounts, GlusterMount):
+        mounts = [mounts]
+
+    if isinstance(snaps, str):
+        snaps = [snaps]
+
+    all_mounts_procs = []
+    for mount_obj in mounts:
+        g.log.info("Viewing '.snaps' on %s:%s", mount_obj.client_system,
+                   mount_obj.mountpoint)
+        cmd = ("ls -1 %s/.snaps" % mount_obj.mountpoint)
+        proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
+        all_mounts_procs.append(proc)
+
+    _rc = True
+    for i, proc in enumerate(all_mounts_procs):
+        ret, out, err = proc.async_communicate()
+        if ret != 0:
+            g.log.error("Failed to list '.snaps' on %s:%s - %s",
+                        mounts[i].client_system, mounts[i].mountpoint, err)
+            _rc = False
+        else:
+            snap_list = out.splitlines()
+            if not snap_list:
+                g.log.error("No snaps present in the '.snaps' dir on %s:%s",
+                            mounts[i].client_system, mounts[i].mountpoint)
+                _rc = False
+                continue
+
+            for snap_name in snap_list:
+                if snap_name not in snap_list:
+                    g.log.error("Failed to list snap %s in '.snaps' dir on "
+                                "%s:%s - %s", snap_name,
+                                mounts[i].client_system, mounts[i].mountpoint,
+                                snap_list)
+                    _rc = False
+                else:
+                    g.log.info("Successful listed snap %s in '.snaps' dir on "
+                               "%s:%s - %s", snap_name,
+                               mounts[i].client_system, mounts[i].mountpoint,
+                               snap_list)
+    return _rc
+
+
 def validate_io_procs(all_mounts_procs, mounts):
     """Validates whether IO was successful or not
 
@@ -185,7 +241,7 @@ def validate_io_procs(all_mounts_procs, mounts):
     if isinstance(all_mounts_procs, subprocess.Popen):
         all_mounts_procs = [all_mounts_procs]
 
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     _rc = True
@@ -219,7 +275,7 @@ def wait_for_io_to_complete(all_mounts_procs, mounts):
     if isinstance(all_mounts_procs, subprocess.Popen):
         all_mounts_procs = [all_mounts_procs]
 
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     _rc = True
@@ -246,7 +302,7 @@ def cleanup_mounts(mounts):
     Returns:
         bool: True if cleanup is successful on all mounts. False otherwise.
     """
-    if isinstance(mounts, str):
+    if isinstance(mounts, GlusterMount):
         mounts = [mounts]
 
     g.log.info("Start cleanup mounts")
