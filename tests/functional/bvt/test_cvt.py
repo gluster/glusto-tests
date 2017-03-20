@@ -25,8 +25,8 @@
             - set volume options which changes the client graphs
             - enable quota
             - collecting snapshot
-        TODO:
             - remove-brick
+        TODO:
             - n/w failure followed by heal
             - replace-brick
             - attach-tier, detach-tier
@@ -40,7 +40,7 @@ from glustolibs.gluster.volume_libs import enable_and_validate_volume_options
 from glustolibs.gluster.volume_libs import (
     verify_all_process_of_volume_are_online)
 from glustolibs.gluster.volume_libs import (log_volume_info_and_status,
-                                            expand_volume)
+                                            expand_volume, shrink_volume)
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_rebalance_to_complete,
                                               rebalance_status)
@@ -228,6 +228,69 @@ class TestGlusterExpandVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         self.assertEqual(ret, 0, ("Failed to get rebalance status for the "
                                   "volume %s", self.volname))
         g.log.info("Successfully got rebalance status of the volume %s",
+                   self.volname)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # List all files and dirs created
+        g.log.info("List all files and directories:")
+        ret = list_all_files_and_dirs_mounts(self.mounts)
+        self.assertTrue(ret, "Failed to list all files and dirs")
+        g.log.info("Listing all files and directories is successful")
+
+
+@runs_on([['distributed', 'distributed-replicated', 'distributed-dispersed'],
+          ['glusterfs', 'nfs', 'cifs']])
+class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
+    """Sanity tests for Shrinking Volume"""
+    @pytest.mark.bvt_cvt
+    def test_shrinking_volume_when_io_in_progress(self):
+        """Test shrinking volume (Decrease distribute count) using existing
+        servers bricks when IO is in progress.
+
+        Description:
+            - remove brick (start, status, commit)
+            - validate IO
+        """
+        # Log Volume Info and Status before shrinking the volume.
+        g.log.info("Logging volume info and Status before shrinking volume")
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
+
+        # Shrinking volume by removing bricks from volume when IO in progress
+        g.log.info("Start removing bricks from volume when IO in progress")
+        ret = shrink_volume(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to shrink the volume when IO in "
+                              "progress on volume %s", self.volname))
+        g.log.info("Shrinking volume when IO in progress is successful on "
+                   "volume %s", self.volname)
+
+        # Wait for gluster processes to come online
+        time.sleep(30)
+
+        # Log Volume Info and Status after shrinking the volume
+        g.log.info("Logging volume info and Status after shrinking volume")
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online after "
+                   "shrinking volume")
+        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online",
+                              self.volname))
+        g.log.info("Volume %s : All process are online after shrinking volume",
                    self.volname)
 
         # Validate IO

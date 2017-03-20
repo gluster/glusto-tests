@@ -74,7 +74,7 @@ def add_brick(mnode, volname, bricks_list, force=False, **kwargs):
     return g.run(mnode, cmd)
 
 
-def remove_brick(mnode, volname, bricks_list, option, replica=None):
+def remove_brick(mnode, volname, bricks_list, option, xml=False, **kwargs):
     """Remove bricks specified in the bricks_list from the volume.
 
     Args:
@@ -84,8 +84,10 @@ def remove_brick(mnode, volname, bricks_list, option, replica=None):
         option (str): Remove brick options: <start|stop|status|commit|force>
 
     Kwargs:
-        replica (int): Replica count to increase the replica count of
-            the volume.
+        xml (bool): if xml is True, get xml output of command execution.
+        **kwargs
+            The keys, values in kwargs are:
+                - replica_count : (int)|None
 
     Returns:
         tuple: Tuple containing three elements (ret, out, err).
@@ -101,13 +103,21 @@ def remove_brick(mnode, volname, bricks_list, option, replica=None):
     if option == "commit" or option == "force":
         option = option + " --mode=script"
 
-    if replica is None:
-        cmd = ("gluster volume remove-brick %s %s %s" %
-               (volname, ' '.join(bricks_list), option))
-    else:
-        cmd = ("gluster volume remove-brick %s replica %d %s force "
-               "--mode=script" % (volname, int(replica),
-                                  ' '.join(bricks_list)))
+    replica_count = None
+    replica = ''
+
+    if 'replica_count' in kwargs:
+        replica_count = int(kwargs['replica_count'])
+
+    if replica_count is not None:
+        replica = "replica %d" % replica_count
+
+    xml_str = ''
+    if xml:
+        xml_str = "--xml"
+
+    cmd = ("gluster volume remove-brick %s %s %s %s %s" %
+           (volname, replica, ' '.join(bricks_list), option, xml_str))
 
     return g.run(mnode, cmd)
 

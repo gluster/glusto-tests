@@ -16,9 +16,13 @@
 
 """ Description: Module for gluster volume related helper functions. """
 
-
-from glusto.core import Glusto as g
 import time
+import random
+try:
+    import xml.etree.cElementTree as etree
+except ImportError:
+    import xml.etree.ElementTree as etree
+from glusto.core import Glusto as g
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            set_volume_options, get_volume_info,
@@ -35,7 +39,7 @@ from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
 from glustolibs.gluster.brick_libs import are_bricks_online, get_all_bricks
 from glustolibs.gluster.heal_libs import are_all_self_heal_daemons_are_online
-from glustolibs.gluster.brick_ops import add_brick
+from glustolibs.gluster.brick_ops import add_brick, remove_brick
 
 
 def volume_exists(mnode, volname):
@@ -170,6 +174,10 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         else:
             g.log.error("Replica count not specified in the volume config")
             return False
+
+        if 'arbiter_count' in volume_config['voltype']:
+            kwargs['arbiter_count'] = (volume_config['voltype']
+                                       ['arbiter_count'])
 
         number_of_bricks = (kwargs['dist_count'] * kwargs['replica_count'])
 
@@ -664,10 +672,11 @@ def get_volume_type_info(mnode, volname):
                     'hot_tier_type_info': {},
                     'cold_tier_type_info': {},
                     'volume_type_info': {
-                        'typeStr': 'Disperse'
-                        'replicaCount': 1
-                        'stripeCount': 1
-                        'disperseCount': '3'
+                        'typeStr': 'Disperse',
+                        'replicaCount': '1',
+                        'arbiterCount': '0',
+                        'stripeCount': '1',
+                        'disperseCount': '3',
                         'redundancyCount': '1'
                         }
                     }
@@ -676,12 +685,13 @@ def get_volume_type_info(mnode, volname):
                     'is_tier': True,
                     'hot_tier_type_info': {
                         'hotBrickType': 'Distribute',
-                        'hotreplicaCount': 1
+                        'hotreplicaCount': '1'
                         },
                     'cold_tier_type_info': {
                         'coldBrickType': 'Disperse',
-                        'coldreplicaCount': 1,
-                        'colddisperseCount':3,
+                        'coldreplicaCount': '1',
+                        'coldarbiterCount': '0',
+                        'colddisperseCount': '3',
                         'numberOfBricks':1
                         },
                     'volume_type_info': {}
@@ -715,6 +725,7 @@ def get_volume_type_info(mnode, volname):
         non_tiered_volume_type_info = {
             'typeStr': '',
             'replicaCount': '',
+            'arbiterCount': '',
             'stripeCount': '',
             'disperseCount': '',
             'redundancyCount': ''
@@ -744,6 +755,7 @@ def get_cold_tier_type_info(mnode, volname):
                 cold_tier_type_info = {
                     'coldBrickType': 'Disperse',
                     'coldreplicaCount': '1',
+                    'coldarbiterCount': '0',
                     'colddisperseCount': '3',
                     'numberOfBricks': '3'
                     }
@@ -762,6 +774,7 @@ def get_cold_tier_type_info(mnode, volname):
     cold_tier_type_info = {
         'coldBrickType': '',
         'coldreplicaCount': '',
+        'coldarbiterCount': '',
         'colddisperseCount': '',
         'numberOfBricks': ''
         }
@@ -1160,7 +1173,14 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
     Returns:
         bool: True of expanding volumes is successful.
             False otherwise.
+
+    NOTE: adding bricks to hot tier is yet to be added in this function.
     """
+    # Check if volume exists
+    if not volume_exists(mnode, volname):
+        g.log.error("Volume %s doesn't exists.", volname)
+        return False
+
     # Check whether we need to increase the replica count of the volume
     if 'replica_count' in kwargs:
         new_replica_count = int(kwargs['replica_count'])
@@ -1246,10 +1266,282 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
         return False
 
     # Add bricks to the volume
+    g.log.info("Adding bricks to the volume: %s", volname)
     ret, out, err = add_brick(mnode, volname, bricks_list, force=force,
                               **kwargs)
     if ret != 0:
         g.log.error("Failed to add bricks to the volume: %s", err)
         return False
     g.log.info("Successfully added bricks to the volume: %s", out)
+    return True
+
+
+def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
+                  force=False, rebalance_timeout=300, delete_bricks=True,
+                  remove_from_hot_tier=False, **kwargs):
+    """Remove bricks from the volume.
+
+    Args:
+        mnode (str): Node on which commands has to be executed
+        volname (str): volume name
+
+    Kwargs:
+        subvol_num (list): List of sub volumes number to remove.
+            For example: If subvol_num = [2, 5], Then we will be removing
+            bricks from 2nd and 5th sub-volume of the given volume.
+            The sub-volume number starts from 0.
+
+        replica_num (int): Specify which replica brick to remove.
+            If replica_num = 0, then 1st brick from each subvolume is removed.
+            the replica_num starts from 0.
+
+        force (bool): If this option is set to True, then remove-brick command
+            will get executed with force option. If it is set to False,
+            then remove-brick is executed with 'start' and 'commit' when the
+            remove-brick 'status' becomes completed.
+
+        rebalance_timeout (int): Wait time for remove-brick to complete in
+            seconds. Default is 5 minutes.
+
+        delete_bricks (bool): After remove-brick delete the removed bricks.
+
+        remove_from_hot_tier (bool): True If bricks are to be removed from
+            hot_tier. False otherwise. Defaults to False.
+
+        **kwargs
+            The keys, values in kwargs are:
+                - replica_count : (int)|None. Specify the replica count to
+                    reduce
+                - distribute_count: (int)|None. Specify the distribute count to
+                    reduce.
+    Returns:
+        bool: True if removing bricks from the volume is successful.
+            False otherwise.
+
+    NOTE: remove-bricks from hot-tier is yet to be added in this function.
+    """
+    # Check if volume exists
+    if not volume_exists(mnode, volname):
+        g.log.error("Volume %s doesn't exists.", volname)
+        return False
+
+    # Get Subvols
+    subvols_info = get_subvols(mnode, volname)
+
+    # Initialize bricks to remove
+    bricks_list_to_remove = []
+
+    # remove bricks by reducing replica count of the volume
+    if 'replica_count' in kwargs:
+        new_replica_count = int(kwargs['replica_count'])
+
+        # Get replica count info.
+        replica_count_info = get_replica_count(mnode, volname)
+
+        # Get volume type info
+        volume_type_info = get_volume_type_info(mnode, volname)
+
+        # Set is_arbiter to False
+        is_arbiter = False
+
+        # Calculate bricks to remove
+        if subvols_info['is_tier']:
+            if remove_from_hot_tier:
+                current_replica_count = (
+                    int(replica_count_info['hot_tier_replica_count']))
+                subvols_list = subvols_info['hot_tier_subvols']
+            else:
+                current_replica_count = (
+                    int(replica_count_info['cold_tier_replica_count']))
+                subvols_list = subvols_info['cold_tier_subvols']
+                arbiter_count = int(volume_type_info['cold_tier_type_info']
+                                    ['coldarbiterCount'])
+                if arbiter_count == 1:
+                    is_arbiter = True
+        else:
+            current_replica_count = (
+                int(replica_count_info['volume_replica_count']))
+            subvols_list = subvols_info['volume_subvols']
+            arbiter_count = int(volume_type_info['volume_type_info']
+                                ['arbiterCount'])
+            if arbiter_count == 1:
+                is_arbiter = True
+
+        if new_replica_count >= current_replica_count:
+            g.log.error("Provided replica count '%d' is greater than or "
+                        "equal to the Existing replica count '%d' of the "
+                        "volume %s. Hence cannot proceed with remove-brick",
+                        new_replica_count, current_replica_count, volname)
+            return False
+
+        # If replica_num is specified select the bricks of that replica number
+        # from all the subvolumes.
+        if replica_num:
+            try:
+                bricks_list_to_remove = ([subvol[replica_num]
+                                          for subvol in subvols_list])
+            except IndexError:
+                g.log.error("Invalid replica number: %d specified "
+                            "for removing the replica brick from the volume: "
+                            "%s", replica_num, volname)
+                return False
+
+        # If arbiter_volume, always remove the 3rd brick (arbiter brick)
+        elif is_arbiter:
+            bricks_list_to_remove = [subvol[-1] for subvol in subvols_list]
+
+        # If replica_num is not specified not it is arbiter volume, randomly
+        # select the bricks to remove.
+        else:
+            num_of_bricks_per_subvol_to_remove = (current_replica_count -
+                                                  new_replica_count)
+            bricks_list_to_remove = (
+                [random.sample(subvol, num_of_bricks_per_subvol_to_remove)
+                 for subvol in subvols_list])
+
+    # remove bricks from sub-volumes
+    else:
+        if subvols_info['is_tier']:
+            if remove_from_hot_tier:
+                subvols_list = subvols_info['hot_tier_subvols']
+            else:
+                subvols_list = subvols_info['cold_tier_subvols']
+        else:
+            subvols_list = subvols_info['volume_subvols']
+
+        if not subvols_list:
+            g.log.error("No Sub-Volumes available for the volume %s", volname)
+            return False
+
+        # select bricks of subvol_num specified as argument to this function.
+        if subvol_num:
+            try:
+                bricks_list_to_remove = subvols_list[subvol_num]
+            except IndexError:
+                g.log.error("Invalid sub volume number: %d specified "
+                            "for removing the subvolume from the "
+                            "volume: %s", subvol_num, volname)
+                return False
+
+        # select bricks from multiple subvols with number of
+        # subvolumes specified as distribute_count argument.
+        elif 'distribute_count' in kwargs:
+            distribute_count = int(kwargs['distribute_count'])
+            bricks_list_to_remove = random.sample(subvols_list,
+                                                  distribute_count)
+
+        # randomly choose a subvolume to remove-bricks from.
+        else:
+            bricks_list_to_remove = random.choice(subvols_list)
+
+    # If force, then remove-bricks with force option
+    if force:
+        g.log.info("Removing bricks %s from volume %s with force option",
+                   bricks_list_to_remove, volname)
+        ret, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                                 option="force")
+        if ret != 0:
+            g.log.error("Failed to remove bricks %s from the volume %s with "
+                        "force option", bricks_list_to_remove, volname)
+            return False
+        g.log.info("Successfully removed bricks %s from the volume %s with "
+                   "force option", bricks_list_to_remove, volname)
+        return True
+
+    # remove-brick start
+    g.log.info("Start Removing bricks %s from the volume %s",
+               bricks_list_to_remove, volname)
+    ret, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                             option="start")
+    if ret != 0:
+        g.log.error("Failed to start remove-brick of bricks %s on the volume "
+                    "%s", bricks_list_to_remove, volname)
+        return False
+    g.log.info("Successfully started removal of bricks %s from the volume %s",
+               bricks_list_to_remove, volname)
+
+    # remove-brick status
+    g.log.info("Checking remove-brick status of bricks %s on the volume %s",
+               bricks_list_to_remove, volname)
+    ret, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                             option="status")
+    if ret != 0:
+        g.log.error("Failed to get status of remove-brick of bricks %s on "
+                    "volume %s", bricks_list_to_remove, volname)
+    g.log.info("Successfully got remove-brick status of bricks %s on "
+               "volume %s", bricks_list_to_remove, volname)
+
+    # Wait for rebalance started by remove-brick to complete
+    _rc = False
+    while (rebalance_timeout > 0):
+        ret, out, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                                   option="status", xml=True)
+        if ret != 0:
+            g.log.error("Failed to get xml output remove-brick status of "
+                        "bricks %s on volume %s", bricks_list_to_remove,
+                        volname)
+            return False
+
+        try:
+            root = etree.XML(out)
+        except etree.ParseError:
+            g.log.error("Failed to parse the gluster remove-brick status "
+                        "xml output.")
+            return False
+        remove_brick_aggregate_status = {}
+        for info in root.findall("volRemoveBrick"):
+            for element in info.getchildren():
+                if element.tag == "aggregate":
+                    for elmt in element.getchildren():
+                        remove_brick_aggregate_status[elmt.tag] = elmt.text
+        if "completed" in remove_brick_aggregate_status['statusStr']:
+            _rc = True
+            break
+
+        elif "in progress" in remove_brick_aggregate_status['statusStr']:
+            rebalance_timeout = rebalance_timeout - 30
+            time.sleep(30)
+            continue
+        else:
+            g.log.error("Invalid status string in remove brick status")
+            return False
+
+    if not _rc:
+        g.log.error("Rebalance started by remove-brick is not yet complete "
+                    "on the volume %s", volname)
+        return False
+    g.log.info("Rebalance started by remove-brick is successfully complete "
+               "on the volume %s", volname)
+
+    # remove-brick status after rebalance is complete
+    g.log.info("Checking remove-brick status of bricks %s on the volume %s "
+               "after rebalance is complete", bricks_list_to_remove, volname)
+    ret, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                             option="status")
+    if ret != 0:
+        g.log.error("Failed to get status of remove-brick of bricks %s on "
+                    "volume %s after rebalance is complete",
+                    bricks_list_to_remove, volname)
+    g.log.info("Successfully got remove-brick status of bricks %s on "
+               "volume %s after rebalance is complete", bricks_list_to_remove,
+               volname)
+
+    # Commit remove-brick
+    g.log.info("Commit remove-brick of bricks %s on volume %s",
+               bricks_list_to_remove, volname)
+    ret, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                             option="commit")
+    if ret != 0:
+        g.log.error("Failed to commit remove-brick of bricks %s on volume %s",
+                    bricks_list_to_remove, volname)
+        return False
+    g.log.info("Successfully commited remove-bricks of bricks %s on volume %s",
+               bricks_list_to_remove, volname)
+
+    # Delete the removed bricks
+    if delete_bricks:
+        for brick in bricks_list_to_remove:
+            brick_node, brick_path = brick.split(":")
+            _, _, _ = g.run(brick_node, "rm -rf %s" % brick_path)
+
     return True
