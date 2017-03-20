@@ -17,8 +17,12 @@
 """ Description: Module for gluster brick related helper functions. """
 
 import random
+from math import ceil
 from glusto.core import Glusto as g
 from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
+from glustolibs.gluster.volume_libs import (get_subvols, is_tiered_volume,
+                                            get_client_quorum_info,
+                                            get_volume_type_info)
 
 
 def get_all_bricks(mnode, volname):
@@ -177,6 +181,9 @@ def bring_bricks_offline(volname, bricks_list,
         bring_bricks_offline_methods = ['service_kill']
     elif isinstance(bring_bricks_offline_methods, str):
         bring_bricks_offline_methods = [bring_bricks_offline_methods]
+
+    if isinstance(bricks_list, str):
+        bricks_list = [bricks_list]
 
     _rc = True
     failed_to_bring_offline_list = []
@@ -419,3 +426,382 @@ def delete_bricks(bricks_list):
                         brick_path, brick_node)
             _rc = False
     return _rc
+
+
+def select_bricks_to_bring_offline(mnode, volname):
+    """Randomly selects bricks to bring offline without affecting the cluster
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Returns:
+        dict: On success returns dict. Value of each key is list of bricks to
+            bring offline.
+            If volume doesn't exist returns dict with value of each item
+            being empty list.
+            Example:
+                brick_to_bring_offline = {
+                    'is_tier': False,
+                    'hot_tier_bricks': [],
+                    'cold_tier_bricks': [],
+                    'volume_bricks': []
+                    }
+    """
+    # Defaulting the values to empty list
+    bricks_to_bring_offline = {
+        'is_tier': False,
+        'hot_tier_bricks': [],
+        'cold_tier_bricks': [],
+        'volume_bricks': []
+        }
+
+    volinfo = get_volume_info(mnode, volname)
+    if volinfo is None:
+        g.log.error("Unable to get the volume info for volume %s", volname)
+        return bricks_to_bring_offline
+
+    if is_tiered_volume(mnode, volname):
+        bricks_to_bring_offline['is_tier'] = True
+        # Select bricks from tiered volume.
+        bricks_to_bring_offline = (
+            select_tier_volume_bricks_to_bring_offline(mnode, volname))
+    else:
+        # Select bricks from non-tiered volume.
+        volume_bricks = select_volume_bricks_to_bring_offline(mnode, volname)
+        bricks_to_bring_offline['volume_bricks'] = volume_bricks
+
+    return bricks_to_bring_offline
+
+
+def select_volume_bricks_to_bring_offline(mnode, volname):
+    """Randomly selects bricks to bring offline without affecting the cluster
+    from a non-tiered volume.
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Returns:
+        list: On success returns list of bricks that can be brough offline.
+            If volume doesn't exist or is a tiered volume returns empty list
+    """
+    volume_bricks_to_bring_offline = []
+
+    # Check if volume is tiered
+    if is_tiered_volume(mnode, volname):
+        return volume_bricks_to_bring_offline
+
+    # get volume type
+    volume_type_info = get_volume_type_info(mnode, volname)
+    volume_type = volume_type_info['volume_type_info']['typeStr']
+
+    # get subvols
+    subvols_dict = get_subvols(mnode, volname)
+    volume_subvols = subvols_dict['volume_subvols']
+
+    # select bricks from distribute volume
+    if volume_type == 'Distribute':
+        volume_bricks_to_bring_offline = []
+
+    # select bricks from replicated, distributed-replicated volume
+    elif (volume_type == 'Replicate' or
+          volume_type == 'Distributed-Replicate'):
+        # Get replica count
+        volume_replica_count = (volume_type_info['volume_type_info']
+                                ['replicaCount'])
+
+        # Get quorum info
+        quorum_info = get_client_quorum_info(mnode, volname)
+        volume_quorum_info = quorum_info['volume_quorum_info']
+
+        # Get list of bricks to bring offline
+        volume_bricks_to_bring_offline = (
+            get_bricks_to_bring_offline_from_replicated_volume(
+                volume_subvols, volume_replica_count, volume_quorum_info))
+
+    # select bricks from Disperse, Distribured-Disperse volume
+    elif (volume_type == 'Disperse' or
+          volume_type == 'Distributed-Disperse'):
+
+        # Get redundancy count
+        volume_redundancy_count = (volume_type_info['volume_type_info']
+                                   ['redundancyCount'])
+
+        # Get list of bricks to bring offline
+        volume_bricks_to_bring_offline = (
+            get_bricks_to_bring_offline_from_disperse_volume(
+                volume_subvols, volume_redundancy_count))
+
+    return volume_bricks_to_bring_offline
+
+
+def select_tier_volume_bricks_to_bring_offline(mnode, volname):
+    """Randomly selects bricks to bring offline without affecting the cluster
+    from a tiered volume.
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Returns:
+        dict: On success returns dict. Value of each key is list of bricks to
+            bring offline.
+            If volume doesn't exist or is not a tiered volume returns dict
+            with value of each item being empty list.
+            Example:
+                brick_to_bring_offline = {
+                    'hot_tier_bricks': [],
+                    'cold_tier_bricks': [],
+                    }
+    """
+    # Defaulting the values to empty list
+    bricks_to_bring_offline = {
+        'hot_tier_bricks': [],
+        'cold_tier_bricks': [],
+        }
+
+    volinfo = get_volume_info(mnode, volname)
+    if volinfo is None:
+        g.log.error("Unable to get the volume info for volume %s", volname)
+        return bricks_to_bring_offline
+
+    if is_tiered_volume(mnode, volname):
+        # Select bricks from both hot tier and cold tier.
+        hot_tier_bricks = (select_hot_tier_bricks_to_bring_offline
+                           (mnode, volname))
+        cold_tier_bricks = (select_cold_tier_bricks_to_bring_offline
+                            (mnode, volname))
+        bricks_to_bring_offline['hot_tier_bricks'] = hot_tier_bricks
+        bricks_to_bring_offline['cold_tier_bricks'] = cold_tier_bricks
+        return bricks_to_bring_offline
+    else:
+        return bricks_to_bring_offline
+
+
+def select_hot_tier_bricks_to_bring_offline(mnode, volname):
+    """Randomly selects bricks to bring offline without affecting the cluster
+    from a hot tier.
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Returns:
+        list: On success returns list of bricks that can be brough offline
+            from hot tier. If volume doesn't exist or is a non tiered volume
+            returns empty list.
+    """
+    hot_tier_bricks_to_bring_offline = []
+
+    # Check if volume is tiered
+    if not is_tiered_volume(mnode, volname):
+        return hot_tier_bricks_to_bring_offline
+
+    # get volume type
+    volume_type_info = get_volume_type_info(mnode, volname)
+    hot_tier_type = volume_type_info['hot_tier_type_info']['hotBrickType']
+
+    # get subvols
+    subvols_dict = get_subvols(mnode, volname)
+    hot_tier_subvols = subvols_dict['hot_tier_subvols']
+
+    # select bricks from distribute volume
+    if hot_tier_type == 'Distribute':
+        hot_tier_bricks_to_bring_offline = []
+
+    # select bricks from replicated, distributed-replicated volume
+    if (hot_tier_type == 'Replicate' or
+            hot_tier_type == 'Distributed-Replicate'):
+        # Get replica count
+        hot_tier_replica_count = (volume_type_info
+                                  ['hot_tier_type_info']['hotreplicaCount'])
+
+        # Get quorum info
+        quorum_info = get_client_quorum_info(mnode, volname)
+        hot_tier_quorum_info = quorum_info['hot_tier_quorum_info']
+
+        # Get list of bricks to bring offline
+        hot_tier_bricks_to_bring_offline = (
+            get_bricks_to_bring_offline_from_replicated_volume(
+                hot_tier_subvols, hot_tier_replica_count,
+                hot_tier_quorum_info))
+
+    return hot_tier_bricks_to_bring_offline
+
+
+def select_cold_tier_bricks_to_bring_offline(mnode, volname):
+    """Randomly selects bricks to bring offline without affecting the cluster
+    from a cold tier.
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Returns:
+        list: On success returns list of bricks that can be brough offline
+            from cold tier. If volume doesn't exist or is a non tiered volume
+            returns empty list.
+    """
+    cold_tier_bricks_to_bring_offline = []
+
+    # Check if volume is tiered
+    if not is_tiered_volume(mnode, volname):
+        return cold_tier_bricks_to_bring_offline
+
+    # get volume type
+    volume_type_info = get_volume_type_info(mnode, volname)
+    cold_tier_type = volume_type_info['cold_tier_type_info']['coldBrickType']
+
+    # get subvols
+    subvols_dict = get_subvols(mnode, volname)
+    cold_tier_subvols = subvols_dict['cold_tier_subvols']
+
+    # select bricks from distribute volume
+    if cold_tier_type == 'Distribute':
+        cold_tier_bricks_to_bring_offline = []
+
+    # select bricks from replicated, distributed-replicated volume
+    elif (cold_tier_type == 'Replicate' or
+          cold_tier_type == 'Distributed-Replicate'):
+        # Get replica count
+        cold_tier_replica_count = (volume_type_info['cold_tier_type_info']
+                                   ['coldreplicaCount'])
+
+        # Get quorum info
+        quorum_info = get_client_quorum_info(mnode, volname)
+        cold_tier_quorum_info = quorum_info['cold_tier_quorum_info']
+
+        # Get list of bricks to bring offline
+        cold_tier_bricks_to_bring_offline = (
+            get_bricks_to_bring_offline_from_replicated_volume(
+                cold_tier_subvols, cold_tier_replica_count,
+                cold_tier_quorum_info))
+
+    # select bricks from Disperse, Distribured-Disperse volume
+    elif (cold_tier_type == 'Disperse' or
+          cold_tier_type == 'Distributed-Disperse'):
+
+        # Get redundancy count
+        cold_tier_redundancy_count = (volume_type_info['cold_tier_type_info']
+                                      ['coldredundancyCount'])
+
+        # Get list of bricks to bring offline
+        cold_tier_bricks_to_bring_offline = (
+            get_bricks_to_bring_offline_from_disperse_volume(
+                cold_tier_subvols, cold_tier_redundancy_count))
+
+    return cold_tier_bricks_to_bring_offline
+
+
+def get_bricks_to_bring_offline_from_replicated_volume(subvols_list,
+                                                       replica_count,
+                                                       quorum_info):
+    """Randomly selects bricks to bring offline without affecting the cluster
+        for a replicated volume.
+
+    Args:
+        subvols_list: list of subvols. It can be volume_subvols,
+            hot_tier_subvols or cold_tier_subvols.
+            For example:
+                subvols = volume_libs.get_subvols(mnode, volname)
+                volume_subvols = subvols_dict['volume_subvols']
+                hot_tier_subvols = subvols_dict['hot_tier_subvols']
+                cold_tier_subvols = subvols_dict['cold_tier_subvols']
+        replica_count: Replica count of a Replicate or Distributed-Replicate
+            volume.
+        quorum_info: dict containing quorum info of the volume. The dict should
+            have the following info:
+                - is_quorum_applicable, quorum_type, quorum_count
+            For example:
+                quorum_dict = get_client_quorum_info(mnode, volname)
+                volume_quorum_info = quorum_info['volume_quorum_info']
+                hot_tier_quorum_info = quorum_info['hot_tier_quorum_info']
+                cold_tier_quorum_info = quorum_info['cold_tier_quorum_info']
+
+    Returns:
+        list: List of bricks that can be brought offline without affecting the
+            cluster. On any failure return empty list.
+    """
+    list_of_bricks_to_bring_offline = []
+    try:
+        is_quorum_applicable = quorum_info['is_quorum_applicable']
+        quorum_type = quorum_info['quorum_type']
+        quorum_count = quorum_info['quorum_count']
+    except KeyError:
+        g.log.error("Unable to get the proper quorum data from quorum info: "
+                    "%s", quorum_info)
+        return list_of_bricks_to_bring_offline
+
+    """
+    offline_bricks_limit: Maximum Number of bricks that can be offline without
+        affecting the cluster
+    """
+    if is_quorum_applicable:
+        if 'fixed' in quorum_type:
+            if quorum_count is None:
+                g.log.error("Quorum type is 'fixed' for the volume. But "
+                            "Quorum count not specified. Invalid Quorum")
+                return list_of_bricks_to_bring_offline
+            else:
+                offline_bricks_limit = int(replica_count) - int(quorum_count)
+
+        elif 'auto' in quorum_type:
+            offline_bricks_limit = ceil(int(replica_count) / 2)
+
+        elif quorum_type is None:
+            offline_bricks_limit = int(replica_count) - 1
+
+        else:
+            g.log.error("Invalid Quorum Type : %s", quorum_type)
+            return list_of_bricks_to_bring_offline
+
+        for subvol in subvols_list:
+            random.shuffle(subvol)
+
+            # select a random count.
+            random_count = random.randint(1, offline_bricks_limit)
+
+            # select random bricks.
+            bricks_to_bring_offline = random.sample(subvol, random_count)
+
+            # Append the list with selected bricks to bring offline.
+            list_of_bricks_to_bring_offline.extend(bricks_to_bring_offline)
+
+    return list_of_bricks_to_bring_offline
+
+
+def get_bricks_to_bring_offline_from_disperse_volume(subvols_list,
+                                                     redundancy_count):
+    """Randomly selects bricks to bring offline without affecting the cluster
+        for a disperse volume.
+
+    Args:
+        subvols_list: list of subvols. It can be volume_subvols,
+            hot_tier_subvols or cold_tier_subvols.
+            For example:
+                subvols = volume_libs.get_subvols(mnode, volname)
+                volume_subvols = subvols_dict['volume_subvols']
+                hot_tier_subvols = subvols_dict['hot_tier_subvols']
+                cold_tier_subvols = subvols_dict['cold_tier_subvols']
+        redundancy_count: Redundancy count of a Disperse or
+            Distributed-Disperse volume.
+
+    Returns:
+        list: List of bricks that can be brought offline without affecting  the
+            cluster.On any failure return empty list.
+    """
+    list_of_bricks_to_bring_offline = []
+    for subvol in subvols_list:
+        random.shuffle(subvol)
+
+        # select a random value from 1 to redundancy_count.
+        random_count = random.randint(1, int(redundancy_count))
+
+        # select random bricks.
+        bricks_to_bring_offline = random.sample(subvol, random_count)
+
+        # Append the list with selected bricks to bring offline.
+        list_of_bricks_to_bring_offline.extend(bricks_to_bring_offline)
+
+    return list_of_bricks_to_bring_offline

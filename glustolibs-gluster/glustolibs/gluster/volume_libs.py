@@ -39,7 +39,7 @@ from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
 from glustolibs.gluster.brick_libs import are_bricks_online, get_all_bricks
 from glustolibs.gluster.heal_libs import are_all_self_heal_daemons_are_online
-from glustolibs.gluster.brick_ops import add_brick, remove_brick
+from glustolibs.gluster.brick_ops import add_brick, remove_brick, replace_brick
 
 
 def volume_exists(mnode, volname):
@@ -1545,3 +1545,290 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
             _, _, _ = g.run(brick_node, "rm -rf %s" % brick_path)
 
     return True
+
+
+def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
+                              src_brick=None, dst_brick=None,
+                              delete_brick=True,
+                              replace_brick_from_hot_tier=False):
+    """Replace faulty brick from the volume.
+
+    Args:
+        mnode (str): Node on which commands has to be executed
+        volname (str): volume name
+        servers (list): List of servers in the storage pool.
+        all_servers_info (dict): Information about all servers.
+        example :
+            all_servers_info = {
+                'abc.lab.eng.xyz.com': {
+                    'host': 'abc.lab.eng.xyz.com',
+                    'brick_root': '/bricks',
+                    'devices': ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde']
+                    },
+                'def.lab.eng.xyz.com':{
+                    'host': 'def.lab.eng.xyz.com',
+                    'brick_root': '/bricks',
+                    'devices': ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde']
+                    }
+                }
+
+    Kwargs:
+        src_brick (str): Faulty brick which needs to be replaced
+
+        dst_brick (str): New brick to replace the faulty brick
+
+        delete_bricks (bool): After remove-brick delete the removed bricks.
+
+        replace_brick_from_hot_tier (bool): True If brick are to be
+            replaced from hot_tier. False otherwise. Defaults to False.
+
+    Returns:
+        bool: True if replacing brick from the volume is successful.
+            False otherwise.
+    """
+    # Check if volume exists
+    if not volume_exists(mnode, volname):
+        g.log.error("Volume %s doesn't exists.", volname)
+        return False
+
+    # Get Subvols
+    subvols_info = get_subvols(mnode, volname)
+
+    if not dst_brick:
+        dst_brick = form_bricks_list(mnode=mnode, volname=volname,
+                                     number_of_bricks=1,
+                                     servers=servers,
+                                     servers_info=all_servers_info)
+        if not dst_brick:
+            g.log.error("Failed to get a new brick to replace the faulty "
+                        "brick")
+            return False
+        dst_brick = dst_brick[0]
+
+    if not src_brick:
+        # Randomly pick up a brick to bring the brick down and replace.
+        if subvols_info['is_tier']:
+            if replace_brick_from_hot_tier:
+                subvols_list = subvols_info['hot_tier_subvols']
+            else:
+                subvols_list = subvols_info['cold_tier_subvols']
+        else:
+            subvols_list = subvols_info['volume_subvols']
+
+        src_brick = (random.choice(random.choice(subvols_list)))
+
+    # Brick the source brick offline
+    from glustolibs.gluster.brick_libs import bring_bricks_offline
+    g.log.info("Bringing brick %s offline of the volume  %s", src_brick,
+               volname)
+    ret = bring_bricks_offline(volname, src_brick)
+    if not ret:
+        g.log.error("Unable to bring brick %s offline for replace-brick "
+                    "operation on volume %s", src_brick, volname)
+        return False
+    g.log.info("Successfully brought the brick %s offline for replace-brick "
+               "operation on volume %s", src_brick, volname)
+
+    # adding delay before performing replace-brick
+    time.sleep(15)
+
+    # Log volume status before replace-brick
+    g.log.info("Logging volume status before performing replace-brick")
+    ret, _, _ = volume_status(mnode, volname)
+    if ret != 0:
+        g.log.error("Failed to get volume status before performing "
+                    "replace-brick")
+        return False
+
+    # Replace brick
+    g.log.info("Start replace-brick commit force of brick %s -> %s "
+               "on the volume %s", src_brick, dst_brick, volname)
+    ret, _, _ = replace_brick(mnode, volname, src_brick, dst_brick)
+    if ret != 0:
+        g.log.error("Failed to replace-brick commit force of brick %s -> %s "
+                    "on the volume %s", src_brick, dst_brick, volname)
+    g.log.info("Start replace-brick commit force of brick %s -> %s "
+               "on the volume %s", src_brick, dst_brick, volname)
+
+    # Delete the replaced brick
+    if delete_brick:
+        g.log.info("Deleting the replaced brick")
+        brick_node, brick_path = src_brick.split(":")
+        _, _, _ = g.run(brick_node, "rm -rf %s" % brick_path)
+
+    return True
+
+
+def get_client_quorum_info(mnode, volname):
+    """Get the client quorum information. i.e the quorum type,
+        quorum count.
+    Args:
+        mnode (str): Node on which commands are executed.
+        volname (str): Name of the volume.
+
+    Returns:
+        dict: client quorum information for the volume.
+            client_quorum_dict = {
+                'is_tier': False,
+                'hot_tier_quorum_info':{
+                    'is_quorum_applicable': False,
+                    'quorum_type': None,
+                    'quorum_count': None
+                    },
+                'cold_tier_quorum_info':{
+                    'is_quorum_applicable': False,
+                    'quorum_type': None,
+                    'quorum_count': None
+                    },
+                'volume_quorum_info':{
+                    'is_quorum_applicable': False,
+                    'quorum_type': None,
+                    'quorum_count': None
+                    }
+        }
+        NoneType: None if volume doesnot exist.
+    """
+    client_quorum_dict = {
+        'is_tier': False,
+        'hot_tier_quorum_info': {
+            'is_quorum_applicable': False,
+            'quorum_type': None,
+            'quorum_count': None
+            },
+        'cold_tier_quorum_info': {
+            'is_quorum_applicable': False,
+            'quorum_type': None,
+            'quorum_count': None
+            },
+        'volume_quorum_info': {
+            'is_quorum_applicable': False,
+            'quorum_type': None,
+            'quorum_count': None
+            }
+        }
+
+    # Get quorum-type
+    volume_option = get_volume_options(mnode, volname, 'cluster.quorum-type')
+    if volume_option is None:
+        g.log.error("Unable to get the volume option 'cluster.quorum-type' "
+                    "for volume %s", volname)
+        return client_quorum_dict
+    quorum_type = volume_option['cluster.quorum-type']
+
+    # Get quorum-count
+    volume_option = get_volume_options(mnode, volname, 'cluster.quorum-count')
+    if volume_option is None:
+        g.log.error("Unable to get the volume option 'cluster.quorum-count' "
+                    "for volume %s", volname)
+        return client_quorum_dict
+    quorum_count = volume_option['cluster.quorum-count']
+
+    # Set the quorum info
+    volume_type_info = get_volume_type_info(mnode, volname)
+    if volume_type_info['is_tier'] is True:
+        client_quorum_dict['is_tier'] = True
+
+        # Hot Tier quorum info
+        hot_tier_type = volume_type_info['hot_tier_type_info']['hotBrickType']
+        if (hot_tier_type == 'Replicate' or
+                hot_tier_type == 'Distributed-Replicate'):
+
+            (client_quorum_dict['hot_tier_quorum_info']
+             ['is_quorum_applicable']) = True
+            replica_count = (volume_type_info['hot_tier_type_info']
+                             ['hotreplicaCount'])
+
+            # Case1: Replica 2
+            if int(replica_count) == 2:
+                if 'none' not in quorum_type:
+                    (client_quorum_dict['hot_tier_quorum_info']
+                     ['quorum_type']) = quorum_type
+
+                    if quorum_type == 'fixed':
+                        if not quorum_count == '(null)':
+                            (client_quorum_dict['hot_tier_quorum_info']
+                             ['quorum_count']) = quorum_count
+
+            # Case2: Replica > 2
+            if int(replica_count) > 2:
+                if quorum_type == 'none':
+                    (client_quorum_dict['hot_tier_quorum_info']
+                     ['quorum_type']) = 'auto'
+                    quorum_type == 'auto'
+                else:
+                    (client_quorum_dict['hot_tier_quorum_info']
+                     ['quorum_type']) = quorum_type
+                if quorum_type == 'fixed':
+                    if not quorum_count == '(null)':
+                        (client_quorum_dict['hot_tier_quorum_info']
+                         ['quorum_count']) = quorum_count
+
+        # Cold Tier quorum info
+        cold_tier_type = (volume_type_info['cold_tier_type_info']
+                          ['coldBrickType'])
+        if (cold_tier_type == 'Replicate' or
+                cold_tier_type == 'Distributed-Replicate'):
+            (client_quorum_dict['cold_tier_quorum_info']
+             ['is_quorum_applicable']) = True
+            replica_count = (volume_type_info['cold_tier_type_info']
+                             ['coldreplicaCount'])
+
+            # Case1: Replica 2
+            if int(replica_count) == 2:
+                if 'none' not in quorum_type:
+                    (client_quorum_dict['cold_tier_quorum_info']
+                     ['quorum_type']) = quorum_type
+
+                    if quorum_type == 'fixed':
+                        if not quorum_count == '(null)':
+                            (client_quorum_dict['cold_tier_quorum_info']
+                             ['quorum_count']) = quorum_count
+
+            # Case2: Replica > 2
+            if int(replica_count) > 2:
+                if quorum_type == 'none':
+                    (client_quorum_dict['cold_tier_quorum_info']
+                     ['quorum_type']) = 'auto'
+                    quorum_type == 'auto'
+                else:
+                    (client_quorum_dict['cold_tier_quorum_info']
+                     ['quorum_type']) = quorum_type
+                if quorum_type == 'fixed':
+                    if not quorum_count == '(null)':
+                        (client_quorum_dict['cold_tier_quorum_info']
+                         ['quorum_count']) = quorum_count
+    else:
+        volume_type = (volume_type_info['volume_type_info']['typeStr'])
+        if (volume_type == 'Replicate' or
+                volume_type == 'Distributed-Replicate'):
+            (client_quorum_dict['volume_quorum_info']
+             ['is_quorum_applicable']) = True
+            replica_count = (volume_type_info['volume_type_info']
+                             ['replicaCount'])
+
+            # Case1: Replica 2
+            if int(replica_count) == 2:
+                if 'none' not in quorum_type:
+                    (client_quorum_dict['volume_quorum_info']
+                     ['quorum_type']) = quorum_type
+
+                    if quorum_type == 'fixed':
+                        if not quorum_count == '(null)':
+                            (client_quorum_dict['volume_quorum_info']
+                             ['quorum_count']) = quorum_count
+
+            # Case2: Replica > 2
+            if int(replica_count) > 2:
+                if quorum_type == 'none':
+                    (client_quorum_dict['volume_quorum_info']
+                     ['quorum_type']) = 'auto'
+                    quorum_type == 'auto'
+                else:
+                    (client_quorum_dict['volume_quorum_info']
+                     ['quorum_type']) = quorum_type
+                if quorum_type == 'fixed':
+                    if not quorum_count == '(null)':
+                        (client_quorum_dict['volume_quorum_info']
+                         ['quorum_count']) = quorum_count
+
+    return client_quorum_dict

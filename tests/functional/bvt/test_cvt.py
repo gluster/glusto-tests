@@ -26,9 +26,9 @@
             - enable quota
             - collecting snapshot
             - remove-brick
-        TODO:
             - n/w failure followed by heal
             - replace-brick
+        TODO:
             - attach-tier, detach-tier
 """
 import time
@@ -40,10 +40,16 @@ from glustolibs.gluster.volume_libs import enable_and_validate_volume_options
 from glustolibs.gluster.volume_libs import (
     verify_all_process_of_volume_are_online)
 from glustolibs.gluster.volume_libs import (log_volume_info_and_status,
-                                            expand_volume, shrink_volume)
+                                            expand_volume, shrink_volume,
+                                            replace_brick_from_volume)
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_rebalance_to_complete,
                                               rebalance_status)
+from glustolibs.gluster.brick_libs import (select_bricks_to_bring_offline,
+                                           bring_bricks_offline,
+                                           bring_bricks_online,
+                                           are_bricks_offline)
+from glustolibs.gluster.heal_libs import monitor_heal_completion
 from glustolibs.gluster.quota_ops import (enable_quota, disable_quota,
                                           set_quota_limit_usage,
                                           is_quota_enabled,
@@ -549,6 +555,181 @@ class TestSnapshotSanity(GlusterBasicFeaturesSanityBaseClass):
                        mount_obj.mountpoint)
         g.log.info("%s not listed under .snaps from mounts after "
                    "deactivating ", snap_name)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # List all files and dirs created
+        g.log.info("List all files and directories:")
+        ret = list_all_files_and_dirs_mounts(self.mounts)
+        self.assertTrue(ret, "Failed to list all files and dirs")
+        g.log.info("Listing all files and directories is successful")
+
+
+@runs_on([['replicated', 'distributed-replicated'],
+          ['glusterfs', 'nfs', 'cifs']])
+class TestGlusterReplaceBrickSanity(GlusterBasicFeaturesSanityBaseClass):
+    """Sanity tests for Replacing faulty bricks"""
+    @pytest.mark.bvt_cvt
+    def test_replace_brick_when_io_in_progress(self):
+        """Test replacing brick using existing servers bricks when IO is
+            in progress.
+
+        Description:
+            - replace_brick
+            - wait for heal to complete
+            - validate IO
+        """
+        # Log Volume Info and Status before replacing brick from the volume.
+        g.log.info("Logging volume info and Status before replacing brick "
+                   "from the volume %s", self.volname)
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
+
+        # Replace brick from a sub-volume
+        g.log.info("Replace a faulty brick from the volume")
+        ret = replace_brick_from_volume(self.mnode, self.volname,
+                                        self.servers, self.all_servers_info)
+        self.assertTrue(ret, "Failed to replace faulty brick from the volume")
+        g.log.info("Successfully replaced faulty brick from the volume")
+
+        # Wait for gluster processes to come online
+        time.sleep(30)
+
+        # Log Volume Info and Status after replacing the brick
+        g.log.info("Logging volume info and Status after replacing brick "
+                   "from the volume %s", self.volname)
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online")
+        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online",
+                              self.volname))
+        g.log.info("Volume %s : All process are online", self.volname)
+
+        # Wait for self-heal to complete
+        g.log.info("Wait for self-heal to complete")
+        ret = monitor_heal_completion(self.mnode, self.volname)
+        self.assertTrue(ret, "Self heal didn't complete even after waiting "
+                        "for 20 minutes. 20 minutes is too much a time for "
+                        "current test workload")
+        g.log.info("self-heal is successful after replace-brick operation")
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # List all files and dirs created
+        g.log.info("List all files and directories:")
+        ret = list_all_files_and_dirs_mounts(self.mounts)
+        self.assertTrue(ret, "Failed to list all files and dirs")
+        g.log.info("Listing all files and directories is successful")
+
+
+@runs_on([['replicated', 'distributed-replicated', 'dispersed',
+           'distributed-dispersed'],
+          ['glusterfs', 'nfs', 'cifs']])
+class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
+    """Sanity tests for SelfHeal"""
+    @pytest.mark.bvt_cvt
+    def test_self_heal_when_io_in_progress(self):
+        """Test self-heal is successful when IO is in progress.
+
+        Description:
+            - simulate brick down.
+            - bring bricks online
+            - wait for heal to complete
+            - validate IO
+        """
+        # Log Volume Info and Status before simulating brick failure
+        g.log.info("Logging volume info and Status before bringing bricks "
+                   "offlien from the volume %s", self.volname)
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
+
+        # Select bricks to bring offline
+        bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
+            self.mnode, self.volname))
+        bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline_dict['hot_tier_bricks'] +
+            bricks_to_bring_offline_dict['cold_tier_bricks'] +
+            bricks_to_bring_offline_dict['volume_bricks']))
+
+        # Bring bricks offline
+        g.log.info("Bringing bricks: %s offline", bricks_to_bring_offline)
+        ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
+        self.assertTrue(ret, ("Failed to bring bricks: %s offline",
+                              bricks_to_bring_offline))
+        g.log.info("Successful in bringing bricks: %s offline",
+                   bricks_to_bring_offline)
+
+        # Wait for gluster processes to be offline
+        time.sleep(10)
+
+        # Validate if bricks are offline
+        g.log.info("Validating if bricks: %s are offline",
+                   bricks_to_bring_offline)
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 bricks_to_bring_offline)
+        self.assertTrue(ret, "Not all the bricks in list:%s are offline")
+        g.log.info("Successfully validated that bricks: %s are all offline")
+
+        # Log Volume Info and Status
+        g.log.info("Logging volume info and Status after bringing bricks "
+                   "offline from the volume %s", self.volname)
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
+
+        # Add delay before bringing bricks online
+        time.sleep(40)
+
+        # Bring bricks online
+        g.log.info("Bring bricks: %s online", bricks_to_bring_offline)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  bricks_to_bring_offline)
+        self.assertTrue(ret, ("Failed to bring bricks: %s online",
+                              bricks_to_bring_offline))
+        g.log.info("Successfully brought all bricks:%s online",
+                   bricks_to_bring_offline)
+
+        # Wait for gluster processes to be online
+        time.sleep(10)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online")
+        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online",
+                              self.volname))
+        g.log.info("Volume %s : All process are online", self.volname)
+
+        # Wait for self-heal to complete
+        g.log.info("Wait for self-heal to complete")
+        ret = monitor_heal_completion(self.mnode, self.volname)
+        self.assertTrue(ret, "Self heal didn't complete even after waiting "
+                        "for 20 minutes. 20 minutes is too much a time for "
+                        "current test workload")
+        g.log.info("self-heal is successful after replace-brick operation")
 
         # Validate IO
         g.log.info("Wait for IO to complete and validate IO ...")
