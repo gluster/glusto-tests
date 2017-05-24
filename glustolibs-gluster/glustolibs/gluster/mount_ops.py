@@ -396,7 +396,7 @@ def create_mount_objs(mounts):
 
         Example:
             mounts: [
-                {'mount_protocol': 'glusterfs',
+                {'protocol': 'glusterfs',
                  'mountpoint': '/mnt/g1',
                  'server': 'abc.lab.eng.xyz.com',
                  'client': {'host': 'def.lab.eng.xyz.com'},
@@ -404,14 +404,14 @@ def create_mount_objs(mounts):
                  'options': '',
                  'num_of_mounts': 2},
 
-                {'mount_protocol': 'nfs',
+                {'protocol': 'nfs',
                  'mountpoint': '/mnt/n1',
                  'server': 'abc.lab.eng.xyz.com',
                  'client': {'host': 'def.lab.eng.xyz.com'},
                  'volname': 'testvoi',
                  'options': ''}
 
-                {'mount_protocol': 'smb',
+                {'protocol': 'smb',
                  'mountpoint': '',
                  'server': 'abc.lab.eng.xyz.com',
                  'client': {
@@ -435,14 +435,14 @@ def create_mount_objs(mounts):
         temp_mount = copy.deepcopy(mount)
         if (mount['protocol'] == "glusterfs" or mount['protocol'] == "nfs" or
                 mount['protocol'] == "cifs"):
-            if 'mountpoint' in mount['mountpoint'] and mount['mountpoint']:
+            if 'mountpoint' in mount and mount['mountpoint']:
                 temp_mount['mountpoint'] = mount['mountpoint']
             else:
                 temp_mount['mountpoint'] = ("/mnt/%s_%s" %
                                             (mount['volname'],
                                              mount['protocol']))
         elif mount['protocol'] == "smb":
-            if 'mountpoint' in mount['mountpoint'] and mount['mountpoint']:
+            if 'mountpoint' in mount and mount['mountpoint']:
                 temp_mount['mountpoint'] = mount['mountpoint']
             else:
                 temp_mount['mountpoint'] = "*"

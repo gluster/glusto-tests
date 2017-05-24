@@ -126,12 +126,19 @@ class GlusterBaseClass(unittest.TestCase):
             cls.smb_users_info['root']['password'] = 'foobar'
             cls.smb_users_info['root']['acl'] = 'rwx'
 
-        # NFS-Ganesha Cluster Info
+        # NFS-Ganesha Cluster info
         try:
             cls.enable_nfs_ganesha = bool(g.config['gluster']['cluster_config']
                                           ['nfs_ganesha']['enable'])
+            cls.num_of_nfs_ganesha_nodes = (g.config['gluster']
+                                            ['cluster_config']['nfs_ganesha']
+                                            ['num_of_nfs_ganesha_nodes'])
+            cls.vips = (g.config['gluster']['cluster_config']['nfs_ganesha']
+                        ['vips'])
         except KeyError:
             cls.enable_nfs_ganesha = False
+            cls.num_of_nfs_ganesha_nodes = None
+            cls.vips = []
 
         # Defining default volume_types configuration.
         default_volume_type_config = {
