@@ -1,0 +1,7 @@
+[hosts]
+{{ server }}
+
+[nfs-ganesha]
+action=refresh-config
+update_config_lines={{ config_to_update }}
+volname={{ volname }}

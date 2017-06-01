@@ -1,0 +1,6 @@
+[hosts]{% for server in servers %}
+{{server}}{% endfor %}
+
+[nfs-ganesha]
+action=delete-node
+nodes={{ node_to_delete }}

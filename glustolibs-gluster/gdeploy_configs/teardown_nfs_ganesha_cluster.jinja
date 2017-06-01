@@ -1,0 +1,6 @@
+[hosts]{% for server in servers %}
+{{server}}{% endfor %}
+
+[nfs-ganesha]
+action=destroy-cluster
+cluster-nodes={{ servers|join(',') }}

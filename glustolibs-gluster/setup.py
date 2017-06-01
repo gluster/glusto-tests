@@ -17,8 +17,9 @@
 #
 
 from setuptools import setup, find_packages
+from distutils import dir_util
 
-version = '0.1.1'
+version = '0.2'
 name = 'glustolibs-gluster'
 
 setup(
@@ -46,3 +47,5 @@ setup(
     dependency_links=['http://github.com/loadtheaccumulator/glusto/tarball/master#egg=glusto'],
     namespace_packages = ['glustolibs']
 )
+
+dir_util.copy_tree('./gdeploy_configs', '/usr/share/glustolibs/gdeploy_configs')

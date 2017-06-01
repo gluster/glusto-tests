@@ -1,0 +1,27 @@
+[hosts]{% for server in servers %}
+{{server}}{% endfor %}
+
+[peer]
+action=probe
+
+#Enabling firewall ports
+[firewalld]
+action=add
+ports=111/tcp,2049/tcp,54321/tcp,5900/tcp,5900-6923/tcp,5666/tcp,16514/tcp
+services=glusterfs,nlm,nfs,rpc-bind,high-availability,mountd,rquota
+permanent=true
+zone=public
+
+[clients]
+action=mount
+volname={{ node_to_add }}:/gluster_shared_storage
+hosts={{ node_to_add }}
+fstype=glusterfs
+client_mount_points=/var/run/gluster/shared_storage/
+
+[nfs-ganesha]
+action=add-node
+cluster_nodes={{ cluster_nodes|join(',') }}
+nodes={{ node_to_add }}
+vip={{ vip }}
+

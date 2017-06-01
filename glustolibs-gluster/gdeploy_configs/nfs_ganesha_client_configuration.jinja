@@ -1,0 +1,31 @@
+[hosts]{% for server in servers %}
+{{server}}{% endfor %}
+
+[yum1]
+action=install
+gpgcheck=yes
+packages=nfs-utils
+
+#Enabling firewall ports
+[firewalld]
+action=add
+ports=662/tcp,662/udp,32803/tcp,32769/udp
+permanent=true
+zone=public
+
+[shell1]
+action=execute
+command=sed -i '/STATD_PORT/s/^#//' /etc/sysconfig/nfs
+
+[shell2]
+action=execute
+command=sed -i '/LOCKD_TCPPORT/s/^#//' /etc/sysconfig/nfs
+
+[shell3]
+action=execute
+command=sed -i '/LOCKD_UDPPORT/s/^#//' /etc/sysconfig/nfs
+
+[service]
+action=restart
+service=nfs-config,rpc-statd,nfslock
+

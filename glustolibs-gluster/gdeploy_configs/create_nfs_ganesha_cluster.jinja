@@ -1,0 +1,20 @@
+[hosts]{% for server in servers %}
+{{server}}{% endfor %}
+
+[peer]
+action=probe
+
+#Enabling firewall ports
+[firewalld]
+action=add
+ports=111/tcp,2049/tcp,54321/tcp,5900/tcp,5900-6923/tcp,5666/tcp,16514/tcp
+services=glusterfs,nlm,nfs,rpc-bind,high-availability,mountd,rquota
+permanent=true
+zone=public
+
+#Creating a high availability cluster and exporting the volume
+[nfs-ganesha]
+action=create-cluster
+ha-name=ganesha-ha-360
+cluster-nodes={{ servers|join(',') }}
+vip={{ vips|join(',') }}
