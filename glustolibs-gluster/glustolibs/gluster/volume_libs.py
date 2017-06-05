@@ -37,7 +37,6 @@ from glustolibs.gluster.quota_ops import (enable_quota, set_quota_limit_usage,
                                           is_quota_enabled)
 from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
-from glustolibs.gluster.brick_libs import are_bricks_online, get_all_bricks
 from glustolibs.gluster.heal_libs import are_all_self_heal_daemons_are_online
 from glustolibs.gluster.brick_ops import add_brick, remove_brick, replace_brick
 
@@ -478,6 +477,7 @@ def verify_all_process_of_volume_are_online(mnode, volname):
         bool: Returns True if all the processes of volume are online.
             False Otherwise.
     """
+    from glustolibs.gluster.brick_libs import are_bricks_online, get_all_bricks
     # Verify all the  brick process are online
     bricks_list = get_all_bricks(mnode, volname)
     if not bricks_list:
