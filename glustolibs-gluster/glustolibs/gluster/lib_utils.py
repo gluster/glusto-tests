@@ -659,3 +659,55 @@ def check_if_dir_is_filled(mnode, dirname, percent_to_fill,
                    " percentage")
         return True
     return False
+
+
+def install_epel(servers):
+    """
+    Module to install epel in rhel/centos/fedora systems.
+
+    Args:
+        servers (list): servers in which epel to be installed.
+
+    Returns:
+        bool: True, if epel is installed successfully, False otherwise
+
+    Example:
+        install_epel(["abc.com", "def.com"])
+    """
+
+    rt = True
+    results = g.run_parallel(servers, "yum list installed epel-release")
+    for server in servers:
+        if results[server][0] != 0:
+            ret, out, _ = g.run(server,
+                                "cat /etc/redhat-release")
+            if ret != 0:
+                g.log.error("Failed to recognize OS release")
+                rt = False
+            release_string = out
+            if "release 5" in release_string:
+                ret, _, _ = g.run(server,
+                                  "yum -y install http://dl.fedoraproject.org/"
+                                  "pub/epel/epel-release-latest-5.noarch.rpm")
+                if ret != 0:
+                    g.log.error("Epel install failed")
+                    rt = False
+            elif "release 6" in release_string:
+                ret, _, _ = g.run(server,
+                                  "yum -y install http://dl.fedoraproject.org/"
+                                  "pub/epel/epel-release-latest-6.noarch.rpm")
+                if ret != 0:
+                    g.log.error("Epel install failed")
+                    rt = False
+            elif (("release 7" in release_string) or
+                  ("Fedora" in release_string)):
+                ret, _, _ = g.run(server,
+                                  "yum -y install http://dl.fedoraproject.org/"
+                                  "pub/epel/epel-release-latest-7.noarch.rpm")
+                if ret != 0:
+                    g.log.error("Epel install failed")
+                    rt = False
+            else:
+                g.log.error("Unrecognized release. Skipping epel install")
+                rt = False
+    return rt

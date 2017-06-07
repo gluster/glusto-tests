@@ -21,6 +21,7 @@ import os
 import subprocess
 from glusto.core import Glusto as g
 from glustolibs.gluster.mount_ops import GlusterMount
+from multiprocessing import Pool
 
 
 def collect_mounts_arequal(mounts):
@@ -375,3 +376,206 @@ def cleanup_mounts(mounts):
     list_all_files_and_dirs_mounts(mounts)
 
     return _rc_lookup
+
+
+def run_bonnie(servers, directory_to_run, username="root"):
+    """
+    Module to run bonnie test suite on the given servers.
+
+    Args:
+        servers (list): servers in which tests to be run.
+        directory_to_run (list): directory path where tests will run for
+         each server.
+
+    Kwargs:
+        username (str): username. Defaults to root.
+
+    Returns:
+        bool: True, if test passes in all servers, False otherwise
+
+    Example:
+        run_bonnie(["abc.com", "def.com"], ["/mnt/test1", "/mnt/test2"])
+    """
+
+    g.log.info("Running bonnie tests on %s" % ','.join(servers))
+    rt = True
+    options_for_each_servers = []
+
+    # Install bonnie test suite if not installed
+    results = g.run_parallel(servers, "yum list installed bonnie++")
+    for index, server in enumerate(servers):
+        if results[server][0] != 0:
+            ret, out, _ = g.run(server,
+                                "yum list installed bonnie++ || "
+                                "yum -y install bonnie++")
+            if ret != 0:
+                g.log.error("Failed to install bonnie on %s" % server)
+                return False
+
+        # Building options for bonnie tests
+        options_list = []
+        options = ""
+        freemem_command = "free -g | grep Mem: | awk '{ print $2 }'"
+        ret, out, _ = g.run(server, freemem_command)
+        memory = int(out)
+        g.log.info("Memory = %i", memory)
+        options_list.append("-d %s -u %s" % (directory_to_run[index],
+                                             username))
+        if memory >= 8:
+            options_list.append("-r 16G -s 16G -n 0 -m TEST -f -b")
+
+        options = " ".join(options_list)
+        options_for_each_servers.append(options)
+
+    proc_list = []
+    for index, server in enumerate(servers):
+        bonnie_command = "bonnie++ %s" % (options_for_each_servers[index])
+        proc = g.run_async(server, bonnie_command)
+        proc_list.append(proc)
+
+    for index, proc in enumerate(proc_list):
+        results = proc.async_communicate()
+        if results[0] != 0:
+            g.log.error("Bonnie test failed on server %s" % servers[index])
+            rt = False
+
+    for index, server in enumerate(servers):
+        ret, out, _ = g.run(server, "rm -rf %s/Bonnie.*"
+                            % directory_to_run[index])
+        if ret != 0:
+            g.log.error("Failed to remove files from %s" % server)
+            rt = False
+
+    for server in servers:
+        ret, out, _ = g.run(server, "yum -y remove bonnie++")
+        if ret != 0:
+            g.log.error("Failed to remove bonnie from %s" % server)
+            return False
+    return rt
+
+
+def run_fio(servers, directory_to_run):
+    """
+    Module to run fio test suite on the given servers.
+
+    Args:
+        servers (list): servers in which tests to be run.
+        directory_to_run (list): directory path where tests will run for
+         each server.
+
+    Returns:
+        bool: True, if test passes in all servers, False otherwise
+
+    Example:
+        run_fio(["abc.com", "def.com"], ["/mnt/test1", "/mnt/test2"])
+    """
+
+    g.log.info("Running fio tests on %s" % ','.join(servers))
+    rt = True
+
+    # Installing fio if not installed
+    results = g.run_parallel(servers, "yum list installed fio")
+    for index, server in enumerate(servers):
+        if results[server][0] != 0:
+            ret, out, _ = g.run(server,
+                                "yum list installed fio || "
+                                "yum -y install fio")
+            if ret != 0:
+                g.log.error("Failed to install bonnie on %s" % server)
+                return False
+
+        # building job file for running fio
+        # TODO: parametrizing the fio and to get input values from user
+        job_file = "/tmp/fio_job.ini"
+        cmd = ("echo -e '[global]\nrw=randrw\nio_size=1g\nfsync_on_close=1\n"
+               "size=4g\nbs=64k\nrwmixread=20\nopenfiles=1\nstartdelay=0\n"
+               "ioengine=sync\n[write]\ndirectory=%s\nnrfiles=1\n"
+               "filename_format=fio_file.$jobnum.$filenum\nnumjobs=8' "
+               "> %s" % (directory_to_run[index], job_file))
+
+        ret, _, _ = g.run(server, cmd)
+        if ret != 0:
+            g.log.error("Failed to create fio job file")
+            rt = False
+
+    proc_list = []
+    for index, server in enumerate(servers):
+        fio_command = "fio %s" % (job_file)
+        proc = g.run_async(server, fio_command)
+        proc_list.append(proc)
+
+    for index, proc in enumerate(proc_list):
+        results = proc.async_communicate()
+        if results[0] != 0:
+            g.log.error("fio test failed on server %s" % servers[index])
+            rt = False
+
+    for index, server in enumerate(servers):
+        ret, out, _ = g.run(server, "rm -rf %s/fio_file.*"
+                            % directory_to_run[index])
+        if ret != 0:
+            g.log.error("Failed to remove files from %s" % server)
+            rt = False
+
+    for index, server in enumerate(servers):
+        ret, out, _ = g.run(server, "rm -rf %s" % job_file)
+        if ret != 0:
+            g.log.error("Failed to remove job file from %s" % server)
+            rt = False
+
+    for server in servers:
+        ret, out, _ = g.run(server, "yum -y remove fio")
+        if ret != 0:
+            g.log.error("Failed to remove fio from %s" % server)
+            return False
+    return rt
+
+
+def run_mixed_io(servers, io_tools, directory_to_run):
+    """
+    Module to run different io patterns on each given servers.
+
+    Args:
+        servers (list): servers in which tests to be run.
+        io_tools (list): different io tools. Currently fio, bonnie are
+         supported.
+        directory_to_run (list): directory path where tests will run for
+         each server.
+
+    Returns:
+        bool: True, if test passes in all servers, False otherwise
+
+    Example:
+        run_mixed_io(["abc.com", "def.com"], ["/mnt/test1", "/mnt/test2"])
+    """
+
+    g.log.info("Running mixed IO tests on %s" % ','.join(servers))
+
+    # Assigning IO tool to each server in round robin way
+    if len(servers) > len(io_tools):
+        for index, tool in enumerate(io_tools):
+            io_tools.append(io_tools[index])
+            if len(servers) == len(io_tools):
+                break
+    server_io_dict = {}
+    for items in zip(servers, io_tools):
+        server_io_dict[items[0]] = items[1]
+
+    io_dict = {'fio': run_fio,
+               'bonnie': run_bonnie}
+
+    func_list = []
+    for index, server in enumerate(servers):
+        tmp_list = ([server], [directory_to_run[index]])
+        tmp_list_item = (io_dict[server_io_dict[server]], tmp_list)
+        func_list.append(tmp_list_item)
+
+    pool = Pool()
+    results = []
+    ret = True
+    for func, func_args in func_list:
+        results.append(pool.apply_async(func, func_args))
+    for result in results:
+        ret = ret & result.get()
+    pool.terminate()
+    return ret
