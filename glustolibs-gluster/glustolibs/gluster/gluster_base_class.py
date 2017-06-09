@@ -51,11 +51,16 @@ class runs_on(g.CarteTestClass):
 
         # these are the volume and mount options to run and set in config
         # what do runs_on_volumes and runs_on_mounts need to be named????
-        run_on_volumes = g.config.get('running_on_volumes',
-                                      self.available_options[0])
-        run_on_mounts = g.config.get('running_on_mounts',
-                                     self.available_options[1])
+        run_on_volumes = self.available_options[0]
+        run_on_mounts = self.available_options[1]
+        if 'gluster' in g.config and g.config['gluster']:
+            if ('running_on_volumes' in g.config['gluster'] and
+                    g.config['gluster']['running_on_volumes']):
+                run_on_volumes = g.config['gluster']['running_on_volumes']
 
+            if ('running_on_mounts' in g.config['gluster'] and
+                    g.config['gluster']['running_on_mounts']):
+                run_on_mounts = g.config['gluster']['running_on_mounts']
         # selections is the above info from the run that is intersected with
         # the limits from the test script
         self.selections = [run_on_volumes, run_on_mounts]
