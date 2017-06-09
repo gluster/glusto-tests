@@ -103,3 +103,6 @@ Default log location is '/tmp/glustomain.log'.
 
 Note: When using 'glusto' via the Python Interactive Interpreter,
 the default log location is '/tmp/glusto.log'.
+
+Refer to 'docs/userguide/HOWTO' for a detailed information
+on how to install/setup/run/report
