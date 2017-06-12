@@ -423,7 +423,7 @@ def is_volume_exported(mnode, volname, share_type):
         cmd = "showmount -e localhost"
         _, _, _ = g.run(mnode, cmd)
 
-        cmd = "showmount -e localhost | grep %s" % volname
+        cmd = "showmount -e localhost | grep -w %s" % volname
         ret, _, _ = g.run(mnode, cmd)
         if ret != 0:
             return False
