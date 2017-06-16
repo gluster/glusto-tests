@@ -15,6 +15,7 @@ To automate/run glusto-tests we need to install the following packages:
 -   glusto
 -   glustolibs-gluster
 -   glustolibs-io
+-   gdeploy
 
 How to install glusto:
 ----------------------
@@ -37,6 +38,11 @@ How to install the glustolibs-gluster and glustolibs-io libraries:
     # python setup.py install
     # cd glusto-tests/glustolibs-io
     # python setup.py install
+
+How to install gdeploy:
+-----------------------
+-   Install latest version of gdeploy from below link.
+    https://copr.fedorainfracloud.org/coprs/sac/gdeploy/package/gdeploy/
 
 How to run the test case:
 -------------------------

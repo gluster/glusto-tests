@@ -62,6 +62,10 @@ The testrun is divided in several phases:
             # cd glusto-tests/glustolibs-io
             # python setup.py install
 
+        - Install latest version of gdeploy from below link.
+          https://copr.fedorainfracloud.org/coprs/sac/gdeploy/package/gdeploy/
+            # yum install -y <gdeployrpm>
+
     - Creating the config file on glusto-tests management node:
         - Create config file containing info about the servers, clients,
         volumes, mounts. Config file should have the following sections:
