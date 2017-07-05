@@ -33,7 +33,7 @@ from glustolibs.gluster.nfs_ganesha_ops import (
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError, ConfigError
 from glustolibs.gluster.peer_ops import peer_probe_servers, peer_status
-from glustolibs.gluster.volume_ops import volume_info
+from glustolibs.gluster.volume_ops import volume_info, get_volume_info
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume,
                                             log_volume_info_and_status,
                                             get_volume_options,
@@ -266,11 +266,15 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
                 raise ExecutionError("Failed to export volume %s "
                                      "as NFS export", cls.volname)
             time.sleep(5)
-        else:
-            g.log.info("Volume %s is exported already"
-                       % cls.volname)
 
-        _, _, _ = g.run(cls.mnode, "showmount -e")
+        ret = wait_for_nfs_ganesha_volume_to_get_exported(cls.mnode,
+                                                          cls.volname)
+        if not ret:
+            raise ExecutionError("Failed to export volume %s. volume is "
+                                 "not listed in showmount" % cls.volname)
+        else:
+            g.log.info("Volume %s is exported successfully"
+                       % cls.volname)
 
         # Log Volume Info and Status
         ret = log_volume_info_and_status(cls.mnode, cls.volname)
@@ -317,25 +321,30 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
         # Cleanup volume
         if cleanup_vol:
 
-            # Unexport volume, if it is not unexported already
-            vol_option = get_volume_options(cls.mnode, cls.volname,
-                                            option='ganesha.enable')
-            if vol_option is None:
-                raise ExecutionError("Failed to get ganesha.enable volume "
-                                     " option for %s " % cls.volume)
-            if vol_option['ganesha.enable'] != 'off':
-                if is_volume_exported(cls.mnode, cls.volname, "nfs"):
-                    ret, out, err = unexport_nfs_ganesha_volume(
-                        mnode=cls.mnode, volname=cls.volname)
-                    if ret != 0:
-                        raise ExecutionError("Failed to unexport volume %s "
-                                             % cls.volname)
-                    time.sleep(5)
+            volinfo = get_volume_info(cls.mnode, cls.volname)
+            if volinfo is None or cls.volname not in volinfo:
+                g.log.info("Volume %s does not exist in %s"
+                           % (cls.volname, cls.mnode))
             else:
-                g.log.info("Volume %s is unexported already"
-                           % cls.volname)
+                # Unexport volume, if it is not unexported already
+                vol_option = get_volume_options(cls.mnode, cls.volname,
+                                                option='ganesha.enable')
+                if vol_option is None:
+                    raise ExecutionError("Failed to get ganesha.enable volume "
+                                         " option for %s " % cls.volume)
+                if vol_option['ganesha.enable'] != 'off':
+                    if is_volume_exported(cls.mnode, cls.volname, "nfs"):
+                        ret, out, err = unexport_nfs_ganesha_volume(
+                            mnode=cls.mnode, volname=cls.volname)
+                        if ret != 0:
+                            raise ExecutionError("Failed to unexport volume %s"
+                                                 % cls.volname)
+                        time.sleep(5)
+                else:
+                    g.log.info("Volume %s is unexported already"
+                               % cls.volname)
 
-            _, _, _ = g.run(cls.mnode, "showmount -e")
+                _, _, _ = g.run(cls.mnode, "showmount -e")
 
             ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
             if not ret:
