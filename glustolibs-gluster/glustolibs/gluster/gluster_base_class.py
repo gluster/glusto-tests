@@ -24,6 +24,7 @@ import os
 import random
 import time
 import copy
+import datetime
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError, ConfigError
 from glustolibs.gluster.peer_ops import is_peer_connected, peer_status
@@ -34,6 +35,7 @@ from glustolibs.gluster.samba_libs import share_volume_over_smb
 from glustolibs.gluster.nfs_libs import export_volume_through_nfs
 from glustolibs.gluster.mount_ops import create_mount_objs
 from glustolibs.io.utils import log_mounts_info
+from glustolibs.gluster.lib_utils import inject_msg_in_logs
 
 
 class runs_on(g.CarteTestClass):
@@ -81,11 +83,35 @@ class GlusterBaseClass(unittest.TestCase):
     mount_type = None
 
     @classmethod
+    def inject_msg_in_gluster_logs(cls, msg):
+        """Inject all the gluster logs on servers, clients with msg
+
+        Args:
+            msg (str): Message string to be injected
+
+        Returns:
+            bool: True if injecting msg on the log files/dirs is successful.
+                False Otherwise.
+        """
+        _rc = True
+        # Inject msg on server gluster logs
+        ret = inject_msg_in_logs(cls.servers, log_msg=msg,
+                                 list_of_dirs=cls.server_gluster_logs_dirs,
+                                 list_of_files=cls.server_gluster_logs_files)
+        if not ret:
+            _rc = False
+
+        ret = inject_msg_in_logs(cls.clients, log_msg=msg,
+                                 list_of_dirs=cls.client_gluster_logs_dirs,
+                                 list_of_files=cls.client_gluster_logs_files)
+        if not ret:
+            _rc = False
+        return _rc
+
+    @classmethod
     def setUpClass(cls):
         """Initialize all the variables necessary for testing Gluster
         """
-        g.log.info("Setting up class: %s", cls.__name__)
-
         # Get all servers
         cls.all_servers = None
         if 'servers' in g.config and g.config['servers']:
@@ -288,18 +314,70 @@ class GlusterBaseClass(unittest.TestCase):
                 cls.clients.append(mount['client']['host'])
             cls.clients = list(set(cls.clients))
 
+        # Gluster Logs info
+        cls.server_gluster_logs_dirs = ["/var/log/glusterfs",
+                                        "/var/log/samba"]
+        cls.server_gluster_logs_files = ["/var/log/ganesha.log",
+                                         "/var/log/ganesha-gfapi.log"]
+        if ('gluster' in g.config and
+                'server_gluster_logs_info' in g.config['gluster']):
+            server_gluster_logs_info = (
+                g.config['gluster']['server_gluster_logs_info'])
+            if ('dirs' in server_gluster_logs_info and
+                    server_gluster_logs_info['dirs']):
+                cls.server_gluster_logs_dirs = (
+                    server_gluster_logs_info['dirs'])
+
+            if ('files' in server_gluster_logs_info and
+                    server_gluster_logs_info['files']):
+                cls.server_gluster_logs_files = (
+                    server_gluster_logs_info['files'])
+
+        cls.client_gluster_logs_dirs = ["/var/log/glusterfs"]
+        cls.client_gluster_logs_files = []
+        if ('gluster' in g.config and
+                'client_gluster_logs_info' in g.config['gluster']):
+            client_gluster_logs_info = (
+                g.config['gluster']['client_gluster_logs_info'])
+            if ('dirs' in client_gluster_logs_info and
+                    client_gluster_logs_info['dirs']):
+                cls.client_gluster_logs_dirs = (
+                    client_gluster_logs_info['dirs'])
+
+            if ('files' in client_gluster_logs_info and
+                    client_gluster_logs_info['files']):
+                cls.client_gluster_logs_files = (
+                    client_gluster_logs_info['files'])
+
+        # Have a unique string to recognize the test run for logging in
+        # gluster logs
+        if 'glustotest_run_id' not in g.config:
+            g.config['glustotest_run_id'] = (
+                datetime.datetime.now().strftime('%H_%M_%d_%m_%Y'))
+        cls.glustotest_run_id = g.config['glustotest_run_id']
+
+        msg = "Setupclass: %s : %s" % (cls.__name__, cls.glustotest_run_id)
+        g.log.info(msg)
+        cls.inject_msg_in_gluster_logs(msg)
+
         # Log the baseclass variables for debugging purposes
         g.log.debug("GlusterBaseClass Variables:\n %s", cls.__dict__)
 
     def setUp(self):
-        g.log.info("Starting Test: %s", self.id())
+        msg = "Starting Test : %s : %s" % (self.id(), self.glustotest_run_id)
+        g.log.info(msg)
+        self.inject_msg_in_gluster_logs(msg)
 
     def tearDown(self):
-        g.log.info("Ending Test: %s", self.id())
+        msg = "Ending Test: %s : %s" % (self.id(), self.glustotest_run_id)
+        g.log.info(msg)
+        self.inject_msg_in_gluster_logs(msg)
 
     @classmethod
     def tearDownClass(cls):
-        g.log.info("Teardown class: %s", cls.__name__)
+        msg = "Teardownclass: %s : %s" % (cls.__name__, cls.glustotest_run_id)
+        g.log.info(msg)
+        cls.inject_msg_in_gluster_logs(msg)
 
 
 class GlusterVolumeBaseClass(GlusterBaseClass):
@@ -375,8 +453,6 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
     def tearDownClass(cls, umount_vol=True, cleanup_vol=True):
         """Teardown the mounts and volume.
         """
-        GlusterBaseClass.tearDownClass.im_func(cls)
-
         # Unmount volume
         if umount_vol:
             _rc = True
@@ -399,3 +475,5 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
 
         # All Volume Info
         volume_info(cls.mnode)
+
+        GlusterBaseClass.tearDownClass.im_func(cls)

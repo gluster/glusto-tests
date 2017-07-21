@@ -113,6 +113,21 @@ gluster:
     running_on_volumes: []
     running_on_mounts: []
 
+    # This is to define what are the server log dirs and client log dirs
+    # to inject any message required for debugging.
+    server_gluster_logs_info:
+        # Defaults: ["/var/log/glusterfs", "/var/log/samba"]
+        dirs: []
+        # Defaults: ["/var/log/ganesha.log", "/var/log/ganesha-gfapi.log"]
+        files: []
+
+    client_gluster_logs_info:
+        # Defaults: ["/var/log/glusterfs"]
+        dirs: []
+
+        # Defaults: []
+        files: []
+
     # This section defines the details about 'nfs-ganesha' or 'samba' clusters
     # to be created. Define this section for setting up nfs-ganesha or
     # samba clusters.

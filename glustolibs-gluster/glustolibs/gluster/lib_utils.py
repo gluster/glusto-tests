@@ -711,3 +711,59 @@ def install_epel(servers):
                 g.log.error("Unrecognized release. Skipping epel install")
                 rt = False
     return rt
+
+
+def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
+    """Injects the message to all log files under all dirs specified on nodes.
+
+    Args:
+        nodes (list): List of nodes on which message has to be injects to logs
+        log_msg (str): Message to be injected
+        list_of_dirs (list): List of dirs to inject message on log files.
+        list_of_files (list): List of files to inject message.
+
+    Returns:
+        bool: True if successfully injected msg on all log files.
+    """
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    if list_of_dirs is None:
+        list_of_dirs = ""
+
+    if isinstance(list_of_dirs, list):
+        list_of_dirs = ' '.join(list_of_dirs)
+
+    if list_of_files is None:
+        list_of_files = ''
+
+    if isinstance(list_of_files, list):
+        list_of_files = ' '.join(list_of_files)
+
+    inject_msg_on_dirs = ""
+    inject_msg_on_files = ""
+    if list_of_dirs:
+        inject_msg_on_dirs = (
+            "for dir in %s ; do "
+            "for file in `find ${dir} -type f -name '*.log'`; do "
+            "echo \"%s\" >> ${file} ; done ;"
+            "done; " % (list_of_dirs, log_msg))
+    if list_of_files:
+        inject_msg_on_files = (
+           "for file in %s ; do "
+           "echo \"%s\" >> ${file} ; done; " % (list_of_files, log_msg))
+
+    cmd = inject_msg_on_dirs + inject_msg_on_files
+
+    results = g.run_parallel(nodes, cmd)
+
+    _rc = True
+    # Check for return status
+    for host in results:
+        ret, _, _ = results[host]
+        if ret != 0:
+            g.log.error("Failed to inject log message '%s' in dirs '%s', "
+                        "in files '%s',  on node'%s'",
+                        log_msg, list_of_dirs, list_of_files, host)
+            _rc = False
+    return _rc
