@@ -30,6 +30,12 @@ import subprocess
 from docx import Document
 import contextlib
 import platform
+import shutil
+
+if platform.system() == "Windows":
+    path_sep = "\\"
+elif platform.system() == "Linux":
+    path_sep = "/"
 
 
 def is_root(path):
@@ -507,6 +513,263 @@ def get_path_stats(args):
     return rc
 
 
+def compress(args):
+    """Compress each top level dirs and complete dir under
+       destination directory
+    """
+    dir_path = os.path.abspath(args.dir)
+    compress_type = args.compress_type
+    dest_dir = args.dest_dir
+
+    # Check if dir_path is '/'
+    if is_root(dir_path):
+        return 1
+
+    # Check if dir_path exists
+    if not path_exists(dir_path):
+        print "Directory '%s' does not exist" % dir_path
+        return 1
+
+    # Create dir_path
+    rc = create_dir(dest_dir)
+    if rc != 0:
+        return 1
+
+    rc = 0
+    dirs = [os.path.join(dir_path, name) for name in os.listdir(dir_path)
+            if os.path.isdir(os.path.join(dir_path, name))]
+
+    proc_list = []
+    for each_dir in dirs:
+        if compress_type == '7z':
+            file_name = (dest_dir + path_sep +
+                         os.path.basename(each_dir) + "_7z.7z")
+            cmd = "7z a -t7z " + file_name + " " + each_dir
+        elif compress_type == 'gzip':
+            tmp_file_name = (dir_path + path_sep +
+                             os.path.basename(each_dir) + "_tar.tar")
+            file_name = (dest_dir + path_sep +
+                         os.path.basename(each_dir) + "_tgz.tgz")
+            cmd = ("7z a -ttar -so " + tmp_file_name + " " +
+                   each_dir + " | 7z a -si " + file_name)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, shell=True)
+        proc_list.append(proc)
+
+    for proc in proc_list:
+        proc.communicate()
+        ret = proc.returncode
+        if ret == 1:
+            rc = 1
+
+    if compress_type == '7z':
+        file_name = dest_dir + path_sep + os.path.basename(dir_path) + "_7z.7z"
+        cmd = "7z a -t7z " + file_name + " " + dir_path
+    elif compress_type == 'gzip':
+        tmp_file_name = (dest_dir + path_sep + os.path.basename(dir_path) +
+                         "_tar.tar")
+        file_name = (dest_dir + path_sep + os.path.basename(dir_path) +
+                     "_tgz.tgz")
+        cmd = ("7z a -ttar -so " + tmp_file_name + " " + dir_path +
+               " | 7z a -si " + file_name)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, shell=True)
+    proc.communicate()
+    ret = proc.returncode
+    if ret == 1:
+        rc = 1
+
+    return rc
+
+
+def uncompress(args):
+    """UnCompress the given compressed file
+    """
+    compressed_file = os.path.abspath(args.compressed_file)
+    dest_dir = args.dest_dir
+    date_time = datetime.datetime.now().strftime("%I_%M%p_%B_%d_%Y")
+    cmd = ("7z x " + compressed_file + " -o" + dest_dir + path_sep +
+           "uncompress_" + date_time + " -y")
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, shell=True)
+    proc.communicate()
+    ret = proc.returncode
+    if ret == 1:
+        return 1
+
+    return 0
+
+
+def uncompress_dir(args):
+    """UnCompress all compressed files in destination directory
+    """
+    dir_path = os.path.abspath(args.dir)
+    dest_dir = args.dest_dir
+    date_time = datetime.datetime.now().strftime("%I_%M%p_%B_%d_%Y")
+    cmd = ("7z x " + dir_path + " -o" + dest_dir + path_sep +
+           "uncompress_" + date_time + " -y")
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, shell=True)
+    proc.communicate()
+    ret = proc.returncode
+    if ret == 1:
+        return 1
+
+    return 0
+
+
+def create_hard_links(args):
+    """Creates hard link"""
+    src_dir = os.path.abspath(args.src_dir)
+    dest_dir = args.dest_dir
+
+    # Check if src_dir is '/'
+    if is_root(src_dir):
+        return 1
+
+    # Check if src_dir exists
+    if not path_exists(src_dir):
+        print "Directory '%s' does not exist" % src_dir
+        return 1
+
+    # Create dir_path
+    rc = create_dir(dest_dir)
+    if rc != 0:
+        return 1
+
+    rc = 0
+    for dir_name, subdir_list, file_list in os.walk(src_dir, topdown=False):
+        for fname in file_list:
+            new_fname, ext = os.path.splitext(fname)
+            try:
+                tmp_dir = dir_name.replace(src_dir, "")
+                rc = create_dir(dest_dir + path_sep + tmp_dir)
+                if rc != 0:
+                    rc = 1
+                link_file = (dest_dir + path_sep + tmp_dir + path_sep +
+                             new_fname + "_h")
+                target_file = os.path.join(dir_name, fname)
+                if platform.system() == "Windows":
+                    cmd = "mklink /H " + link_file + " " + target_file
+                elif platform.system() == "Linux":
+                    cmd = "ln " + target_file + " " + link_file
+                subprocess.call(cmd, shell=True)
+            except OSError:
+                rc = 1
+
+        if platform.system() == "Windows":
+            if dir_name != src_dir:
+                try:
+                    tmp_dir = dir_name.replace(src_dir, "")
+                    rc = create_dir(dest_dir + path_sep + tmp_dir)
+                    if rc != 0:
+                        rc = 1
+                    link_file = dest_dir + path_sep + tmp_dir + "_h"
+                    target_file = dir_name
+                    cmd = "mklink /J " + link_file + " " + target_file
+                    subprocess.call(cmd, shell=True)
+                except OSError:
+                    rc = 1
+
+    return rc
+
+
+def read(args):
+    """Reads all files under 'dir' and logs the contents of the file
+       in given log file.
+    """
+    dir_path = os.path.abspath(args.dir)
+    log_file = args.log_file
+    rc = 0
+    for dir_name, subdir_list, file_list in os.walk(dir_path, topdown=False):
+        for fname in file_list:
+            new_fname, ext = os.path.splitext(fname)
+            try:
+                if platform.system() == "Windows":
+                    cmd = "type " + os.path.join(dir_name, fname)
+                elif platform.system() == "Linux":
+                    cmd = "cat " + os.path.join(dir_name, fname)
+                fh = open(log_file, "a")
+                subprocess.call(cmd, shell=True, stdout=fh)
+                fh.close()
+            except OSError:
+                rc = 1
+    return rc
+
+
+def copy(args):
+    """
+    Copies files/dirs under 'dir' to destination directory
+    """
+    src_dir = os.path.abspath(args.src_dir)
+    dest_dir = args.dest_dir
+
+    # Check if src_dir is '/'
+    if is_root(src_dir):
+        return 1
+
+    # Check if src_dir exists
+    if not path_exists(src_dir):
+        print "Directory '%s' does not exist" % src_dir
+        return 1
+
+    # Create dest_dir
+    rc = create_dir(dest_dir)
+    if rc != 0:
+        return 1
+
+    rc = 0
+    for dir_name, subdir_list, file_list in os.walk(src_dir, topdown=False):
+        for fname in file_list:
+            try:
+                src = os.path.join(dir_name, fname)
+                dst = dest_dir
+                shutil.copy(src, dst)
+            except OSError:
+                rc = 1
+
+        if dir_name != src_dir:
+            try:
+                src = dir_name
+                dst = (dest_dir + path_sep +
+                       os.path.basename(os.path.normpath(src)))
+                shutil.copytree(src, dst)
+            except OSError:
+                rc = 1
+    return rc
+
+
+def delete(args):
+    """
+    Deletes files/dirs under 'dir'
+    """
+    dir_path = os.path.abspath(args.dir)
+
+    # Check if dir_path is '/'
+    if is_root(dir_path):
+        return 1
+
+    # Check if dir_path exists
+    if not path_exists(dir_path):
+        print "Directory '%s' does not exist" % dir_path
+        return 1
+
+    rc = 0
+    for dir_name, subdir_list, file_list in os.walk(dir_path, topdown=False):
+        for fname in file_list:
+            try:
+                os.remove(os.path.join(dir_name, fname))
+            except OSError:
+                rc = 1
+
+        if dir_name != dir_path:
+            try:
+                os.rmdir(dir_name)
+            except OSError:
+                rc = 1
+    return rc
+
+
 if __name__ == "__main__":
     print "Starting File/Dir Ops: %s" % _get_current_time()
     test_start_time = datetime.datetime.now().replace(microsecond=0)
@@ -671,6 +934,110 @@ if __name__ == "__main__":
         'path', metavar='PATH', type=str,
         help="File/Directory for which stat has to be performed")
     stat_parser.set_defaults(func=get_path_stats)
+
+    # Compress files/directories under dir
+    compress_parser = subparsers.add_parser(
+        'compress',
+        help=("Recursively compress all the files/dirs under 'dir'. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    compress_parser.add_argument(
+        '--compress-type', help="Compress type. It can be 7z,gzip",
+        metavar=('compress_type'), dest='compress_type', default='7z',
+        type=str)
+    compress_parser.add_argument(
+        '--dest-dir', help="Destination directory to place compress files",
+        metavar=('dest_dir'), dest='dest_dir',
+        type=str)
+    compress_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    compress_parser.set_defaults(func=compress)
+
+    # UnCompress the given compressed file
+    uncompress_file_parser = subparsers.add_parser(
+        'uncompress',
+        help=("Uncompress the given compressed file. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    uncompress_file_parser.add_argument(
+        'compressed_file', metavar='compressed_file', type=str,
+        help="File to be uncompressed")
+    uncompress_file_parser.add_argument(
+        '--dest-dir', help="Destination directory to place uncompressed files",
+        metavar=('dest_dir'), dest='dest_dir',
+        type=str)
+    uncompress_file_parser.set_defaults(func=uncompress)
+
+    # UnCompress compressed files under dir
+    uncompress_dir_parser = subparsers.add_parser(
+        'uncompress_dir',
+        help=("Uncompress compressed files under 'dir'. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    uncompress_dir_parser.add_argument(
+        '--dest-dir', help="Destination directory to place uncompress files",
+        metavar=('dest_dir'), dest='dest_dir',
+        type=str)
+    uncompress_dir_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    uncompress_dir_parser.set_defaults(func=uncompress_dir)
+
+    # Creates hard link for each file and directory under dir
+    hard_link_parser = subparsers.add_parser(
+        'create_hard_link',
+        help=("Creates hard link for files/directory under 'dir'. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    hard_link_parser.add_argument(
+        '--dest-dir', help="Destination directory to create hard links",
+        metavar=('dest_dir'), dest='dest_dir',
+        type=str)
+    hard_link_parser.add_argument(
+        'src_dir', metavar='src_dir', type=str,
+        help="Directory on which operations has to be performed")
+    hard_link_parser.set_defaults(func=create_hard_links)
+
+    # Reads files under dir
+    if platform.system() == "Windows":
+        default_log_file = "NUL"
+    elif platform.system() == "Linux":
+        default_log_file = "/dev/null"
+
+    read_parser = subparsers.add_parser(
+        'read',
+        help=("Read all the files under 'dir'. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    read_parser.add_argument(
+        '--log-file', help="Output log filename to log the "
+                           "contents of file",
+        metavar=('log_file'), dest='log_file',
+        type=str, default=default_log_file)
+    read_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    read_parser.set_defaults(func=read)
+
+    # copy all files/directories under dir
+    copy_parser = subparsers.add_parser(
+        'copy',
+        help=("Copy all files/directories under 'dir'. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    copy_parser.add_argument(
+        '--dest-dir', help="Output directory to copy files/dirs",
+        metavar=('dest_dir'), dest='dest_dir',
+        type=str)
+    copy_parser.add_argument(
+        'src_dir', metavar='src_dir', type=str,
+        help="Directory on which operations has to be performed")
+    copy_parser.set_defaults(func=copy)
+
+    # Deletes all files/directories under dir
+    delete_parser = subparsers.add_parser(
+        'delete',
+        help=("Delete all the files/dirs under 'dir'"),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    delete_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    delete_parser.set_defaults(func=delete)
 
     args = parser.parse_args()
     rc = args.func(args)
