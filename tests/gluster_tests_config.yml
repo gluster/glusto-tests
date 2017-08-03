@@ -191,6 +191,16 @@ gluster:
             redundancy_count: 2
             transport: tcp
 
+    # Volume options that has to be applicable to all volume types
+    volume_options:
+##        performance.quick-read: "off"
+##        performance.read-ahead: "off"
+##        performance.io-cache: "off"
+##        performance.stat-prefetch: "off"
+##        performance.open-behind: "off"
+##        performance.readdir-ahead: "off"
+##        server.allow-insecure: "on"
+
     # slave volumes config goes under 'slave_volumes' section. This is a list
     # of all the slave volumes.
     slave_volumes:

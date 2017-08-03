@@ -204,6 +204,13 @@ class GlusterBaseClass(unittest.TestCase):
                 }
             }
 
+        # Default volume options which is applicable for all the volumes
+        cls.volume_options = {}
+        if ('volume_options' in g.config['gluster'] and
+                g.config['gluster']['volume_options']):
+            cls.volume_options = (
+                g.config['gluster']['volume_options'])
+
         # Get the volume configuration.
         cls.volume = {}
         if cls.volume_type:
@@ -241,7 +248,7 @@ class GlusterBaseClass(unittest.TestCase):
 
             # Set volume options
             if 'options' not in cls.volume:
-                cls.volume['options'] = {}
+                cls.volume['options'] = cls.volume_options
 
             # Define Volume Useful Variables.
             cls.volname = cls.volume['name']
