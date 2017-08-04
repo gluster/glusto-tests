@@ -539,6 +539,20 @@ def set_volume_options(mnode, volname, options):
         set_volume_option("abc.com", "testvol", options)
     """
     _rc = True
+
+    # Check if group options are specified.
+    if 'group' in options:
+        group_options = options.pop('group')
+        if isinstance(group_options, str):
+            group_options = [group_options]
+        for group_option in group_options:
+            cmd = ("gluster volume set %s group %s --mode=script" %
+                   (volname, group_option))
+            ret, _, _ = g.run(mnode, cmd)
+            if ret != 0:
+                g.log.error("Unable to set group option: %s", group_option)
+                _rc = False
+
     for option in options:
         cmd = ("gluster volume set %s %s %s --mode=script"
                % (volname, option, options[option]))

@@ -244,13 +244,13 @@ def share_volume_over_smb(mnode, volname, smb_users_info):
     """
     g.log.info("Start sharing the volume over SMB")
 
-    # Set volume option 'stat-prefetch' to 'off'.
-    cmd = "gluster volume set %s stat-prefetch off" % volname
+    # Set volume option 'stat-prefetch' to 'on'.
+    cmd = "gluster volume set %s stat-prefetch on" % volname
     ret, _, _ = g.run(mnode, cmd)
     if ret != 0:
-        g.log.error("Failed to set the volume option stat-prefetch off")
+        g.log.error("Failed to set the volume option stat-prefetch on")
         return False
-    g.log.info("Successfully set 'stat-prefetch' to 'off' on %s", volname)
+    g.log.info("Successfully set 'stat-prefetch' to 'on' on %s", volname)
 
     # Set volume option 'server.allow-insecure' to 'on'.
     cmd = "gluster volume set %s server.allow-insecure on" % volname

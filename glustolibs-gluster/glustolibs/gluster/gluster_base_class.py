@@ -28,7 +28,7 @@ import datetime
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError, ConfigError
 from glustolibs.gluster.peer_ops import is_peer_connected, peer_status
-from glustolibs.gluster.volume_ops import volume_info
+from glustolibs.gluster.volume_ops import volume_info, set_volume_options
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume,
                                             log_volume_info_and_status)
 from glustolibs.gluster.samba_libs import share_volume_over_smb
@@ -209,6 +209,22 @@ class GlusterBaseClass(unittest.TestCase):
         if (g.config.get('gluster') and
                 g.config['gluster'].get('volume_options')):
             cls.volume_options = g.config['gluster']['volume_options']
+
+        # If the volume is exported as SMB Share, then set the following
+        # volume options on the share.
+        cls.smb_share_options = {}
+        if (g.config.get('gluster') and
+                g.config['gluster'].get('smb_share_options')):
+            cls.smb_share_options = (
+                g.config['gluster']['smb_share_options'])
+
+        # If the volume is exported as NFS-Ganesha export,
+        # then set the following volume options on the export.
+        cls.nfs_ganesha_export_options = {}
+        if (g.config.get('gluster') and
+                g.config['gluster'].get('nfs_ganesha_export_options')):
+            cls.nfs_ganesha_export_options = (
+                g.config['gluster']['nfs_ganesha_export_options'])
 
         # Get the volume configuration.
         cls.volume = {}
@@ -425,6 +441,20 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                     raise ExecutionError("Failed to export volume %s "
                                          "as NFS export", cls.volname)
 
+                # Set NFS-Ganesha specific volume options
+                if cls.enable_nfs_ganesha and cls.nfs_ganesha_export_options:
+                    g.log.info("Setting NFS-Ganesha export specific "
+                               "volume options")
+                    ret = set_volume_options(
+                        mnode=cls.mnode, volname=cls.volname,
+                        options=cls.nfs_ganesha_export_options)
+                    if not ret:
+                        raise ExecutionError("Failed to set NFS-Ganesha "
+                                             "export specific options on "
+                                             "volume %s", cls.volname)
+                    g.log.info("Successful in setting NFS-Ganesha export "
+                               "specific volume options")
+
             if "smb" in cls.mount_type or "cifs" in cls.mount_type:
                 ret = share_volume_over_smb(mnode=cls.mnode,
                                             volname=cls.volname,
@@ -432,6 +462,19 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                 if not ret:
                     raise ExecutionError("Failed to export volume %s "
                                          "as SMB Share", cls.volname)
+
+                # Set SMB share specific volume options
+                if cls.smb_share_options:
+                    g.log.info("Setting SMB share specific volume options")
+                    ret = set_volume_options(mnode=cls.mnode,
+                                             volname=cls.volname,
+                                             options=cls.smb_share_options)
+                    if not ret:
+                        raise ExecutionError("Failed to set SMB share "
+                                             "specific options "
+                                             "on volume %s", cls.volname)
+                    g.log.info("Successful in setting SMB share specific "
+                               "volume options")
 
         # Log Volume Info and Status
         ret = log_volume_info_and_status(cls.mnode, cls.volname)

@@ -3,7 +3,7 @@ log_level: DEBUG
 
 # 'servers' is list of Hostnames/IP's of servers in the cluster.
 # This section has to be defined.
- servers:
+servers:
     - server-vm1
     - server-vm2
     - server-vm3
@@ -200,6 +200,17 @@ gluster:
 ##        performance.open-behind: "off"
 ##        performance.readdir-ahead: "off"
 ##        server.allow-insecure: "on"
+
+    # If the volume is exported as SMB Share, then set the following
+    # volume options on the share.
+    smb_share_options:
+##        group:
+##            - metadata-cache
+##            - nl-cache
+
+    # If the volume is exported as NFS-Ganesha export, then set the following
+    # volume options on the export.
+    nfs_ganesha_export_options:
 
     # slave volumes config goes under 'slave_volumes' section. This is a list
     # of all the slave volumes.
