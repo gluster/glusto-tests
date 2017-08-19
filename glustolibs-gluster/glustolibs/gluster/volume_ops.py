@@ -17,6 +17,7 @@
 
 
 import re
+import copy
 from glusto.core import Glusto as g
 from pprint import pformat
 try:
@@ -540,9 +541,10 @@ def set_volume_options(mnode, volname, options):
     """
     _rc = True
 
+    volume_options = copy.deepcopy(options)
     # Check if group options are specified.
-    if 'group' in options:
-        group_options = options.pop('group')
+    if 'group' in volume_options:
+        group_options = volume_options.pop('group')
         if isinstance(group_options, str):
             group_options = [group_options]
         for group_option in group_options:
@@ -553,13 +555,13 @@ def set_volume_options(mnode, volname, options):
                 g.log.error("Unable to set group option: %s", group_option)
                 _rc = False
 
-    for option in options:
+    for option in volume_options:
         cmd = ("gluster volume set %s %s %s --mode=script"
-               % (volname, option, options[option]))
+               % (volname, option, volume_options[option]))
         ret, _, _ = g.run(mnode, cmd)
         if ret != 0:
             g.log.error("Unable to set value %s for option %s"
-                        % (options[option], option))
+                        % (volume_options[option], option))
             _rc = False
     return _rc
 

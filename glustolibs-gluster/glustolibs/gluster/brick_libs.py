@@ -193,9 +193,10 @@ def bring_bricks_offline(volname, bricks_list,
         if bring_brick_offline_method == 'service_kill':
             brick_node, brick_path = brick.split(":")
             brick_path = brick_path.replace("/", "-")
-            kill_cmd = ("pid=`cat /var/lib/glusterd/vols/%s/run/%s%s.pid` && "
+            kill_cmd = ("pid=`ps -ef | grep -ve 'grep' | "
+                        "grep -e '%s%s.pid' | awk '{print $2}'` && "
                         "kill -15 $pid || kill -9 $pid" %
-                        (volname, brick_node, brick_path))
+                        (brick_node, brick_path))
             ret, _, _ = g.run(brick_node, kill_cmd)
             if ret != 0:
                 g.log.error("Unable to kill the brick %s", brick)
