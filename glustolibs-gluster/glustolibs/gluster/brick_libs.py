@@ -18,6 +18,7 @@
 
 import random
 from math import ceil
+import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
 from glustolibs.gluster.volume_libs import (get_subvols, is_tiered_volume,
@@ -245,6 +246,9 @@ def bring_bricks_online(mnode, volname, bricks_list,
     elif isinstance(bring_bricks_online_methods, str):
         bring_bricks_online_methods = [bring_bricks_online_methods]
 
+    g.log.info("Bringing bricks '%s' online with '%s'",
+               bricks_list, bring_bricks_online_methods)
+
     _rc = True
     failed_to_bring_online_list = []
     for brick in bricks_list:
@@ -258,6 +262,9 @@ def bring_bricks_online(mnode, volname, bricks_list,
                             brick_node)
                 _rc = False
                 failed_to_bring_online_list.append(brick)
+            else:
+                g.log.info("Successfully restarted glusterd on node %s to "
+                           "bring back brick %s online", brick_node, brick)
         elif bring_brick_online_method == 'volume_start_force':
             bring_brick_online_command = ("gluster volume start %s force" %
                                           volname)
@@ -267,18 +274,17 @@ def bring_bricks_online(mnode, volname, bricks_list,
                             volname)
                 _rc = False
             else:
+                g.log.info("Successfully restarted volume %s to bring all "
+                           "the bricks '%s' online", volname, bricks_list)
                 break
         else:
             g.log.error("Invalid method '%s' to bring brick online",
                         bring_brick_online_method)
             return False
-    if not _rc:
-        g.log.error("Unable to bring some of the bricks %s online",
-                    failed_to_bring_online_list)
-        return False
 
-    g.log.info("All the bricks : %s are brought online", bricks_list)
-    return True
+    g.log.info("Waiting for 30 seconds for all the bricks to be online")
+    time.sleep(30)
+    return _rc
 
 
 def are_bricks_offline(mnode, volname, bricks_list):

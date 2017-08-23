@@ -684,14 +684,6 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         # Wait for gluster processes to be offline
         time.sleep(10)
 
-        # Validate if bricks are offline
-        g.log.info("Validating if bricks: %s are offline",
-                   bricks_to_bring_offline)
-        ret = are_bricks_offline(self.mnode, self.volname,
-                                 bricks_to_bring_offline)
-        self.assertTrue(ret, "Not all the bricks in list:%s are offline")
-        g.log.info("Successfully validated that bricks: %s are all offline")
-
         # Log Volume Info and Status
         g.log.info("Logging volume info and Status after bringing bricks "
                    "offline from the volume %s", self.volname)
@@ -700,6 +692,14 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
                               "volume %s", self.volname))
         g.log.info("Successful in logging volume info and status of volume %s",
                    self.volname)
+
+        # Validate if bricks are offline
+        g.log.info("Validating if bricks: %s are offline",
+                   bricks_to_bring_offline)
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 bricks_to_bring_offline)
+        self.assertTrue(ret, "Not all the bricks in list:%s are offline")
+        g.log.info("Successfully validated that bricks: %s are all offline")
 
         # Add delay before bringing bricks online
         time.sleep(40)
@@ -715,6 +715,15 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
 
         # Wait for gluster processes to be online
         time.sleep(10)
+
+        # Log Volume Info and Status
+        g.log.info("Logging volume info and Status after bringing bricks "
+                   "online from the volume %s", self.volname)
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+        g.log.info("Successful in logging volume info and status of volume %s",
+                   self.volname)
 
         # Verify volume's all process are online
         g.log.info("Verifying volume's all process are online")

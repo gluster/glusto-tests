@@ -115,11 +115,14 @@ def remove_brick(mnode, volname, bricks_list, option, xml=False, **kwargs):
     xml_str = ''
     if xml:
         xml_str = "--xml"
+        log_level = 'DEBUG'
+    else:
+        log_level = 'INFO'
 
     cmd = ("gluster volume remove-brick %s %s %s %s %s" %
            (volname, replica, ' '.join(bricks_list), option, xml_str))
 
-    return g.run(mnode, cmd)
+    return g.run(mnode, cmd, log_level=log_level)
 
 
 def replace_brick(mnode, volname, src_brick, dst_brick):

@@ -271,7 +271,7 @@ def get_heal_info(mnode, volname):
             heal_info data per brick.
     """
     cmd = "gluster volume heal %s info --xml" % volname
-    ret, out, _ = g.run(mnode, cmd)
+    ret, out, _ = g.run(mnode, cmd, log_level='DEBUG')
     if ret != 0:
         g.log.error("Failed to get the heal info xml output for the volume %s."
                     "Hence failed to get the heal info summary." % volname)
@@ -357,7 +357,7 @@ def get_heal_info_split_brain(mnode, volname):
             heal_info_split_brain data per brick.
     """
     cmd = "gluster volume heal %s info split-brain --xml" % volname
-    ret, out, _ = g.run(mnode, cmd)
+    ret, out, _ = g.run(mnode, cmd, log_level='DEBUG')
     if ret != 0:
         g.log.error("Failed to get the heal info xml output for the volume %s."
                     "Hence failed to get the heal info summary." % volname)

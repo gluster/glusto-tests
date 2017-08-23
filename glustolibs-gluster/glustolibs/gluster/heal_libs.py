@@ -64,7 +64,7 @@ def is_heal_disabled(mnode, volname):
         NoneType: None if unable to get the volume status shd or parse error.
     """
     cmd = "gluster volume status %s shd --xml" % volname
-    ret, out, _ = g.run(mnode, cmd)
+    ret, out, _ = g.run(mnode, cmd, log_level='DEBUG')
     if ret != 0:
         g.log.error("Failed to get the self-heal-daemon status for the "
                     "volume" % volname)

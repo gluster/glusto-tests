@@ -275,7 +275,7 @@ def get_peer_status(mnode):
         'stateStr': 'Peer in Cluster'}
         ]
     """
-    ret, out, _ = g.run(mnode, "gluster peer status --xml")
+    ret, out, _ = g.run(mnode, "gluster peer status --xml", log_level='DEBUG')
     if ret != 0:
         g.log.error("Failed to execute peer status command on node '%s'. "
                     "Hence failed to parse the peer status.", mnode)
@@ -327,7 +327,7 @@ def get_pool_list(mnode):
         'stateStr': 'Peer in Cluster'}
         ]
     """
-    ret, out, _ = g.run(mnode, "gluster pool list --xml")
+    ret, out, _ = g.run(mnode, "gluster pool list --xml", log_level='DEBUG')
     if ret != 0:
         g.log.error("Failed to execute 'pool list' on node %s. "
                     "Hence failed to parse the pool list.", mnode)

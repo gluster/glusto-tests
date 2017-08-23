@@ -384,7 +384,7 @@ def get_volume_status(mnode, volname='all', service='', options=''):
 
     cmd = "gluster vol status %s %s %s --xml" % (volname, service, options)
 
-    ret, out, _ = g.run(mnode, cmd)
+    ret, out, _ = g.run(mnode, cmd, log_level='DEBUG')
     if ret != 0:
         g.log.error("Failed to execute gluster volume status command")
         return None
@@ -635,7 +635,7 @@ def get_volume_info(mnode, volname='all'):
     """
 
     cmd = "gluster volume info %s --xml" % volname
-    ret, out, _ = g.run(mnode, cmd)
+    ret, out, _ = g.run(mnode, cmd, log_level='DEBUG')
     if ret != 0:
         g.log.error("volume info returned error")
         return None
