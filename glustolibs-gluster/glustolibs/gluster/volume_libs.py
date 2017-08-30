@@ -1461,15 +1461,10 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
                bricks_list_to_remove, volname)
 
     # remove-brick status
-    g.log.info("Checking remove-brick status of bricks %s on the volume %s",
+    g.log.info("Logging remove-brick status of bricks %s on the volume %s",
                bricks_list_to_remove, volname)
-    ret, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
-                             option="status")
-    if ret != 0:
-        g.log.error("Failed to get status of remove-brick of bricks %s on "
-                    "volume %s", bricks_list_to_remove, volname)
-    g.log.info("Successfully got remove-brick status of bricks %s on "
-               "volume %s", bricks_list_to_remove, volname)
+    _, _, _ = remove_brick(mnode, volname, bricks_list_to_remove,
+                           option="status")
 
     # Wait for rebalance started by remove-brick to complete
     _rc = False

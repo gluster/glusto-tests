@@ -212,13 +212,9 @@ class TestGlusterExpandVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Successfully started rebalance on the volume %s",
                    self.volname)
 
-        # Check Rebalance status
-        g.log.info("Checking Rebalance status")
-        ret, _, _ = rebalance_status(self.mnode, self.volname)
-        self.assertEqual(ret, 0, ("Failed to get rebalance status for the "
-                                  "volume %s", self.volname))
-        g.log.info("Successfully got rebalance status of the volume %s",
-                   self.volname)
+        # Log Rebalance status
+        g.log.info("Log Rebalance status")
+        _, _, _ = rebalance_status(self.mnode, self.volname)
 
         # Wait for rebalance to complete
         g.log.info("Waiting for rebalance to complete")
