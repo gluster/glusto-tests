@@ -109,7 +109,9 @@ class GlusterMount():
                 self.mountpoint = "/mnt/%s" % self.mounttype
 
         # Get server
-        self.server_system = mount['server']
+        self.server_system = None
+        if 'server' in mount and mount['server']:
+            self.server_system = mount['server']
 
         # Get client
         self.client_system = mount['client']['host']
@@ -342,8 +344,12 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
         elif options and 'vers' not in options:
             options = options + ",vers=3"
 
-    mcmd = ("mount -t %s %s %s:/%s %s" %
-            (mtype, options, mserver, volname, mpoint))
+    if mserver:
+        mcmd = ("mount -t %s %s %s:/%s %s" %
+                (mtype, options, mserver, volname, mpoint))
+    else:
+        mcmd = ("mount -t %s %s %s %s" %
+                (mtype, options, volname, mpoint))
 
     if mtype == 'cifs':
         if smbuser is None or smbpasswd is None:

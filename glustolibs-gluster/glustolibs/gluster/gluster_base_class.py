@@ -406,7 +406,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
     """GlusterVolumeBaseClass sets up the volume for testing purposes.
     """
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls, mount_vol=True):
         """Setup volume, shares/exports volume for cifs/nfs protocols,
             mounts the volume.
         """
@@ -483,20 +483,28 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
                                  cls.volname)
 
         # Create Mounts
-        _rc = True
-        for mount_obj in cls.mounts:
-            ret = mount_obj.mount()
-            if not ret:
-                g.log.error("Unable to mount volume '%s:%s' on '%s:%s'",
-                            mount_obj.server_system, mount_obj.volname,
-                            mount_obj.client_system, mount_obj.mountpoint)
-                _rc = False
-        if not _rc:
-            raise ExecutionError("Mounting volume %s on few clients failed",
-                                 cls.volname)
+        if mount_vol:
+            _rc = True
+            g.log.info("Starting to mount volume")
+            for mount_obj in cls.mounts:
+                ret = mount_obj.mount()
+                if not ret:
+                    g.log.error("Unable to mount volume '%s:%s' on '%s:%s'",
+                                mount_obj.server_system, mount_obj.volname,
+                                mount_obj.client_system, mount_obj.mountpoint)
+                    _rc = False
+            if not _rc:
+                raise ExecutionError("Mounting volume %s on few clients "
+                                     "failed", cls.volname)
+            else:
+                g.log.info("Successful in mounting volume on all clients")
 
-        # Get info of mount before the IO
-        log_mounts_info(cls.mounts)
+            # Get info of mount before the IO
+            g.log.info("Get mounts Info:")
+            log_mounts_info(cls.mounts)
+        else:
+            g.log.info("Not Mouting the volume as 'mount_vol' option is "
+                       "set to %s", mount_vol)
 
     @classmethod
     def tearDownClass(cls, umount_vol=True, cleanup_vol=True):
@@ -505,6 +513,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
         # Unmount volume
         if umount_vol:
             _rc = True
+            g.log.info("Starting to UnMount Volumes")
             for mount_obj in cls.mounts:
                 ret = mount_obj.unmount()
                 if not ret:
@@ -515,12 +524,22 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
             if not _rc:
                 raise ExecutionError("Unmount of all mounts are not "
                                      "successful")
+            else:
+                g.log.info("Successful in unmounting volume on all clients")
+        else:
+            g.log.info("Not Unmouting the Volume as 'umount_vol' is set "
+                       "to %s", umount_vol)
 
         # Cleanup volume
         if cleanup_vol:
             ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
             if not ret:
                 raise ExecutionError("cleanup volume %s failed", cls.volname)
+            else:
+                g.log.info("Successfully cleaned-up volume")
+        else:
+            g.log.info("Not Cleaning-Up volume as 'cleanup_vol' is %s",
+                       cleanup_vol)
 
         # All Volume Info
         volume_info(cls.mnode)
