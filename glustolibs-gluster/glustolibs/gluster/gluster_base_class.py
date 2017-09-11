@@ -290,23 +290,34 @@ class GlusterBaseClass(unittest.TestCase):
                                     continue
                             else:
                                 temp_mount['volname'] = cls.volname
-                            if ('server' not in temp_mount or
-                                    (not temp_mount['server'])):
+                            if ('server' not in mount or
+                                    (not mount['server'])):
                                 temp_mount['server'] = cls.mnode
-                            if ('mountpoint' not in temp_mount or
-                                    (not temp_mount['mountpoint'])):
+                            else:
+                                temp_mount['server'] = mount['server']
+                            if ('mountpoint' not in mount or
+                                    (not mount['mountpoint'])):
                                 temp_mount['mountpoint'] = (os.path.join(
                                     "/mnt", '_'.join([cls.volname,
                                                       cls.mount_type])))
-                            if ('client' not in temp_mount or
-                                    (not temp_mount['client'])):
+                            else:
+                                temp_mount['mountpoint'] = mount['mountpoint']
+                            if ('client' not in mount or
+                                    (not mount['client'])):
                                 temp_mount['client'] = (
                                     cls.all_clients_info[
                                         random.choice(
                                             cls.all_clients_info.keys())]
                                     )
+                            else:
+                                temp_mount['client'] = mount['client']
+                            if 'options' in mount and mount['options']:
+                                temp_mount['options'] = mount['options']
+                            else:
+                                temp_mount['options'] = ''
                             cls.mounts_dict_list.append(temp_mount)
                             found_mount = True
+
             if not found_mount:
                 for client in cls.all_clients_info.keys():
                     mount = {
@@ -503,7 +514,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
             g.log.info("Get mounts Info:")
             log_mounts_info(cls.mounts)
         else:
-            g.log.info("Not Mouting the volume as 'mount_vol' option is "
+            g.log.info("Not Mounting the volume as 'mount_vol' option is "
                        "set to %s", mount_vol)
 
     @classmethod
@@ -527,7 +538,7 @@ class GlusterVolumeBaseClass(GlusterBaseClass):
             else:
                 g.log.info("Successful in unmounting volume on all clients")
         else:
-            g.log.info("Not Unmouting the Volume as 'umount_vol' is set "
+            g.log.info("Not Unmounting the Volume as 'umount_vol' is set "
                        "to %s", umount_vol)
 
         # Cleanup volume
