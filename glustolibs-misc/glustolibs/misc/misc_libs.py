@@ -536,3 +536,26 @@ def are_nodes_offline(nodes):
     ret = all(node_results.values())
 
     return ret, node_results
+
+
+def drop_caches(hosts):
+    """Drops Kernel Cache on a list of hosts
+       (in order to run reads/renames etc on a cold cache).
+
+    Args:
+        hosts (list): List of  hosts where kernel caches need to be
+                      dropped (Servers/ Clients)
+
+    Returns:
+        bool : True , post succesful completion.Else,False.
+    """
+    cmd = "echo 3 > /proc/sys/vm/drop_caches"
+    results = g.run_parallel(hosts, cmd)
+    _rc = True
+    for host, ret_values in results.iteritems():
+        retcode, _, _ = ret_values
+        if retcode != 0:
+            g.log.error("Unable to drop cache on host %s", host)
+            _rc = False
+
+    return _rc
