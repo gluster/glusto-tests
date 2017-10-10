@@ -1,0 +1,38 @@
+# Config yaml file for IO's
+
+io:
+    tools:
+        fio:
+            script_path : "/usr/share/glustolibs/io/tools/fio/run_fio.py"
+            job_files :
+                small_files: ['/usr/share/glustolibs/io/tools/fio/small_file_fio_job.ini']
+                large_files: ['/usr/share/glustolibs/io/tools/fio/large_file_fio_job.ini']
+                generic_workload: ['/usr/share/glustolibs/io/tools/fio/generic_workload_fio_job.ini']
+
+    scripts:
+        fd_writes:
+            script_path : "/usr/share/glustolibs/io/scripts/fd_writes.py"
+        generate_io:
+            script_path : "/usr/share/glustolibs/io/scripts/generate_io.py"
+        file_dir_ops:
+            script_path : "/usr/share/glustolibs/io/scripts/file_dir_ops.py"
+
+    workload:
+        small_files:
+            - fio
+            - fd_writes
+            - file_dir_ops
+            - small_file_generator
+
+        large_files:
+            - fio
+            - iozone
+            - bonnie
+
+    generic_workload:
+        - fio
+        - fd_writes
+        - file_dir_ops
+        - small_file_generator
+        - iozone
+        - bonnie
