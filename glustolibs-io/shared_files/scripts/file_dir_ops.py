@@ -305,7 +305,7 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
                                     for x in range(file_size)))
                 document.add_paragraph(file_str)
                 document.save(fname_abs_path)
-            except:
+            except Exception as e:
                 print ("Unable to write to file '%s' : %s" %
                        (fname_abs_path, e.strerror))
                 rc = 1
@@ -313,7 +313,7 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
             try:
                 with open(fname_abs_path, "w+") as fd:
                     fd.close()
-            except:
+            except IOError as e:
                 print ("Unable to write to file '%s' : %s" %
                        (fname_abs_path, e.strerror))
                 rc = 1

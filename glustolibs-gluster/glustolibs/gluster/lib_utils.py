@@ -64,9 +64,9 @@ def append_string_to_file(mnode, filename, str_to_add_in_file,
             _filehandle.write(str_to_add_in_file)
 
         return True
-    except:
+    except IOError:
         g.log.error("Exception occured while adding string to "
-                    "file %s in append_string_to_file()" % filename)
+                    "file %s in append_string_to_file()", filename)
         return False
     finally:
         g.rpyc_close_connection(host=mnode, user=user)
@@ -287,7 +287,7 @@ def list_files(mnode, dir_path, parse_str="", user="root"):
                     filepath = conn.modules.os.path.join(root, filename)
                     filepaths.append(filepath)
         return filepaths
-    except:
+    except StopIteration:
         g.log.error("Exception occured in list_files()")
         return None
 
@@ -453,8 +453,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
         # current_server is the server from which brick path will be created
         current_server = servers_unused_bricks_dict.keys()[dict_index]
         current_server_unused_bricks_list = (
-                servers_unused_bricks_dict.values()[dict_index]
-                )
+            servers_unused_bricks_dict.values()[dict_index])
         brick_path = ''
         if current_server_unused_bricks_list:
             brick_path = ("%s:%s/%s_brick%s" %
@@ -572,12 +571,12 @@ def get_disk_usage(mnode, path, user="root"):
     usage_info['free'] = ((int(info['b_free']) * int(info['b_size'])) /
                           ONE_GB_BYTES)
     usage_info['used_percent'] = (100 - (100.0 * usage_info['free'] /
-                                  usage_info['total']))
+                                         usage_info['total']))
     usage_info['total_inode'] = int(info['i_total'])
     usage_info['free_inode'] = int(info['i_free'])
     usage_info['used_percent_inode'] = (100 - (100.0 *
-                                        usage_info['free_inode'] /
-                                        usage_info['total_inode']))
+                                               usage_info['free_inode'] /
+                                               usage_info['total_inode']))
     usage_info['used'] = usage_info['total'] - usage_info['free']
     usage_info['used_inode'] = (usage_info['total_inode'] -
                                 usage_info['free_inode'])
@@ -631,7 +630,7 @@ def check_if_dir_is_filled(mnode, dirname, percent_to_fill,
     """
     flag = 0
     count = 0
-    while (count < timeout):
+    while count < timeout:
         output = get_disk_usage(mnode, dirname)
         used = output['used_percent']
 
@@ -749,9 +748,9 @@ def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
             "echo \"%s\" >> ${file} ; done ;"
             "done; " % (list_of_dirs, log_msg))
     if list_of_files:
-        inject_msg_on_files = (
-           "for file in %s ; do "
-           "echo \"%s\" >> ${file} ; done; " % (list_of_files, log_msg))
+        inject_msg_on_files = ("for file in %s ; do "
+                               "echo \"%s\" >> ${file} ; done; " %
+                               (list_of_files, log_msg))
 
     cmd = inject_msg_on_dirs + inject_msg_on_files
 
