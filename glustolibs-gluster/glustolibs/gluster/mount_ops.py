@@ -357,8 +357,28 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
                         "for cifs mounts")
             return (1, '', '')
 
-        mcmd = ("mount -t cifs -o username=%s,password=%s "
-                "\\\\\\\\%s\\\\gluster-%s %s" % (smbuser, smbpasswd, mserver,
+        # Check if client is running rhel. If so add specific options
+        cifs_options = ""
+        try:
+            conn = g.rpyc_get_connection(mclient, user=user)
+            if conn is None:
+                g.log.error("Unable to get connection to %s on node %s"
+                            " in mount_volume()", user, mclient)
+                return (1, '', '')
+
+            os, version, name = conn.modules.platform.linux_distribution()
+            if "Santiago" in name:
+                cifs_options = "sec=ntlmssp"
+        except Exception as e:
+            g.log.error("Exception occured while getting the platform "
+                        "of node %s: %s", mclient, str(e))
+            return (1, '', '')
+        finally:
+            g.rpyc_close_connection(host=mclient, user=user)
+
+        mcmd = ("mount -t cifs -o username=%s,password=%s,%s "
+                "\\\\\\\\%s\\\\gluster-%s %s" % (smbuser, smbpasswd,
+                                                 cifs_options, mserver,
                                                  volname, mpoint))
 
     # Create mount dir
