@@ -26,13 +26,16 @@ def start_glusterd(servers):
     """Starts glusterd on specified servers if they are not running.
 
     Args:
-        servers (list): List of server hosts  on which glusterd has to be
-            started.
+        servers (str|list): A server|List of server hosts on which glusterd
+            has to be started.
 
     Returns:
         bool : True if starting glusterd is successful on all servers.
             False otherwise.
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     cmd = "pgrep glusterd || service glusterd start"
     results = g.run_parallel(servers, cmd)
 
@@ -52,13 +55,16 @@ def stop_glusterd(servers):
     """Stops the glusterd on specified servers.
 
     Args:
-        servers (list): List of server hosts on which glusterd has to be
-            stopped.
+        servers (str|list): A server|List of server hosts on which glusterd
+            has to be stopped.
 
     Returns:
         bool : True if stopping glusterd is successful on all servers.
             False otherwise.
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     cmd = "service glusterd stop"
     results = g.run_parallel(servers, cmd)
 
@@ -78,13 +84,16 @@ def restart_glusterd(servers):
     """Restart the glusterd on specified servers.
 
     Args:
-        servers (list): List of server hosts on which glusterd has to be
-            restarted.
+        servers (str|list): A server|List of server hosts on which glusterd
+            has to be restarted.
 
     Returns:
         bool : True if restarting glusterd is successful on all servers.
             False otherwise.
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     cmd = "service glusterd restart"
     results = g.run_parallel(servers, cmd)
 
@@ -104,8 +113,8 @@ def is_glusterd_running(servers):
     """Checks the glusterd status on specified servers.
 
     Args:
-        servers (list): List of server hosts on which glusterd status has to
-        be checked.
+        servers (str|list): A server|List of server hosts on which glusterd
+            status has to be checked.
 
     Returns:
             0  : if glusterd running
@@ -113,6 +122,9 @@ def is_glusterd_running(servers):
            -1  : if glusterd not running and PID is alive
 
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     cmd1 = "service glusterd status"
     cmd2 = "pidof glusterd"
     cmd1_results = g.run_parallel(servers, cmd1)
@@ -137,14 +149,17 @@ def env_setup_servers(servers):
     """Set up environment on all the specified servers.
 
     Args:
-        servers (list): List of server hosts  on which environment has to be
-            setup.
+        servers (str|list): A server|List of server hosts on which environment
+            has to be setup.
 
     Returns:
         bool : True if setting up environment is successful on all servers.
             False otherwise.
 
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     g.log.info("The function isn't implemented fully")
     g.log.info("Please setup the bricks manually.")
 

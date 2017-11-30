@@ -298,8 +298,8 @@ def list_files(mnode, dir_path, parse_str="", user="root"):
 def get_servers_bricks_dict(servers, servers_info):
     """This module returns servers_bricks dictionary.
     Args:
-        servers (list): List of servers for which we need the
-            list of bricks available on it.
+        servers (str|list): A server|List of servers for which we
+            need the list of bricks available on it.
         servers_info (dict): dict of server info of each servers
     Returns:
         OrderedDict: key - server
@@ -308,7 +308,7 @@ def get_servers_bricks_dict(servers, servers_info):
         get_servers_bricks_dict(g.config['servers'], g.config['servers_info'])
     """
     servers_bricks_dict = OrderedDict()
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
     for server in servers:
         server_info = servers_info[server]
@@ -330,7 +330,7 @@ def get_servers_used_bricks_dict(mnode, servers):
     """This module returns servers_used_bricks dictionary.
        This information is fetched from gluster volume info command.
     Args:
-        servers (list): List of servers for which we need the
+        servers (str|list): A server|List of servers for which we need the
             list of unused bricks on it.
         mnode (str): The node on which gluster volume info command has
             to be executed.
@@ -342,7 +342,7 @@ def get_servers_used_bricks_dict(mnode, servers):
         get_servers_used_bricks_dict(g.config['servers'][0]['host'],
                                      g.config['servers'])
     """
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
 
     servers_used_bricks_dict = OrderedDict()
@@ -378,7 +378,7 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
     Args:
         mnode (str): The node on which gluster volume info command has
             to be executed.
-        servers (list): List of servers for which we need the
+        servers (str|list): A server|List of servers for which we need the
             list of unused bricks available on it.
         servers_info (dict): dict of server info of each servers
      Returns:
@@ -389,7 +389,7 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
                                        g.config['servers'],
                                        g.config['servers_info'])
     """
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
     dict1 = get_servers_bricks_dict(servers, servers_info)
     dict2 = get_servers_used_bricks_dict(mnode, servers)
@@ -416,7 +416,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
         volname (str): Volume name for which we require brick-list.
         number_of_bricks (int): The number of bricks for which brick list
             has to be created.
-        servers (list): The list of servers from which the bricks
+        servers (str|list): A server|List of servers from which the bricks
             needs to be selected for creating the brick list.
         servers_info (dict): dict of server info of each servers.
 
@@ -428,7 +428,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
         form_bricks_path(g.config['servers'](0), "testvol", 6,
                          g.config['servers'], g.config['servers_info'])
     """
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
     dict_index = 0
     bricks_list = []
@@ -476,11 +476,13 @@ def is_rhel6(servers):
     """Function to get whether the server is RHEL-6
 
     Args:
-    servers(list): List of server hosts to know the RHEL Version
+    servers (str|list): A server|List of servers hosts to know the RHEL Version
 
     Returns:
     bool:Returns True, if its RHEL-6 else returns false
     """
+    if isinstance(servers, str):
+        servers = [servers]
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
     rc = True
@@ -500,11 +502,13 @@ def is_rhel7(servers):
     """Function to get whether the server is RHEL-7
 
     Args:
-    servers(list): List of server hosts to know the RHEL Version
+    servers (str|list): A server|List of servers hosts to know the RHEL Version
 
     Returns:
     bool:Returns True, if its RHEL-7 else returns false
     """
+    if isinstance(servers, str):
+        servers = [servers]
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
     rc = True
@@ -665,7 +669,8 @@ def install_epel(servers):
     Module to install epel in rhel/centos/fedora systems.
 
     Args:
-        servers (list): servers in which epel to be installed.
+        servers (str|list): A server|List of servers in which epel
+            to be installed.
 
     Returns:
         bool: True, if epel is installed successfully, False otherwise
@@ -673,6 +678,8 @@ def install_epel(servers):
     Example:
         install_epel(["abc.com", "def.com"])
     """
+    if isinstance(servers, str):
+        servers = [servers]
 
     rt = True
     results = g.run_parallel(servers, "yum list installed epel-release")
@@ -716,7 +723,8 @@ def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
     """Injects the message to all log files under all dirs specified on nodes.
 
     Args:
-        nodes (list): List of nodes on which message has to be injects to logs
+        nodes (str|list): A server|List of nodes on which message has to be
+            injected to logs
         log_msg (str): Message to be injected
         list_of_dirs (list): List of dirs to inject message on log files.
         list_of_files (list): List of files to inject message.

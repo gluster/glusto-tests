@@ -1100,14 +1100,15 @@ def enable_and_validate_volume_options(mnode, volname, volume_options_list,
     Args:
         mnode (str): Node on which commands are executed.
         volname (str): Name of the volume.
-        volume_options_list (list): List of volume options to be enabled
+        volume_options_list (str|list): A volume option|List of volume options
+            to be enabled
         time_delay (int): Time delay between 2 volume set operations
 
     Returns:
         bool: True when enabling and validating all volume options is
             successful. False otherwise
     """
-    if not isinstance(volume_options_list, list):
+    if isinstance(volume_options_list, str):
         volume_options_list = [volume_options_list]
 
     for option in volume_options_list:
@@ -1143,7 +1144,7 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
     Args:
         mnode (str): Node on which commands has to be executed
         volname (str): volume name
-        servers (list): List of servers in the storage pool.
+        servers (str|list): A server|List of servers in the storage pool.
         all_servers_info (dict): Information about all servers.
         example :
             all_servers_info = {
@@ -1178,6 +1179,9 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
 
     NOTE: adding bricks to hot tier is yet to be added in this function.
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     # Check if volume exists
     if not volume_exists(mnode, volname):
         g.log.error("Volume %s doesn't exists.", volname)
@@ -1553,7 +1557,7 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
     Args:
         mnode (str): Node on which commands has to be executed
         volname (str): volume name
-        servers (list): List of servers in the storage pool.
+        servers (str|list): A server|List of servers in the storage pool.
         all_servers_info (dict): Information about all servers.
         example :
             all_servers_info = {
@@ -1583,6 +1587,9 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
         bool: True if replacing brick from the volume is successful.
             False otherwise.
     """
+    if isinstance(servers, str):
+        servers = [servers]
+
     # Check if volume exists
     if not volume_exists(mnode, volname):
         g.log.error("Volume %s doesn't exists.", volname)

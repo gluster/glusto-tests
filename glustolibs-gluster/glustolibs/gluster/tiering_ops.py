@@ -37,7 +37,8 @@ def add_extra_servers_to_cluster(mnode, extra_servers):
 
     Args:
         mnode (str): Node on which cmd has to be executed.
-        extra_servers (list) : list of extra servers to be attached to cluster
+        extra_servers (str|list) : A server|list of extra servers to be
+            attached to cluster
 
     Returns:
         bool: True, if extra servers are attached to cluster
@@ -47,7 +48,7 @@ def add_extra_servers_to_cluster(mnode, extra_servers):
         add_extra_servers_to_cluster("abc.com", ['peer_node1','peer_node2'])
     """
 
-    if not isinstance(extra_servers, list):
+    if isinstance(extra_servers, str):
         extra_servers = [extra_servers]
 
     ret = start_glusterd(servers=extra_servers)
@@ -71,8 +72,8 @@ def tier_attach(mnode, volname, num_bricks_to_add, extra_servers,
         mnode (str): Node on which cmd has to be executed.
         volname (str): volume name
         num_bricks_to_add (str): number of bricks to be added as hot tier
-        extra_servers (list): from these servers, hot tier will be added
-            to volume
+        extra_servers (str|list): from this server|these servers,
+            hot tier will be added to volume
         extra_servers_info (dict): dict of server info of each extra servers
 
     Kwargs:
@@ -96,6 +97,8 @@ def tier_attach(mnode, volname, num_bricks_to_add, extra_servers,
         tier_attach("abc.com", testvol, '2', ['extra_server1','extra_server2'],
                     extra_server_info)
     """
+    if isinstance(extra_servers, str):
+        extra_servers = [extra_servers]
 
     replica = int(replica)
     repc = ''

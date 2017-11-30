@@ -128,7 +128,7 @@ def peer_probe_servers(mnode, servers, validate=True, time_delay=10):
 
     Args:
         mnode (str): Node on which command has to be executed.
-        servers (list): List of servers to be peer probed.
+        servers (str|list): A server|List of servers to be peer probed.
 
     Kwargs:
         validate (bool): True to validate if probed peer is in cluster and
@@ -139,7 +139,7 @@ def peer_probe_servers(mnode, servers, validate=True, time_delay=10):
     Returns:
         bool: True on success and False on failure.
     """
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
     else:
         servers = servers[:]
@@ -182,7 +182,7 @@ def peer_detach_servers(mnode, servers, force=False, validate=True,
 
     Args:
         mnode (str): Node on which command has to be executed.
-        servers (list): List of servers to be peer probed.
+        servers (str|list): A server|List of servers to be peer probed.
 
     Kwargs:
         force (bool): option to detach peer.
@@ -195,7 +195,7 @@ def peer_detach_servers(mnode, servers, force=False, validate=True,
     Returns:
         bool: True on success and False on failure.
     """
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
     else:
         servers = servers[:]
@@ -361,13 +361,13 @@ def is_peer_connected(mnode, servers):
 
     Args:
         mnode (str): Node from which peer probe has to be executed.
-        servers (list): List of servers to be validated.
+        servers (str|list): A server|List of servers to be validated.
 
     Returns
         bool : True on success (peer in cluster and connected), False on
             failure.
     """
-    if not isinstance(servers, list):
+    if isinstance(servers, str):
         servers = [servers]
     else:
         servers = servers[:]
