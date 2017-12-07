@@ -30,7 +30,7 @@ One can use either of the two methods.
 
         # git clone https://github.com/loadtheaccumulator/glusto.git
         # cd glusto
-        # python setup.py
+        # python setup.py install
 
 For more info refer the [docs](http://glusto.readthedocs.io/en/latest/userguide/install.html).
 
