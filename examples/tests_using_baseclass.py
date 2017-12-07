@@ -14,15 +14,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
-                                                   GlusterVolumeBaseClass,
-                                                   runs_on)
-
+from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 
 """ Example1: Using GlusterBaseClass
 """
 
 
+@runs_on([['replicated', 'distributed', 'distributed-replicated',
+           'dispersed', 'distributed-dispersed'],
+          ['glusterfs', 'nfs', 'cifs']])
 class TestUsingGlusterBaseClass(GlusterBaseClass):
     """Use GlusterBaseClass
     """
@@ -70,58 +70,3 @@ class TestUsingGlusterBaseClass(GlusterBaseClass):
 
         # Calling GlusterBaseClass tearDownClass.
         GlusterBaseClass.tearDownClass.im_func(cls)
-
-
-"""Example2: Using GlusterVolumeBaseClass
-"""
-
-
-@runs_on([['replicated', 'distributed', 'distributed-replicated',
-           'dispersed', 'distributed-dispersed'],
-          ['glusterfs', 'nfs', 'cifs']])
-class TestsUsingGlusterVolumeBaseClass(GlusterVolumeBaseClass):
-    """ Use GlusterVolumeBaseClass
-    """
-    @classmethod
-    def setUpClass(cls):
-        """setUpClass. This will be executed once per class.
-        """
-        # Calling GlusterVolumeBaseClass setUpClass.
-        # Sets up volume(creates, starts, set default volume options,
-        # export volume as smb or nfs share),
-        # mounts the volume.
-        GlusterVolumeBaseClass.setUpClass.im_func(cls)
-
-    def setUp(self):
-        """setUp before the test
-        """
-        # Calling GlusterVolumeBaseClass setUp
-        GlusterVolumeBaseClass.setUp.im_func(self)
-
-        # Add test setup code here
-
-    def test1(self):
-        pass
-
-    def test2(self):
-        pass
-
-    def test3(self):
-        pass
-
-    def tearDown(self):
-        """teardown after the test
-        """
-        # Add test teardown code here
-
-        # Calling GlusterVolumeBaseClass teardown
-        GlusterVolumeBaseClass.tearDown.im_func(self)
-
-    @classmethod
-    def tearDownClass(cls):
-        """tearDownClass. This will be executed once per class.
-        """
-        # Add test class teardown code here
-
-        # Calling GlusterVolumeBaseClass tearDownClass
-        GlusterVolumeBaseClass.tearDownClass.im_func(cls)
