@@ -34,8 +34,7 @@
 import time
 import pytest
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import (GlusterVolumeBaseClass,
-                                                   runs_on)
+from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.volume_libs import enable_and_validate_volume_options
 from glustolibs.gluster.volume_libs import (
     verify_all_process_of_volume_are_online)
@@ -57,31 +56,35 @@ from glustolibs.gluster.quota_ops import (enable_quota, disable_quota,
 from glustolibs.gluster.snap_ops import (snap_create, get_snap_list,
                                          snap_activate, snap_deactivate)
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.io.utils import (validate_io_procs, log_mounts_info,
+from glustolibs.io.utils import (validate_io_procs,
                                  list_all_files_and_dirs_mounts,
                                  view_snaps_from_mount,
                                  wait_for_io_to_complete)
 from glustolibs.gluster.exceptions import ExecutionError
 
 
-class GlusterBasicFeaturesSanityBaseClass(GlusterVolumeBaseClass):
+class GlusterBasicFeaturesSanityBaseClass(GlusterBaseClass):
     """ BaseClass for all the gluster basic features sanity tests. """
     @classmethod
     def setUpClass(cls):
-        """Setup Volume, Create Mounts and upload the necessary scripts to run
-        tests.
+        """Upload the necessary scripts to run tests.
         """
-        # Sets up volume, mounts
-        GlusterVolumeBaseClass.setUpClass.im_func(cls)
+        # Calling GlusterBaseClass setUpClass
+        GlusterBaseClass.setUpClass.im_func(cls)
 
         # Upload io scripts for running IO on mounts
+        g.log.info("Upload io scripts to clients %s for running IO on "
+                   "mounts", cls.clients)
         script_local_path = ("/usr/share/glustolibs/io/scripts/"
                              "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts")
+            raise ExecutionError("Failed to upload IO scripts to clients %s",
+                                 cls.clients)
+        g.log.info("Successfully uploaded IO scripts to clients %s",
+                   cls.clients)
 
         cls.counter = 1
         """int: Value of counter is used for dirname-start-num argument for
@@ -99,16 +102,27 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterVolumeBaseClass):
         """
 
     def setUp(self):
-        """setUp starts the io from all the mounts.
-            IO creates deep dirs and files.
         """
-        # Calling BaseClass setUp
-        GlusterVolumeBaseClass.setUp.im_func(self)
+        - Setup Volume and Mount Volume
+        - setUp starts the io from all the mounts.
+        - IO creates deep dirs and files.
+        """
+        # Calling GlusterBaseClass setUp
+        GlusterBaseClass.setUp.im_func(self)
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
+        g.log.info("Successful in Setup Volume and Mount Volume")
 
         # Start IO on mounts
         g.log.info("Starting IO on all mounts...")
         self.all_mounts_procs = []
         for mount_obj in self.mounts:
+            g.log.info("Starting IO on %s:%s", mount_obj.client_system,
+                       mount_obj.mountpoint)
             cmd = ("python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
@@ -130,6 +144,8 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterVolumeBaseClass):
     def tearDown(self):
         """If test method failed before validating IO, tearDown waits for the
         IO's to complete and checks for the IO exit status
+
+        Unmount Volume and Cleanup Volume
         """
         # Wait for IO to complete if io validation is not executed in the
         # test method
@@ -140,17 +156,23 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterVolumeBaseClass):
             if not ret:
                 raise ExecutionError("IO failed on some of the clients")
             g.log.info("IO is successful on all mounts")
-        GlusterVolumeBaseClass.tearDown.im_func(self)
 
-    @classmethod
-    def tearDownClass(cls):
-        """Cleanup data from mount and cleanup volume.
-        """
-        # Log Mounts info
-        g.log.info("Log mounts info")
-        log_mounts_info(cls.mounts)
+            # List all files and dirs created
+            g.log.info("List all files and directories:")
+            ret = list_all_files_and_dirs_mounts(self.mounts)
+            if not ret:
+                raise ExecutionError("Failed to list all files and dirs")
+            g.log.info("Listing all files and directories is successful")
 
-        GlusterVolumeBaseClass.tearDownClass.im_func(cls)
+        # Unmount Volume and Cleanup Volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
+        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+
+        # Calling GlusterBaseClass tearDown
+        GlusterBaseClass.tearDown.im_func(self)
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
