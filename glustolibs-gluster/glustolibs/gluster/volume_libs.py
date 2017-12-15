@@ -37,7 +37,9 @@ from glustolibs.gluster.quota_ops import (enable_quota, set_quota_limit_usage,
                                           is_quota_enabled)
 from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
-from glustolibs.gluster.heal_libs import are_all_self_heal_daemons_are_online
+from glustolibs.gluster.heal_libs import (
+    are_all_self_heal_daemons_are_online,
+    wait_for_self_heal_daemons_to_be_online)
 from glustolibs.gluster.brick_ops import add_brick, remove_brick, replace_brick
 
 
@@ -1827,3 +1829,43 @@ def get_client_quorum_info(mnode, volname):
                          ['quorum_count']) = quorum_count
 
     return client_quorum_dict
+
+
+def wait_for_volume_process_to_be_online(mnode, volname, timeout=300):
+    """Waits for the volume's processes to be online until timeout
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for all volume
+        processes to be online.
+
+    Returns:
+        True if the volume's processes are online within timeout,
+        False otherwise
+    """
+    # Adding import here to avoid cyclic imports
+    from glustolibs.gluster.brick_libs import wait_for_bricks_to_be_online
+
+    # Wait for bricks to be online
+    bricks_online_status = wait_for_bricks_to_be_online(mnode, volname,
+                                                        timeout)
+    if bricks_online_status is False:
+        g.log.error("Failed to wait for the volume '%s' processes "
+                    "to be online", volname)
+        return False
+
+    # Wait for self-heal-daemons to be online
+    self_heal_daemon_online_status = (
+        wait_for_self_heal_daemons_to_be_online(mnode, volname, timeout))
+    if self_heal_daemon_online_status is False:
+        g.log.error("Failed to wait for the volume '%s' processes "
+                    "to be online", volname)
+        return False
+
+    # TODO: Add any process checks here
+
+    g.log.info("Volume '%s' processes are all online", volname)
+    return True

@@ -269,3 +269,39 @@ def get_unhealed_entries_info(volname, mnode=''):
             False otherwise
     """
     return True
+
+
+def wait_for_self_heal_daemons_to_be_online(mnode, volname, timeout=300):
+    """Waits for the volume self-heal-daemons to be online until timeout
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for self-heal-daemons
+        to be online.
+
+    Returns:
+        True if all self-heal-daemons are online within timeout,
+        False otherwise
+    """
+    counter = 0
+    flag = 0
+    while counter < timeout:
+        status = are_all_self_heal_daemons_are_online(mnode, volname)
+        if status:
+            flag = 1
+            break
+        if not status:
+            time.sleep(10)
+            counter = counter + 10
+
+    if not flag:
+        g.log.error("All self-heal-daemons of the volume '%s' are not online "
+                    "even after %d minutes", (volname, timeout/60.0))
+        return False
+    else:
+        g.log.info("All self-heal-daemons of the volume '%s' are online ",
+                   volname)
+    return True

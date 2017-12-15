@@ -812,3 +812,42 @@ def get_bricks_to_bring_offline_from_disperse_volume(subvols_list,
         list_of_bricks_to_bring_offline.extend(bricks_to_bring_offline)
 
     return list_of_bricks_to_bring_offline
+
+
+def wait_for_bricks_to_be_online(mnode, volname, timeout=300):
+    """Waits for the bricks to be online until timeout
+
+    Args:
+        mnode (str): Node on which commands will be executed.
+        volname (str): Name of the volume.
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for bricks to be
+        online
+
+    Returns:
+        True if all bricks are online within timeout, False otherwise
+    """
+    all_bricks = get_all_bricks(mnode, volname)
+    if not all_bricks:
+        return False
+
+    counter = 0
+    flag = 0
+    while counter < timeout:
+        status = are_bricks_online(mnode, volname, all_bricks)
+
+        if status:
+            flag = 1
+            break
+        if not status:
+            time.sleep(10)
+            counter = counter + 10
+
+    if not flag:
+        g.log.error("All Bricks of the volume '%s' are not online "
+                    "even after %d minutes", (volname, timeout/60.0))
+        return False
+    else:
+        g.log.info("All Bricks of the volume '%s' are online ", volname)
+    return True
