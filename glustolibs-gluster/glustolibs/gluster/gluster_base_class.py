@@ -181,11 +181,15 @@ class GlusterBaseClass(unittest.TestCase):
         Returns (bool): True if all the steps mentioned in the descriptions
             passes. False otherwise.
         """
+        force_volume_create = False
+        if volume_create_force or cls.volume_create_force:
+            force_volume_create = True
+
         # Setup Volume
         g.log.info("Setting up volume %s", cls.volname)
         ret = setup_volume(mnode=cls.mnode,
                            all_servers_info=cls.all_servers_info,
-                           volume_config=cls.volume, force=volume_create_force)
+                           volume_config=cls.volume, force=force_volume_create)
         if not ret:
             g.log.error("Failed to Setup volume %s", cls.volname)
             return False
@@ -514,6 +518,26 @@ class GlusterBaseClass(unittest.TestCase):
                 'transport': 'tcp'
                 }
             }
+
+        # Check if default volume_type configuration is provided in
+        # config yml
+        if (g.config.get('gluster') and
+                g.config['gluster'].get('volume_types')):
+            default_volume_type_from_config = (
+                g.config['gluster']['volume_types'])
+
+            for volume_type in default_volume_type_from_config.keys():
+                if default_volume_type_from_config[volume_type]:
+                    if volume_type in cls.default_volume_type_config:
+                        cls.default_volume_type_config[volume_type] = (
+                            default_volume_type_from_config[volume_type])
+
+        # Create Volume with force option
+        cls.volume_create_force = False
+        if (g.config.get('gluster') and
+                g.config['gluster'].get('volume_create_force')):
+            cls.volume_create_force = (
+                g.config['gluster']['volume_create_force'])
 
         # Default volume options which is applicable for all the volumes
         cls.volume_options = {}

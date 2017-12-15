@@ -191,6 +191,8 @@ gluster:
             redundancy_count: 2
             transport: tcp
 
+    volume_create_force: False
+
     # Volume options that has to be applicable to all volume types
     volume_options:
 ##        performance.quick-read: "off"
