@@ -167,3 +167,58 @@ def env_setup_servers(servers):
         return False
 
     return True
+
+
+def get_glusterd_pids(nodes):
+    """
+    Checks if glusterd process is running and
+    return the process id's in dictionary format
+
+    Args:
+        nodes ( str|list ) : Node/Nodes of the cluster
+
+    Returns:
+        tuple : Tuple containing two elements (ret, gluster_pids).
+        The first element 'ret' is of type 'bool', True if only if
+        glusterd is running on all the nodes in the list and each
+        node contains only one instance of glusterd running.
+        False otherwise.
+
+        The second element 'glusterd_pids' is of type dictonary and
+        it contains the process ID's for glusterd.
+
+    """
+    glusterd_pids = {}
+    _rc = True
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    cmd = "pidof glusterd"
+    g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
+    results = g.run_parallel(nodes, cmd)
+    for node in results:
+        ret, out, err = results[node]
+        if ret == 0:
+            if len(out.strip().split("\n")) == 1:
+                if not out.strip():
+                    g.log.error("NO glusterd process found "
+                                "on node %s" % node)
+                    _rc = False
+                    glusterd_pids[node] = ['-1']
+                else:
+                    g.log.info("glusterd process with "
+                               "pid %s found on %s",
+                               out.strip().split("\n"), node)
+                    glusterd_pids[node] = (out.strip().split("\n"))
+            else:
+                g.log.error("More than One glusterd process "
+                            "found on node %s" % node)
+                _rc = False
+                glusterd_pids[node] = out
+        else:
+            g.log.error("Not able to get glusterd process "
+                        "from node %s" % node)
+            _rc = False
+            glusterd_pids[node] = ['-1']
+
+    return _rc, glusterd_pids

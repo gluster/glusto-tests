@@ -305,3 +305,152 @@ def wait_for_self_heal_daemons_to_be_online(mnode, volname, timeout=300):
         g.log.info("All self-heal-daemons of the volume '%s' are online ",
                    volname)
     return True
+
+
+def get_self_heal_daemon_pid(nodes):
+    """
+    Checks if self-heal daemon process is running and
+    return the process id's in dictionary format
+
+    Args:
+        nodes ( str|list ) : Node/Nodes of the cluster
+
+    Returns:
+        tuple : Tuple containing two elements (ret, glustershd_pids).
+        The first element 'ret' is of type 'bool', True if and only if
+        glustershd is running on all the nodes in the list and each
+        node contains only one instance of glustershd running.
+        False otherwise.
+
+        The second element 'glustershd_pids' is of type dictonary and it
+        contains the process ID's for glustershd
+    """
+    glustershd_pids = {}
+    _rc = True
+    if isinstance(nodes, str):
+        nodes = [nodes]
+    cmd = "pgrep -f glustershd"
+    g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
+    results = g.run_parallel(nodes, cmd)
+    for node in results:
+        ret, out, err = results[node]
+        if ret == 0:
+            if len(out.strip().split("\n")) == 1:
+                if not out.strip():
+                    g.log.error("NO self heal daemon process found "
+                                "on node %s" % node)
+                    _rc = False
+                    glustershd_pids[node] = [-1]
+                else:
+                    g.log.info("Single Self Heal Daemon process with "
+                               "pid %s found on %s",
+                               out.strip().split("\n"), node)
+                    glustershd_pids[node] = (out.strip().split("\n"))
+            else:
+                g.log.error("More than One self heal daemon process "
+                            "found on node %s" % node)
+                _rc = False
+                glustershd_pids[node] = [-1]
+        else:
+            g.log.error("Not able to get self heal daemon process "
+                        "from node %s" % node)
+            _rc = False
+            glustershd_pids[node] = [-1]
+
+    return _rc, glustershd_pids
+
+
+def do_bricks_exist_in_shd_volfile(mnode, volname, brick_list):
+    """
+    Checks whether the given brick list is present in glustershd
+    server volume file
+
+    Args:
+        mnode (str)         : Node on which commands will be executed.
+        volname (str)       : Name of the volume.
+        brick_list ( list ) : brick list of a volume which needs to
+                              compare in glustershd server volume file
+
+    Returns:
+        bool : True if brick exists in glustershd server volume file.
+               False Otherwise
+    """
+    GLUSTERSHD = "/var/lib/glusterd/glustershd/glustershd-server.vol"
+    brick_list_server_vol = []
+    volume_clients = "volume " + volname + "-client-"
+    host = brick = None
+    parse = False
+
+    # Establish connection to mnode
+    conn = g.rpyc_get_connection(mnode)
+    if conn is None:
+        g.log.info("Not able to establish connection to node %s" % mnode)
+        return False
+    try:
+        fd = conn.builtins.open(GLUSTERSHD)
+        for each_line in fd:
+            each_line = each_line.strip()
+            if volume_clients in each_line:
+                parse = True
+            elif "end-volume" in each_line:
+                parse = False
+                brick_list_server_vol.append("%s:%s" % (host, brick))
+            elif parse:
+                if "option remote-subvolume" in each_line:
+                    brick = each_line.split(" ")[2]
+                if "option remote-host" in each_line:
+                    host = each_line.split(" ")[2]
+
+    except IOError as e:
+        g.log.info("I/O error ({0}): {1}".format(e.errno, e.strerror))
+        return False
+
+    g.log.info("Brick List from volume info : %s" % brick_list)
+    g.log.info("Brick List from volume server "
+               "file : %s" % brick_list_server_vol)
+
+    if set(brick_list) != set(brick_list_server_vol):
+        return False
+    return True
+
+
+def is_shd_daemonized(nodes, timeout=120):
+    """
+    wait for the glustershd process to release parent process.
+
+    Args:
+        nodes ( str|list ) : Node/Nodes of the cluster
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for self-heal-daemons
+        to be online.
+
+    Returns:
+        bool : True if glustershd releases its parent.
+               False Otherwise
+
+    """
+    counter = 0
+    flag = 0
+    if isinstance(nodes, str):
+        nodes = [nodes]
+    while counter < timeout:
+        ret, pids = get_self_heal_daemon_pid(nodes)
+        if not ret:
+            g.log.info("Retry after 3 sec to get self heal "
+                       "daemon process....")
+            time.sleep(3)
+            counter = counter + 3
+        else:
+            flag = 1
+            break
+
+    if not flag:
+        g.log.error("Either No self heal daemon process found or more than"
+                    "One self heal daemon process found even "
+                    "after %d minutes", (timeout/60.0))
+        return False
+    else:
+        g.log.info("Single self heal daemon process on all nodes %s",
+                   nodes)
+    return True
