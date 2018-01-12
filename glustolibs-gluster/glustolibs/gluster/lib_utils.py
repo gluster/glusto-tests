@@ -774,3 +774,61 @@ def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
                         log_msg, list_of_dirs, list_of_files, host)
             _rc = False
     return _rc
+
+
+def is_core_file_created(nodes, testrun_timestamp,
+                         paths=['/', '/var/log/core', '/tmp']):
+    '''
+    Listing directories and files in "/", /var/log/core, /tmp
+    directory for checking if the core file created or not
+
+    Args:
+
+    nodes(list):
+        List of nodes need to pass from test method
+    testrun_timestamp:
+        This time stamp need to pass from test method
+        test case runing started time, time format is EPOCH
+        time format, use below command for getting timestamp
+        of test case 'date +%s'
+    paths(list):
+        By default core file will be verified in "/","/tmp",
+        "/var/log/core"
+       If test case need to verify core file in specific path,
+       need to pass path from test method
+    '''
+    count = 0
+    cmd_list = []
+    for path in paths:
+        cmd = ' '.join(['cd', path, '&&', 'ls', 'core*'])
+        cmd_list.append(cmd)
+
+    # Checks for core file in "/", "/var/log/core", "/tmp" directory
+    for node in nodes:
+        for cmd in cmd_list:
+            ret, out, _ = g.run(node, cmd)
+            g.log.info("storing all files and directory names into list")
+            dir_list = re.split(r'\s+', out)
+
+            # checking for core file created or not in "/"
+            # "/var/log/core", "/tmp" directory
+            g.log.info("checking core file created or not")
+            for file1 in dir_list:
+                if (re.search(r'\bcore\.[\S]+\b', file1)):
+                    file_path_list = re.split('[\s]+', cmd)
+                    file_path = file_path_list[1] + '/' + file1
+                    time_cmd = 'stat ' + '-c ' + '%X ' + file_path
+                    ret, file_timestamp, _ = g.run(node, time_cmd)
+                    file_timestamp = file_timestamp.strip()
+                    if(file_timestamp > testrun_timestamp):
+                        count += 1
+                        g.log.error("New core file created %s " % file1)
+                    else:
+                        g.log.info("Old core file Found")
+    # return the status of core file
+    if (count >= 1):
+        g.log.error("Core file created glusterd crashed")
+        return False
+    else:
+        g.log.info("No core files found ")
+        return True
