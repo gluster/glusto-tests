@@ -716,8 +716,8 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
                    bricks_to_bring_offline)
         ret = are_bricks_offline(self.mnode, self.volname,
                                  bricks_to_bring_offline)
-        self.assertTrue(ret, "Not all the bricks in list:%s are offline",
-                        bricks_to_bring_offline)
+        self.assertTrue(ret, ("Not all the bricks in list: %s are offline",
+                              bricks_to_bring_offline))
         g.log.info("Successfully validated that bricks: %s are all offline",
                    bricks_to_bring_offline)
 
