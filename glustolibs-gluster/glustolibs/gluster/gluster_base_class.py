@@ -32,8 +32,8 @@ from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.volume_libs import (setup_volume,
                                             cleanup_volume,
                                             log_volume_info_and_status)
-# from glustolibs.gluster.volume_libs import (
-#    wait_for_volume_process_to_be_online)
+from glustolibs.gluster.volume_libs import (
+    wait_for_volume_process_to_be_online)
 from glustolibs.gluster.samba_libs import share_volume_over_smb
 from glustolibs.gluster.nfs_libs import export_volume_through_nfs
 from glustolibs.gluster.mount_ops import create_mount_objs
@@ -185,6 +185,16 @@ class GlusterBaseClass(unittest.TestCase):
         if volume_create_force or cls.volume_create_force:
             force_volume_create = True
 
+        # Validate peers before setting up volume
+        g.log.info("Validate peers before setting up volume ")
+        ret = cls.validate_peers_are_connected()
+        if not ret:
+            g.log.error("Failed to validate peers are in connected state "
+                        "before setting up volume")
+            return False
+        g.log.info("Successfully validated peers are in connected state "
+                   "before setting up volume")
+
         # Setup Volume
         g.log.info("Setting up volume %s", cls.volname)
         ret = setup_volume(mnode=cls.mnode,
@@ -195,15 +205,15 @@ class GlusterBaseClass(unittest.TestCase):
             return False
         g.log.info("Successful in setting up volume %s", cls.volname)
 
-#        # Wait for volume processes to be online
-#        g.log.info("Wait for volume %s processes to be online", cls.volname)
-#        ret = wait_for_volume_process_to_be_online(cls.mnode, cls.volname)
-#        if not ret:
-#            g.log.error("Failed to wait for volume %s processes to "
-#                        "be online", cls.volname)
-#            return False
-#        g.log.info("Successful in waiting for volume %s processes to be "
-#                   "online", cls.volname)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume %s processes to be online", cls.volname)
+        ret = wait_for_volume_process_to_be_online(cls.mnode, cls.volname)
+        if not ret:
+            g.log.error("Failed to wait for volume %s processes to "
+                        "be online", cls.volname)
+            return False
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", cls.volname)
 
         # Export/Share the volume based on mount_type
         if cls.mount_type != "glusterfs":
@@ -320,11 +330,6 @@ class GlusterBaseClass(unittest.TestCase):
         Returns (bool): True if setting up volume and mounting the volume
             for a mount obj is successful. False otherwise
         """
-        # Validate peers before setting up volume
-        _rc = cls.validate_peers_are_connected()
-        if not _rc:
-            return _rc
-
         # Setup Volume
         _rc = cls.setup_volume(volume_create_force)
         if not _rc:

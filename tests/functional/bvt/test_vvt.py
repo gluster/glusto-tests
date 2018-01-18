@@ -21,14 +21,14 @@
 """
 
 import pytest
-import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_init import is_glusterd_running
 from glustolibs.gluster.volume_ops import volume_stop, volume_start
 from glustolibs.gluster.volume_libs import (
-    verify_all_process_of_volume_are_online)
+    verify_all_process_of_volume_are_online,
+    wait_for_volume_process_to_be_online)
 from glustolibs.gluster.volume_libs import log_volume_info_and_status
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs, get_mounts_stat
@@ -114,7 +114,13 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         self.assertEqual(ret, 0, "Failed to start volume %s" % self.volname)
         g.log.info("Successfully started volume %s", self.volname)
 
-        time.sleep(15)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
 
         # Log Volume Info and Status
         g.log.info("Logging Volume %s Info and Status", self.volname)

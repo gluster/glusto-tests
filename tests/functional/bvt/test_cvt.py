@@ -38,9 +38,9 @@ from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.volume_libs import enable_and_validate_volume_options
 from glustolibs.gluster.volume_libs import (
     verify_all_process_of_volume_are_online)
-from glustolibs.gluster.volume_libs import (log_volume_info_and_status,
-                                            expand_volume, shrink_volume,
-                                            replace_brick_from_volume)
+from glustolibs.gluster.volume_libs import (
+    log_volume_info_and_status, expand_volume, shrink_volume,
+    replace_brick_from_volume, wait_for_volume_process_to_be_online)
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_rebalance_to_complete,
                                               rebalance_status)
@@ -208,8 +208,13 @@ class TestGlusterExpandVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Expanding volume when IO in progress is successful on "
                    "volume %s", self.volname)
 
-        # Wait for gluster processes to come online
-        time.sleep(30)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
 
         # Log Volume Info and Status after expanding the volume
         g.log.info("Logging volume info and Status after expanding volume")
@@ -297,8 +302,13 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Shrinking volume when IO in progress is successful on "
                    "volume %s", self.volname)
 
-        # Wait for gluster processes to come online
-        time.sleep(30)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
 
         # Log Volume Info and Status after shrinking the volume
         g.log.info("Logging volume info and Status after shrinking volume")
@@ -618,8 +628,13 @@ class TestGlusterReplaceBrickSanity(GlusterBasicFeaturesSanityBaseClass):
         self.assertTrue(ret, "Failed to replace faulty brick from the volume")
         g.log.info("Successfully replaced faulty brick from the volume")
 
-        # Wait for gluster processes to come online
-        time.sleep(30)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
 
         # Log Volume Info and Status after replacing the brick
         g.log.info("Logging volume info and Status after replacing brick "
@@ -701,8 +716,13 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Successful in bringing bricks: %s offline",
                    bricks_to_bring_offline)
 
-        # Wait for gluster processes to be offline
-        time.sleep(10)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s processes not online despite waiting"
+                              "for 5 mins", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
 
         # Log Volume Info and Status
         g.log.info("Logging volume info and Status after bringing bricks "
@@ -735,8 +755,13 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Successfully brought all bricks:%s online",
                    bricks_to_bring_offline)
 
-        # Wait for gluster processes to be online
-        time.sleep(10)
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
 
         # Log Volume Info and Status
         g.log.info("Logging volume info and Status after bringing bricks "
