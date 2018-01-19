@@ -21,6 +21,7 @@
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError, ExecutionParseError
+from glustolibs.gluster.volume_ops import get_volume_options
 
 try:
     import xml.etree.cElementTree as etree
@@ -95,8 +96,6 @@ def is_quota_enabled(mnode, volname):
         is_quota_enabled(mnode, testvol)
     """
 
-    from glustolibs.gluster.volume_ops import get_volume_options
-
     output = get_volume_options(mnode, volname, "features.quota")
     if output is None:
         return False
@@ -107,6 +106,46 @@ def is_quota_enabled(mnode, volname):
         return False
 
     return True
+
+
+def check_quota_deem_statfs(mnode, volname):
+    """Checks if quota-deem-statfs is enabled
+    on given volume
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+        volname (str): volume name
+
+    Returns:
+        bool: True, if quota-deem-statfs is enabled
+            False, if quota-deem-statfs is disabled
+
+    Example:
+        check_quota_deem_statfs(mnode, testvol)
+    """
+
+    output = get_volume_options(mnode, volname,
+                                "features.quota-deem-statfs")
+    if not output:
+        g.log.error("Failed to get current status of "
+                    "'features.quota-deem-statfs' option "
+                    "for volume %s", volname)
+        return False
+
+    g.log.info("Quota deem-statfs status in volume %s: %s",
+               volname, output["features.quota-deem-statfs"])
+
+    if 'features.quota-deem-statfs' in output.keys():
+        if output['features.quota-deem-statfs'] == 'on':
+            g.log.info("Volume option 'features.quota-deem-statfs' "
+                       "is currently enabled for volume %s", volname)
+            return True
+        g.log.info("Volume option 'features.quota-deem-statfs' "
+                   "is not in enabled state for volume %s", volname)
+        return False
+    g.log.error("Failed to get status of 'features.quota-deem-statfs' "
+                "option for the volume %s", volname)
+    return False
 
 
 def quota_list(mnode, volname, path=None):
