@@ -2127,3 +2127,56 @@ def wait_for_volume_process_to_be_online(mnode, volname, timeout=300):
 
     g.log.info("Volume '%s' processes are all online", volname)
     return True
+
+
+def get_files_and_dirs_from_brick(brick_node, brick_path,
+                                  dirs=True, files=True,
+                                  skip=None):
+    """ Get all the files and drectories from a brick
+
+    Args:
+        brick_node (str), brick_path (str) : brick node and path where you
+        would want to list the files and directories.
+
+    Kwargs:
+        dirs (boolean): If this value is set to True(Default), this
+        function will get only directories from all bricks.
+        files (boolean): If this value is set to True(Default), this
+        function will get only files from all bricks.
+        If both dirs and files are set to True, it will get both files
+        and directories.
+        skip (list): List of directories to skip
+
+    Returns:
+        list: List of files and directories from all bricks.
+        NoneType: None on failure
+    """
+    if not (dirs or files):
+        raise RuntimeError("Not specified object type to find dir/files")
+
+    skip_items = ["'.glusterfs'", "'.trashcan'"]
+    if isinstance(skip, str):
+        skip_items.append("'%s'" % skip)
+
+    exclude_pattern = ' '.join([' | grep -ve {}'.format(item)
+                                for item in skip_items])
+    result = []
+    if dirs and files:
+        cmd = 'find %s ! -perm 1000 %s' % (brick_path, exclude_pattern)
+    elif dirs and not files:
+        cmd = 'find %s -type d %s' % (brick_path, exclude_pattern)
+    elif files and not dirs:
+        cmd = 'find %s -type f ! -perm 1000 %s' % (brick_path, exclude_pattern)
+
+    ret, out, err = g.run(brick_node, cmd)
+    if out == '' and err == '':
+        g.log.info("No files/directories are present on %s:%s ",
+                   brick_node, brick_path)
+    elif ret != 0:
+        g.log.error("Failed to get files/directories from %s:%s ",
+                    brick_node, brick_path)
+    else:
+        g.log.info("Successfully got files/directories from %s:%s ",
+                   brick_node, brick_path)
+        result.extend(out.splitlines())
+    return result
