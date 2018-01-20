@@ -263,6 +263,46 @@ def rebalance_stop_and_get_status(mnode, volname):
     return rebal_status
 
 
+def wait_for_fix_layout_to_complete(mnode, volname, timeout=300):
+    """Waits for the fix-layout to complete
+
+    Args:
+        mnode (str): Node on which command has to be executed.
+        volname (str): volume name
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for rebalance
+            to complete
+
+    Returns:
+        True on success, False otherwise
+
+    Examples:
+        >>> wait_for_fix_layout_to_complete("abc.com", "testvol")
+    """
+
+    count = 0
+    flag = 0
+    while (count < timeout):
+        status_info = get_rebalance_status(mnode, volname)
+        if status_info is None:
+            return False
+
+        status = status_info['aggregate']['statusStr']
+        if status == 'fix-layout completed':
+            flag = 1
+            break
+
+        time.sleep(10)
+        count = count + 10
+    if not flag:
+        g.log.error("Fix-layout is not completed")
+        return False
+    else:
+        g.log.info("Fix-layout is successfully completed")
+    return True
+
+
 def wait_for_rebalance_to_complete(mnode, volname, timeout=300):
     """Waits for the rebalance to complete
 
