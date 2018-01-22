@@ -1591,3 +1591,192 @@ class TestSelfHeal(GlusterBaseClass):
                               'after bringing bricks online are not equal')
         g.log.info('Checksums before and after bringing bricks online '
                    'are equal')
+
+    def test_self_heal_50k_files_heal_command_by_add_brick(self):
+        """
+        Test self-heal of 50k files (heal command
+        Description:
+        - set the volume option
+        "metadata-self-heal": "off"
+        "entry-self-heal": "off"
+        "data-self-heal": "off"
+        "self-heal-daemon": "off"
+        - bring down all bricks processes from selected set
+        - create IO (50k files)
+        - Get areequal before getting bricks online
+        - bring bricks online
+        - set the volume option
+        "self-heal-daemon": "on"
+        - check for daemons
+        - start healing
+        - check if heal is completed
+        - check for split-brain
+        - get areequal after getting bricks online and compare with
+        areequal before getting bricks online
+        - add bricks
+        - do rebalance
+        - get areequal after adding bricks and compare with
+        areequal after getting bricks online
+        """
+        # pylint: disable=too-many-locals,too-many-statements
+        # Setting options
+        g.log.info('Setting options...')
+        options = {"metadata-self-heal": "off",
+                   "entry-self-heal": "off",
+                   "data-self-heal": "off",
+                   "self-heal-daemon": "off"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options')
+        g.log.info("Successfully set %s for volume %s", options, self.volname)
+
+        # Select bricks to bring offline
+        bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
+            self.mnode, self.volname))
+        bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline_dict['hot_tier_bricks'] +
+            bricks_to_bring_offline_dict['cold_tier_bricks'] +
+            bricks_to_bring_offline_dict['volume_bricks']))
+
+        # Bring brick offline
+        g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
+        ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
+        self.assertTrue(ret, 'Failed to bring bricks %s offline' %
+                        bricks_to_bring_offline)
+
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 bricks_to_bring_offline)
+        self.assertTrue(ret, 'Bricks %s are not offline'
+                        % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s offline is successful',
+                   bricks_to_bring_offline)
+
+        # Creating files on client side
+        for mount_obj in self.mounts:
+            g.log.info("Generating data for %s:%s",
+                       mount_obj.client_system, mount_obj.mountpoint)
+            # Create 50k files
+            g.log.info('Creating files...')
+            command = ("python %s create_files -f 50000 %s"
+                       % (self.script_upload_path, mount_obj.mountpoint))
+
+            proc = g.run_async(mount_obj.client_system, command,
+                               user=mount_obj.user)
+            self.all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # Get areequal before getting bricks online
+        g.log.info('Getting areequal before getting bricks online...')
+        ret, result_before_online = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal before getting bricks online '
+                   'is successful')
+
+        # Bring brick online
+        g.log.info('Bringing bricks %s online', bricks_to_bring_offline)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  bricks_to_bring_offline)
+        self.assertTrue(ret, 'Failed to bring bricks %s online' %
+                        bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s online is successful',
+                   bricks_to_bring_offline)
+
+        # Setting options
+        g.log.info('Setting options...')
+        options = {"self-heal-daemon": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Option 'self-heal-daemon' is set to 'on' successfully")
+
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online")
+        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online"
+                              % self.volname))
+        g.log.info("Volume %s : All process are online", self.volname)
+
+        # Wait for self-heal-daemons to be online
+        g.log.info("Waiting for self-heal-daemons to be online")
+        ret = is_shd_daemonized(self.all_servers)
+        self.assertTrue(ret, "Either No self heal daemon process found")
+        g.log.info("All self-heal-daemons are online")
+
+        # Start healing
+        ret = trigger_heal(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not started')
+        g.log.info('Healing is started')
+
+        # Monitor heal completion
+        ret = monitor_heal_completion(self.mnode, self.volname,
+                                      timeout_period=3600)
+        self.assertTrue(ret, 'Heal has not yet completed')
+
+        # Check if heal is completed
+        ret = is_heal_complete(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not complete')
+        g.log.info('Heal is completed successfully')
+
+        # Check for split-brain
+        ret = is_volume_in_split_brain(self.mnode, self.volname)
+        self.assertFalse(ret, 'Volume is in split-brain state')
+        g.log.info('Volume is not in split-brain state')
+
+        # Get areequal after getting bricks online
+        g.log.info('Getting areequal after getting bricks online...')
+        ret, result_after_online = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal after getting bricks online '
+                   'is successful')
+
+        # Checking areequals before bringing bricks online
+        # and after bringing bricks online
+        self.assertItemsEqual(result_before_online, result_after_online,
+                              'Checksums before and '
+                              'after bringing bricks online are not equal')
+        g.log.info('Checksums before and after bringing bricks online '
+                   'are equal')
+
+        # Add bricks
+        g.log.info("Start adding bricks to volume...")
+        ret = expand_volume(self.mnode, self.volname, self.servers,
+                            self.all_servers_info)
+        self.assertTrue(ret, ("Failed to expand the volume when IO in "
+                              "progress on volume %s", self.volname))
+        g.log.info("Expanding volume is successful on volume %s", self.volname)
+
+        # Do rebalance
+        ret, _, _ = rebalance_start(self.mnode, self.volname)
+        self.assertEqual(ret, 0, 'Failed to start rebalance')
+        g.log.info('Rebalance is started')
+
+        ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
+        self.assertTrue(ret, 'Rebalance is not completed')
+        g.log.info('Rebalance is completed successfully')
+
+        # Get areequal after adding bricks
+        g.log.info('Getting areequal after adding bricks...')
+        ret, result_after_adding_bricks = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal after getting bricks '
+                   'is successful')
+
+        # Checking areequals after bringing bricks online
+        # and after adding bricks
+        self.assertItemsEqual(result_after_online, result_after_adding_bricks,
+                              'Checksums after bringing bricks online and '
+                              'after adding bricks are not equal')
+        g.log.info('Checksums after bringing bricks online and '
+                   'after adding bricks are equal')
