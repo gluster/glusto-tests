@@ -1346,3 +1346,248 @@ class TestSelfHeal(GlusterBaseClass):
                               'after bringing bricks online are not equal')
         g.log.info('Checksums before and after bringing bricks online '
                    'are equal')
+
+    def test_self_heal_symbolic_links(self):
+        """
+        Test Self-Heal of Symbolic Links (heal command)
+
+        Description:
+        - set the volume option
+        "metadata-self-heal": "off"
+        "entry-self-heal": "off"
+        "data-self-heal": "off"
+        "data-self-heal-algorithm": "diff"
+        "self-heal-daemon": "off"
+        - create IO
+        - calculate areequal
+        - bring down all bricks processes from selected set
+        - calculate areequals and compare with arequal
+        before bringing bricks offline
+        - modify the data and verify whether the links are properly created
+        - calculate areequal before getting bricks online
+        - bring bricks online
+        - set the volume option
+        "self-heal-daemon": "on"
+        - check daemons and start healing
+        - check is heal is complited
+        - check for split-brain
+        - calculate areequal after getting bricks online and compare with
+        areequal before getting bricks online
+        """
+        # pylint: disable=too-many-locals,too-many-statements
+        # Setting options
+        g.log.info('Setting options...')
+        options = {"metadata-self-heal": "off",
+                   "entry-self-heal": "off",
+                   "data-self-heal": "off",
+                   "self-heal-daemon": "off"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options')
+        g.log.info("Options "
+                   "'metadata-self-heal', "
+                   "'entry-self-heal', "
+                   "'data-self-heal', "
+                   "'self-heal-daemon' "
+                   "are set to 'off' successfully")
+
+        # Creating files on client side
+        test_sym_link_self_heal_folder = 'test_sym_link_self_heal'
+        for mount_object in self.mounts:
+            g.log.info("Generating data for %s:%s",
+                       mount_object.client_system, mount_object.mountpoint)
+            # Creating files
+            command = ("cd %s/ ; "
+                       "mkdir %s ; "
+                       "cd %s/ ;"
+                       "for i in `seq 1 5` ; "
+                       "do mkdir dir.$i ; "
+                       "for j in `seq 1 10` ; "
+                       "do dd if=/dev/urandom of=dir.$i/file.$j "
+                       "bs=1k count=$j ; "
+                       "done ; "
+                       "done ;"
+                       % (mount_object.mountpoint,
+                          test_sym_link_self_heal_folder,
+                          test_sym_link_self_heal_folder))
+
+            proc = g.run_async(mount_object.client_system, command,
+                               user=mount_object.user)
+            self.all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # Get areequal before getting bricks offline
+        g.log.info('Getting areequal before getting bricks offline...')
+        ret, result_before_offline = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal before getting bricks offline '
+                   'is successful')
+
+        # Select bricks to bring offline
+        bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
+            self.mnode, self.volname))
+        bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline_dict['hot_tier_bricks'] +
+            bricks_to_bring_offline_dict['cold_tier_bricks'] +
+            bricks_to_bring_offline_dict['volume_bricks']))
+
+        # Bring brick offline
+        g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
+        ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
+        self.assertTrue(ret, 'Failed to bring bricks %s offline' %
+                        bricks_to_bring_offline)
+
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 bricks_to_bring_offline)
+        self.assertTrue(ret, 'Bricks %s are not offline'
+                        % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s offline is successful',
+                   bricks_to_bring_offline)
+
+        # Get areequal after getting bricks offline
+        g.log.info('Getting areequal after getting bricks offline...')
+        ret, result_after_offline = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal after getting bricks offline '
+                   'is successful')
+
+        # Checking areequals before bringing bricks offline
+        # and after bringing bricks offline
+        self.assertItemsEqual(result_before_offline, result_after_offline,
+                              'Checksums before and '
+                              'after bringing bricks online are not equal')
+        g.log.info('Checksums before and after bringing bricks online '
+                   'are equal')
+
+        # Modify the data
+        for mount_object in self.mounts:
+            g.log.info("Modifying data for %s:%s",
+                       mount_object.client_system, mount_object.mountpoint)
+            # Create symlinks
+            g.log.info('Creating symlinks...')
+            command = ("cd %s/%s/ ; "
+                       "for i in `seq 1 5` ; "
+                       "do ln -s dir.$i sym_link_dir.$i ; "
+                       "done ;"
+                       % (mount_object.mountpoint,
+                          test_sym_link_self_heal_folder))
+            ret, _, _ = g.run(mount_object.client_system, command)
+            self.assertEqual(ret, 0, 'Failed to modify the data for %s...'
+                             % mount_object.mountpoint)
+            g.log.info('Modifying the data for %s is successful',
+                       mount_object.mountpoint)
+
+            # Verify whether the links are properly created
+            # Get symlink list
+            command = ("cd %s/%s/ ; "
+                       "ls |grep 'sym'"
+                       % (mount_object.mountpoint,
+                          test_sym_link_self_heal_folder))
+            _, out, _ = g.run(mount_object.client_system, command)
+            symlink_list = out.strip().split('\n')
+
+            # Get folder list
+            command = ("cd %s/%s/ ; "
+                       "ls |grep -v 'sym'"
+                       % (mount_object.mountpoint,
+                          test_sym_link_self_heal_folder))
+            _, out, _ = g.run(mount_object.client_system, command)
+            folder_list = out.strip().split('\n')
+
+            # Compare symlinks and folders
+            for symlink in symlink_list:
+                symlink_index = symlink_list.index(symlink)
+                command = ("cd %s/%s/ ; "
+                           "readlink %s"
+                           % (mount_object.mountpoint,
+                              test_sym_link_self_heal_folder,
+                              symlink))
+                _, out, _ = g.run(mount_object.client_system, command)
+                symlink_to_folder = out.strip()
+                self.assertEqual(symlink_to_folder, folder_list[symlink_index],
+                                 'Links are not properly created')
+                g.log.info('Links for %s are properly created',
+                           mount_object.mountpoint)
+
+        # Get areequal before getting bricks online
+        g.log.info('Getting areequal before getting bricks online...')
+        ret, result_before_online = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal before getting bricks online '
+                   'is successful')
+
+        # Bring brick online
+        g.log.info('Bringing bricks %s online', bricks_to_bring_offline)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  bricks_to_bring_offline)
+        self.assertTrue(ret, 'Failed to bring bricks %s online' %
+                        bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s online is successful',
+                   bricks_to_bring_offline)
+
+        # Setting options
+        g.log.info('Setting options...')
+        options = {"self-heal-daemon": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Option 'self-heal-daemon' is set to 'on' successfully")
+
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online")
+        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online"
+                              % self.volname))
+        g.log.info("Volume %s : All process are online", self.volname)
+
+        # Wait for self-heal-daemons to be online
+        g.log.info("Waiting for self-heal-daemons to be online")
+        ret = is_shd_daemonized(self.all_servers)
+        self.assertTrue(ret, "Either No self heal daemon process found")
+        g.log.info("All self-heal-daemons are online")
+
+        # Start healing
+        ret = trigger_heal(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not started')
+        g.log.info('Healing is started')
+
+        # Monitor heal completion
+        ret = monitor_heal_completion(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal has not yet completed')
+
+        # Check if heal is completed
+        ret = is_heal_complete(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not complete')
+        g.log.info('Heal is completed successfully')
+
+        # Check for split-brain
+        ret = is_volume_in_split_brain(self.mnode, self.volname)
+        self.assertFalse(ret, 'Volume is in split-brain state')
+        g.log.info('Volume is not in split-brain state')
+
+        # Get areequal after getting bricks online
+        g.log.info('Getting areequal after getting bricks online...')
+        ret, result_after_online = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal after getting bricks online '
+                   'is successful')
+
+        # Checking areequals before bringing bricks online
+        # and after bringing bricks online
+        self.assertItemsEqual(result_before_online, result_after_online,
+                              'Checksums before and '
+                              'after bringing bricks online are not equal')
+        g.log.info('Checksums before and after bringing bricks online '
+                   'are equal')
