@@ -60,6 +60,7 @@ from glustolibs.io.utils import (validate_io_procs,
                                  list_all_files_and_dirs_mounts,
                                  view_snaps_from_mount,
                                  wait_for_io_to_complete)
+from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.exceptions import ExecutionError
 
 
@@ -691,6 +692,26 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
             - wait for heal to complete
             - validate IO
         """
+        # Check if volume type is dispersed. If the volume type is
+        # dispersed, set the volume option 'disperse.optimistic-change-log'
+        # to 'off'
+        # Refer to: https://bugzilla.redhat.com/show_bug.cgi?id=1470938
+        if 'dispersed' in self.volume_type and 'nfs' in self.mount_type:
+            g.log.info("Set volume option 'disperse.optimistic-change-log' "
+                       "to 'off' on a dispersed volume . "
+                       "Refer to bug: "
+                       "https://bugzilla.redhat.com/show_bug.cgi?id=1470938")
+            ret = set_volume_options(self.mnode, self.volname,
+                                     {'disperse.optimistic-change-log': 'off'}
+                                     )
+            self.assertTrue(ret, ("Failed to set the volume option %s to "
+                                  "off on volume %s",
+                                  'disperse.optimistic-change-log',
+                                  self.volname)
+                            )
+            g.log.info("Successfully set the volume option "
+                       "'disperse.optimistic-change-log' to 'off'")
+
         # Log Volume Info and Status before simulating brick failure
         g.log.info("Logging volume info and Status before bringing bricks "
                    "offlien from the volume %s", self.volname)
