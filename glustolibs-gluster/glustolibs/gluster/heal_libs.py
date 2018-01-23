@@ -96,6 +96,13 @@ def are_all_self_heal_daemons_are_online(mnode, volname):
             False otherwise.
         NoneType: None if unable to get the volume status
     """
+    from glustolibs.gluster.volume_libs import is_distribute_volume
+    if is_distribute_volume(mnode, volname):
+        g.log.info("Volume %s is a distribute volume. "
+                   "Hence not checking for self-heal daemons "
+                   "to be online", volname)
+        return True
+
     service = 'shd'
     failure_msg = ("Verifying all self-heal-daemons are online failed for "
                    "volume %s" % volname)
@@ -286,6 +293,13 @@ def wait_for_self_heal_daemons_to_be_online(mnode, volname, timeout=300):
         True if all self-heal-daemons are online within timeout,
         False otherwise
     """
+    from glustolibs.gluster.volume_libs import is_distribute_volume
+    if is_distribute_volume(mnode, volname):
+        g.log.info("Volume %s is a distribute volume. "
+                   "Hence not waiting for self-heal daemons "
+                   "to be online", volname)
+        return True
+
     counter = 0
     flag = 0
     while counter < timeout:
