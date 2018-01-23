@@ -579,3 +579,53 @@ def run_mixed_io(servers, io_tools, directory_to_run):
         ret = ret & result.get()
     pool.terminate()
     return ret
+
+
+def is_io_procs_fail_with_rofs(self, all_mounts_procs, mounts):
+    """
+    Checks whether IO failed with Read-only file system error
+
+    Args:
+        all_mounts_procs (list): List of open connection descriptor as
+                                 returned by g.run_async method.
+        mounts (list): List of all GlusterMount objs on which process were
+                       started.
+
+    Returns:
+        tuple : Tuple containing two elements (ret, io_results).
+        The first element 'ret' is of type 'bool', True if
+        IO failed with ROFS on all mount procs. False otherwise.
+
+        The second element 'io_results' is of type dictonary and it
+        contains the proc and corresponding result for IO. If IO failed with
+        ROFS, then proc value contains True else False.
+    """
+    if isinstance(all_mounts_procs, subprocess.Popen):
+        all_mounts_procs = [all_mounts_procs]
+
+    if isinstance(mounts, GlusterMount):
+        mounts = [mounts]
+
+    io_results = {}
+    for i, proc in enumerate(all_mounts_procs):
+        g.log.info("Validating IO on %s:%s", self.mounts[i].client_system,
+                   self.mounts[i].mountpoint)
+        ret, out, err = proc.async_communicate()
+        if ret != 0:
+            g.log.info("EXPECTED : IO Failed on %s:%s",
+                       self.mounts[i].client_system,
+                       self.mounts[i].mountpoint)
+            if ("Read-only file system" in err or
+                    "Read-only file system" in out):
+                g.log.info("EXPECTED : Read-only file system in output")
+                io_results[proc] = True
+            else:
+                g.log.error("Read-only file system error not found in output")
+                io_results[proc] = False
+        else:
+            g.log.error("IO Successful on Read-only file system %s:%s",
+                        self.mounts[i].client_system,
+                        self.mounts[i].mountpoint)
+    ret = all(io_results.values())
+
+    return ret, io_results
