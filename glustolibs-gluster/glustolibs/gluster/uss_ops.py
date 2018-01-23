@@ -20,6 +20,7 @@
 """
 
 from glusto.core import Glusto as g
+from glustolibs.gluster.volume_ops import get_volume_status
 
 
 def enable_uss(mnode, volname):
@@ -113,3 +114,35 @@ def is_uss_disabled(mnode, volname):
         return True
     else:
         return False
+
+
+def is_snapd_running(mnode, volname):
+    """Checks if snapd is running on the given node
+
+        Args:
+            mnode (str): Node on which cmd has to be executed.
+            volname (str): volume name
+
+        Returns:
+            True on success, False otherwise
+
+        Example:
+            is_snapd_running("abc.com", "testvol")
+            """
+    vol_status = get_volume_status(mnode, volname=volname)
+
+    if vol_status is None:
+        g.log.error("Failed to get volume status in is_snapd_running()")
+        return False
+
+    if 'Snapshot Daemon' not in vol_status[volname][mnode]:
+        g.log.error("uss is not enabled in volume %s"
+                    % volname)
+        return False
+
+    snapd_status = vol_status[volname][mnode]['Snapshot Daemon']['status']
+    if snapd_status != '1':
+        g.log.error("Snapshot Daemon is not running in node %s"
+                    % mnode)
+        return False
+    return True
