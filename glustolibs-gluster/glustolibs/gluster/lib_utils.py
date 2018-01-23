@@ -921,3 +921,22 @@ def add_services_to_firewall(nodes, firewall_service, permanent=False):
                         _rc = False
 
     return _rc
+
+
+def get_size_of_mountpoint(node, mount_point):
+    """
+    get_size_of_mountpoint:
+        Returns the size in blocks for the mount point
+
+    Args:
+        node - node on which path is mounted
+        mount_point - mount point path
+
+    Returns:
+        Size of the mount point in blocks or none.
+    """
+
+    cmd = "df %s | grep -v '^Filesystem' | awk '{print $4}'" % (mount_point)
+    _, out, _ = g.run(node, cmd)
+
+    return out
