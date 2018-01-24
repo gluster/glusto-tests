@@ -27,10 +27,17 @@ from glustolibs.gluster.volume_libs import (
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_rebalance_to_complete,
                                               rebalance_status)
-from glustolibs.gluster.brick_libs import get_all_bricks
+from glustolibs.gluster.brick_libs import (get_all_bricks,
+                                           bring_bricks_offline,
+                                           bring_bricks_online,
+                                           are_bricks_online,
+                                           select_bricks_to_bring_offline)
 from glustolibs.gluster.heal_libs import (get_self_heal_daemon_pid,
                                           do_bricks_exist_in_shd_volfile,
-                                          is_shd_daemonized)
+                                          is_shd_daemonized,
+                                          are_all_self_heal_daemons_are_online)
+from glustolibs.gluster.volume_ops import (volume_stop, volume_start)
+from glustolibs.gluster.gluster_init import restart_glusterd
 
 
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
@@ -297,3 +304,201 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
                               "removing bricks. Please check log file "
                               "for details"))
         g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+
+    def test_glustershd_with_restarting_glusterd(self):
+        """
+        Test Script to verify the self heal daemon process with restarting
+        glusterd and rebooting the server
+
+        * stop all volumes
+        * restart glusterd - should not run self heal daemon process
+        * start replicated involved volumes
+        * single self heal daemon process running
+        * restart glusterd
+        * self heal daemon pid will change
+        * bring down brick and restart glusterd
+        * self heal daemon pid will change and its different from previous
+        * brought up the brick
+
+        """
+
+        nodes = self.volume['servers']
+
+        # stop the volume
+        g.log.info("Stopping the volume %s" % self.volname)
+        ret = volume_stop(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to stop volume %s" % self.volname))
+        g.log.info("Successfully stopped volume %s" % self.volname)
+
+        # check the self heal daemon process after stopping the volume
+        g.log.info("Verifying the self heal daemon process for "
+                   "volume %s" % self.volname)
+        ret = are_all_self_heal_daemons_are_online(self.mnode, self.volname)
+        self.assertFalse(ret, ("Self Heal Daemon process is still running "
+                               "even after stopping volume %s" % self.volname))
+        g.log.info("Self Heal Daemon is not running after stopping  "
+                   "volume %s" % self.volname)
+
+        # restart glusterd service on all the servers
+        g.log.info("Restarting glusterd on all servers %s", nodes)
+        ret = restart_glusterd(nodes)
+        self.assertTrue(ret, ("Failed to restart glusterd on all nodes %s",
+                              nodes))
+        g.log.info("Successfully restarted glusterd on all nodes %s",
+                   nodes)
+
+        # check the self heal daemon process after restarting glusterd process
+        g.log.info("Starting to get self-heal daemon process on"
+                   " nodes %s" % nodes)
+        ret = are_all_self_heal_daemons_are_online(self.mnode, self.volname)
+        self.assertFalse(ret, ("Self Heal Daemon process is running after "
+                               "glusterd restart with volume %s in "
+                               "stop state" % self.volname))
+        g.log.info("Self Heal Daemon is not running after stopping  "
+                   "volume and restarting glusterd %s" % self.volname)
+
+        # start the volume
+        g.log.info("Starting the volume %s" % self.volname)
+        ret = volume_start(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to start volume %s" % self.volname))
+        g.log.info("Volume %s started successfully" % self.volname)
+
+        # Verfiy glustershd process releases its parent process
+        g.log.info("Checking whether glustershd process is daemonized or not")
+        ret = is_shd_daemonized(nodes)
+        self.assertTrue(ret, ("Either No self heal daemon process found or "
+                              "more than One self heal daemon process found"))
+        g.log.info("Single self heal daemon process on all nodes %s" % nodes)
+
+        # get the self heal daemon pids after starting volume
+        g.log.info("Starting to get self-heal daemon process "
+                   "on nodes %s" % nodes)
+        ret, pids = get_self_heal_daemon_pid(nodes)
+        self.assertTrue(ret, ("Either No self heal daemon process found or "
+                              "more than One self heal daemon process found"))
+        g.log.info("Succesfull in getting self heal daemon pids")
+        glustershd_pids = pids
+
+        # get the bricks for the volume
+        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        bricks_list = get_all_bricks(self.mnode, self.volname)
+        g.log.info("Brick List : %s" % bricks_list)
+
+        # validate the bricks present in volume info
+        # with glustershd server volume file
+        g.log.info("Starting parsing file %s on "
+                   "node %s" % (self.GLUSTERSHD, self.mnode))
+        ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
+                                             bricks_list)
+        self.assertTrue(ret, ("Brick List from volume info is different from "
+                              "glustershd server volume file. "
+                              "Please check log file for details."))
+        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+
+        # restart glusterd service on all the servers
+        g.log.info("Restarting glusterd on all servers %s", nodes)
+        ret = restart_glusterd(nodes)
+        self.assertTrue(ret, ("Failed to restart glusterd on all nodes %s",
+                              nodes))
+        g.log.info("Successfully restarted glusterd on all nodes %s",
+                   nodes)
+
+        # Verify volume's all process are online for 60 sec
+        g.log.info("Verifying volume's all process are online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname,
+                                                   60)
+        self.assertTrue(ret, ("Volume %s : All process are not "
+                              "online", self.volname))
+        g.log.info("Successfully Verified volume %s processes are online",
+                   self.volname)
+
+        # Verfiy glustershd process releases its parent process
+        ret = is_shd_daemonized(nodes)
+        self.assertTrue(ret, ("Either No self heal daemon process found or "
+                              "more than One self heal daemon process found"))
+
+        # check the self heal daemon process after starting volume and
+        # restarting glusterd process
+        g.log.info("Starting to get self-heal daemon process "
+                   "on nodes %s" % nodes)
+        ret, pids = get_self_heal_daemon_pid(nodes)
+        self.assertTrue(ret, ("Either No self heal daemon process found or "
+                              "more than One self heal daemon process found"))
+        glustershd_pids_after_glusterd_restart = pids
+
+        self.assertNotEqual(glustershd_pids,
+                            glustershd_pids_after_glusterd_restart,
+                            ("Self Heal Daemon pids are same after "
+                             "restarting glusterd process"))
+        g.log.info("Self Heal Daemon process are different before and "
+                   "after restarting glusterd process")
+
+        # select bricks to bring offline
+        bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
+            self.mnode, self.volname))
+        bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline_dict['hot_tier_bricks'] +
+            bricks_to_bring_offline_dict['cold_tier_bricks'] +
+            bricks_to_bring_offline_dict['volume_bricks']))
+
+        # bring bricks offline
+        g.log.info("Going to bring down the brick process "
+                   "for %s" % bricks_to_bring_offline)
+        ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
+        self.assertTrue(ret, ("Failed to bring down the bricks. Please "
+                              "check the log file for more details."))
+        g.log.info("Brought down the brick process "
+                   "for %s succesfully" % bricks_to_bring_offline)
+
+        # restart glusterd after brought down the brick
+        g.log.info("Restart glusterd on all servers %s", nodes)
+        ret = restart_glusterd(nodes)
+        self.assertTrue(ret, ("Failed to restart glusterd on all nodes %s",
+                              nodes))
+        g.log.info("Successfully restarted glusterd on all nodes %s",
+                   nodes)
+
+        # Verify volume's all process are online for 60 sec
+        g.log.info("Verifying volume's all process are online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname,
+                                                   60)
+        self.assertTrue(ret, ("Volume %s : All process are not "
+                              "online", self.volname))
+        g.log.info("Successfully Verified volume %s processes are online",
+                   self.volname)
+
+        # Verfiy glustershd process releases its parent process
+        ret = is_shd_daemonized(nodes)
+        self.assertTrue(ret, ("Either No self heal daemon process found or "
+                              "more than One self heal daemon process found"))
+
+        # check the self heal daemon process after killing brick and
+        # restarting glusterd process
+        g.log.info("Starting to get self-heal daemon process "
+                   "on nodes %s" % nodes)
+        ret, pids = get_self_heal_daemon_pid(nodes)
+        self.assertTrue(ret, ("Either No self heal daemon process found or "
+                              "more than One self heal daemon process found"))
+        glustershd_pids_after_killing_brick = pids
+
+        self.assertNotEqual(glustershd_pids_after_glusterd_restart,
+                            glustershd_pids_after_killing_brick,
+                            ("Self Heal Daemon process are same from before "
+                             "killing the brick,restarting glusterd process"))
+        g.log.info("Self Heal Daemon process are different after killing the "
+                   "brick, restarting the glusterd process")
+
+        # brought the brick online
+        g.log.info("bringing up the bricks : %s online" %
+                   bricks_to_bring_offline)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  bricks_to_bring_offline)
+        self.assertTrue(ret, ("Failed to brought the bricks online"))
+        g.log.info("Successfully brought the bricks online")
+
+        # check all bricks are online
+        g.log.info("Verifying all bricka are online or not.....")
+        ret = are_bricks_online(self.mnode, self.volname,
+                                bricks_to_bring_offline)
+        self.assertTrue(ret, ("Not all bricks are online"))
+        g.log.info("All bricks are online.")
