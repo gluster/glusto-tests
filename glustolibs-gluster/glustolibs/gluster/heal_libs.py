@@ -393,8 +393,9 @@ def do_bricks_exist_in_shd_volfile(mnode, volname, brick_list):
             if volume_clients in each_line:
                 parse = True
             elif "end-volume" in each_line:
+                if parse:
+                    brick_list_server_vol.append("%s:%s" % (host, brick))
                 parse = False
-                brick_list_server_vol.append("%s:%s" % (host, brick))
             elif parse:
                 if "option remote-subvolume" in each_line:
                     brick = each_line.split(" ")[2]
@@ -406,7 +407,7 @@ def do_bricks_exist_in_shd_volfile(mnode, volname, brick_list):
         return False
 
     g.log.info("Brick List from volume info : %s" % brick_list)
-    g.log.info("Brick List from volume server "
+    g.log.info("Brick List from glustershd server volume "
                "file : %s" % brick_list_server_vol)
 
     if set(brick_list) != set(brick_list_server_vol):
