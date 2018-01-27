@@ -24,9 +24,9 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import (
-    set_volume_options, get_volume_options, get_subvols,
+    set_volume_options, get_subvols,
     setup_volume, cleanup_volume)
-from glustolibs.gluster.volume_ops import get_volume_list
+from glustolibs.gluster.volume_ops import get_volume_list, get_volume_options
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            get_all_bricks,
@@ -348,6 +348,156 @@ class ClientSideQuorumTests(GlusterBaseClass):
         g.log.info("Expected: Unable to set %s for volume %s, "
                    "quorum-count should be less than number of bricks "
                    "in replica set", options, self.volname)
+
+    def test_client_side_quorum_with_auto_option_overwrite_fixed(self):
+        """
+        Test Script to verify the Client Side Quorum with auto option
+
+        * check the default value of cluster.quorum-type
+        * try to set any junk value to cluster.quorum-type
+          other than {none,auto,fixed}
+        * check the default value of cluster.quorum-count
+        * set cluster.quorum-type to fixed and cluster.quorum-count to 1
+        * start I/O from the mount point
+        * kill 2 of the brick process from the each replica set.
+        * set cluster.quorum-type to auto
+
+        """
+        # pylint: disable=too-many-locals,too-many-lines,too-many-statements
+        # check the default value of cluster.quorum-type
+        option = "cluster.quorum-type"
+        g.log.info("Getting %s for the volume %s", option, self.volname)
+        option_dict = get_volume_options(self.mnode, self.volname, option)
+        self.assertIsNotNone(option_dict, ("Failed to get %s volume option"
+                                           " for volume %s"
+                                           % (option, self.volname)))
+        self.assertEqual(option_dict['cluster.quorum-type'], 'none',
+                         ("Default value for %s is not NONE"
+                          " for volume %s" % (option, self.volname)))
+        g.log.info("Succesfull in getting %s for the volume %s",
+                   option, self.volname)
+
+        # set the junk value to cluster.quorum-type
+        junk_values = ["123", "abcd", "fixxed", "Aauto"]
+        for each_junk_value in junk_values:
+            options = {"cluster.quorum-type": "%s" % each_junk_value}
+            g.log.info("setting %s for the volume "
+                       "%s", options, self.volname)
+            ret = set_volume_options(self.mnode, self.volname, options)
+            self.assertFalse(ret, ("Able to set junk value %s for "
+                                   "volume %s" % (options, self.volname)))
+            g.log.info("Expected: Unable to set junk value %s "
+                       "for volume %s", options, self.volname)
+
+        # check the default value of cluster.quorum-count
+        option = "cluster.quorum-count"
+        g.log.info("Getting %s for the volume %s", option, self.volname)
+        option_dict = get_volume_options(self.mnode, self.volname, option)
+        self.assertIsNotNone(option_dict, ("Failed to get %s volume option"
+                                           " for volume %s"
+                                           % (option, self.volname)))
+        self.assertEqual(option_dict['cluster.quorum-count'], '(null)',
+                         ("Default value for %s is not null"
+                          " for volume %s" % (option, self.volname)))
+        g.log.info("Succesfull in getting %s for the volume %s",
+                   option, self.volname)
+
+        # set cluster.quorum-type to fixed and cluster.quorum-count to 1
+        options = {"cluster.quorum-type": "fixed",
+                   "cluster.quorum-count": "1"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # create files
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # get the subvolumes
+        g.log.info("starting to get subvolumes for volume %s", self.volname)
+        subvols_dict = get_subvols(self.mnode, self.volname)
+        num_subvols = len(subvols_dict['volume_subvols'])
+        g.log.info("Number of subvolumes in volume %s is %s",
+                   self.volname, num_subvols)
+
+        # bring bricks offline( 2 bricks ) for all the subvolumes
+        for i in range(0, num_subvols):
+            subvol_brick_list = subvols_dict['volume_subvols'][i]
+            g.log.info("sub-volume %s brick list : %s",
+                       i, subvol_brick_list)
+            bricks_to_bring_offline = subvol_brick_list[0:2]
+            g.log.info("Going to bring down the brick process "
+                       "for %s", bricks_to_bring_offline)
+            ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
+            self.assertTrue(ret, ("Failed to bring down the bricks. Please "
+                                  "check the log file for more details."))
+            g.log.info("Brought down the brick process "
+                       "for %s succesfully", bricks_to_bring_offline)
+
+        # create files
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name second_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # set cluster.quorum-type to auto
+        options = {"cluster.quorum-type": "auto"}
+        g.log.info("setting %s for volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set volume option %s for "
+                              "volume %s" % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # create files
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_deep_dirs_with_files --dir-depth 2 "
+                   "--dir-length 2 --max-num-of-dirs 3 --num-of-files 7 %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # check IO failed with Read Only File System error
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        self.assertTrue(ret, ("Unexpected error and IO successful "
+                              "on Read-only file system. Please check the "
+                              "logs for more details"))
+        g.log.info("EXPECTED : Read-only file system in IO while "
+                   "creating files")
 
 
 @runs_on([['replicated', 'distributed-replicated'],
