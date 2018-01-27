@@ -455,3 +455,47 @@ def is_shd_daemonized(nodes, timeout=120):
         g.log.info("Single self heal daemon process on all nodes %s",
                    nodes)
     return True
+
+
+def bring_self_heal_daemon_process_offline(nodes):
+    """
+    Bring the self-heal daemon process offline for the nodes
+
+    Args:
+        nodes ( str|list ) : Node/Nodes of the cluster to bring
+                             self-heal daemon process offline
+
+    Returns:
+        bool : True on successfully bringing self-heal daemon process offline.
+               False otherwise
+    """
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    failed_nodes = []
+    _rc = True
+
+    g.log.info("Starting to get self heal daemon process on nodes %s" % nodes)
+    ret, pids = get_self_heal_daemon_pid(nodes)
+    if not ret:
+        g.log.error("Either no self heal daemon process found or more than"
+                    " one self heal daemon process found : %s" % pids)
+        return False
+    g.log.info("Successful in getting single self heal daemon process"
+               " on all nodes %s", nodes)
+
+    for node in pids:
+        pid = pids[node][0]
+        kill_cmd = "kill -SIGKILL %s" % pid
+        ret, _, _ = g.run(node, kill_cmd)
+        if ret != 0:
+            g.log.error("Unable to kill the self heal daemon "
+                        "process on %s" % node)
+            failed_nodes.append(node)
+
+    if failed_nodes:
+        g.log.info("Unable to kill the self heal daemon "
+                   "process on nodes %s" % nodes)
+        _rc = False
+
+    return _rc
