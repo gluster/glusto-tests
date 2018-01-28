@@ -341,3 +341,65 @@ def wait_for_rebalance_to_complete(mnode, volname, timeout=300):
     else:
         g.log.info("rebalance is successfully completed")
     return True
+
+
+def get_remove_brick_status(mnode, volname, bricks_list):
+    """Parse the output of 'gluster vol remove-brick status' command
+       for the given volume
+
+    Args:
+        mnode (str): Node on which command has to be executed.
+        volname (str): volume name
+        bricks_list (list): List of bricks participating in
+        remove-brick operation
+
+    Returns:
+        NoneType: None if command execution fails, parse errors.
+        dict: dict on success. rebalance status will be
+            in dict format
+
+    Examples:
+        >>> get_remove_brick_status('abc.lab.eng.xyz.com', testvol, bricklist)
+        {'node': [{'files': '0', 'status': '3', 'lookups': '0', 'skipped': '0'
+            , 'nodeName': 'localhost', 'failures': '0', 'runtime': '0.00','id'
+            : '6662bdcd-4602-4f2b-ac1a-75e6c85e780c', 'statusStr':
+            'completed', 'size': '0'}], 'task-id': '6a135147-b202-4e69-
+            b48c-b1c6408b9d24', 'aggregate': {'files': '0', 'status': '3',
+                'lookups': '0', 'skipped': '0', 'failures': '0', 'runtime':
+                '0.00', 'statusStr': 'completed', 'size': '0'}, 'nodeCount'
+            : '3'}
+
+    """
+
+    cmd = ("gluster volume remove-brick %s %s status --xml" %
+           (volname, ' '.join(bricks_list)))
+    ret, out, _ = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to execute 'remove-brick status' on node %s",
+                    mnode)
+        return None
+
+    try:
+        root = etree.XML(out)
+    except etree.ParseError:
+        g.log.error("Failed to parse the remove-brick status"
+                    "xml output on volume %s", volname)
+        return None
+
+    remove_brick_status = {}
+    remove_brick_status["node"] = []
+    for info in root.findall("volRemoveBrick"):
+        for element in info.getchildren():
+            if element.tag == "node":
+                status_info = {}
+                for elmt in element.getchildren():
+                    status_info[elmt.tag] = elmt.text
+                remove_brick_status[element.tag].append(status_info)
+            elif element.tag == "aggregate":
+                status_info = {}
+                for elmt in element.getchildren():
+                    status_info[elmt.tag] = elmt.text
+                remove_brick_status[element.tag] = status_info
+            else:
+                remove_brick_status[element.tag] = element.text
+    return remove_brick_status
