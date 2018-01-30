@@ -19,8 +19,8 @@
     Description: Library for gluster rebalance operations.
 """
 
-from glusto.core import Glusto as g
 import time
+from glusto.core import Glusto as g
 
 try:
     import xml.etree.cElementTree as etree
@@ -282,25 +282,24 @@ def wait_for_fix_layout_to_complete(mnode, volname, timeout=300):
     """
 
     count = 0
-    flag = 0
-    while (count < timeout):
+    while count < timeout:
         status_info = get_rebalance_status(mnode, volname)
         if status_info is None:
             return False
 
         status = status_info['aggregate']['statusStr']
         if status == 'fix-layout completed':
-            flag = 1
-            break
+            g.log.info("Fix-layout is successfully completed")
+            return True
+        if status == 'fix-layout failed':
+            g.log.error("Fix-layout failed on one or more nodes."
+                        "Check rebalance status for more details")
+            return False
 
         time.sleep(10)
         count = count + 10
-    if not flag:
-        g.log.error("Fix-layout is not completed")
-        return False
-    else:
-        g.log.info("Fix-layout is successfully completed")
-    return True
+    g.log.error("Fix layout has not completed. Wait timeout.")
+    return False
 
 
 def wait_for_rebalance_to_complete(mnode, volname, timeout=300):
@@ -322,25 +321,24 @@ def wait_for_rebalance_to_complete(mnode, volname, timeout=300):
     """
 
     count = 0
-    flag = 0
-    while (count < timeout):
+    while count < timeout:
         status_info = get_rebalance_status(mnode, volname)
         if status_info is None:
             return False
 
         status = status_info['aggregate']['statusStr']
         if status == 'completed':
-            flag = 1
-            break
+            g.log.info("Rebalance is successfully completed")
+            return True
+        if status == 'failed':
+            g.log.error(" Rebalance failed on one or more nodes."
+                        "Check rebalance status for more details")
+            return False
 
         time.sleep(10)
         count = count + 10
-    if not flag:
-        g.log.error("rebalance is not completed")
-        return False
-    else:
-        g.log.info("rebalance is successfully completed")
-    return True
+    g.log.error("Rebalance operation has not completed. Wait timeout.")
+    return False
 
 
 def get_remove_brick_status(mnode, volname, bricks_list):
