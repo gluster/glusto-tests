@@ -659,9 +659,11 @@ class TestGlusterReplaceBrickSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Listing all files and directories is successful")
 
 
+# This test is disabled on nfs because of bug 1473668. A patch to apply the
+# workaround mentiond on the bug could not make this test green either.
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
            'distributed-dispersed'],
-          ['glusterfs', 'nfs', 'cifs']])
+          ['glusterfs', 'cifs']])
 class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
     """Sanity tests for SelfHeal"""
     @pytest.mark.bvt_cvt
