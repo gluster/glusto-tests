@@ -373,3 +373,39 @@ def install_arequal(list_of_nodes):
         g.log.info("arequal-checksum is installed on nodes: %s" %
                    list_of_nodes)
     return _rc
+
+
+def are_nodes_online(nodes):
+    """
+    check whether nodes are online or not
+
+    Args:
+        nodes ( str|list ) : Node/Nodes to check whether online or not
+
+    Returns:
+        tuple : Tuple containing two elements (ret, node_results).
+        The first element ret is of type 'bool', True if all nodes
+        are online. False otherwise.
+
+        The second element 'node_results' is of type dictonary and it
+        contains the node and its corresponding result. If node is online
+        then the result contains True else False.
+    """
+
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    node_results = {}
+    for node in nodes:
+        cmd = "ping %s -c1" % node
+        ret, out, err = g.run_local(cmd)
+        if ret:
+            g.log.info("%s is offline" % node)
+            node_results[node] = False
+        else:
+            g.log.info("%s is online" % node)
+            node_results[node] = True
+
+    ret = all(node_results.values())
+
+    return ret, node_results
