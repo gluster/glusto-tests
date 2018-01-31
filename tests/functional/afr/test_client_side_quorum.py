@@ -292,3 +292,53 @@ class ClientSideQuorumTests(GlusterBaseClass):
             self.assertFalse(ret, ("Unexpected error and listing file fails"
                                    " on read-only filesystem"))
             g.log.info("listing files is successfull on read-only filesystem")
+
+    def test_client_side_quorum_with_fixed_validate_max_bricks(self):
+        """
+        Test Script with Client Side Quorum with fixed should validate
+        maximum number of bricks to accept
+
+        * set cluster quorum to fixed
+        * set cluster.quorum-count to higher number which is greater than
+          number of replicas in a sub-voulme
+        * Above step should fail
+
+        """
+
+        # set cluster.quorum-type to fixed
+        options = {"cluster.quorum-type": "fixed"}
+        g.log.info("setting %s for the volume %s" % (options, self.volname))
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s"
+                   % (options, self.volname))
+
+        # get the subvolumes
+        g.log.info("Starting to get sub-volumes for volume %s" % self.volname)
+        subvols_dict = get_subvols(self.mnode, self.volname)
+        num_subvols = len(subvols_dict['volume_subvols'])
+        g.log.info("Number of subvolumes in volume %s is %s"
+                   % (self.volname, num_subvols))
+
+        # get the number of bricks in replica set
+        num_bricks_in_subvol = len(subvols_dict['volume_subvols'][0])
+        g.log.info("Number of bricks in each replica set : %s"
+                   % num_bricks_in_subvol)
+
+        # set cluster.quorum-count to higher value than the number of bricks in
+        # repliac set
+        start_range = num_bricks_in_subvol + 1
+        end_range = num_bricks_in_subvol + 30
+        for i in range(start_range, end_range):
+            options = {"cluster.quorum-count": "%s" % start_range}
+            g.log.info("setting %s for the volume %s" %
+                       (options, self.volname))
+            ret = set_volume_options(self.mnode, self.volname, options)
+            self.assertFalse(ret, ("Able to set %s for volume %s, quorum-count"
+                                   " should not be greater than number of"
+                                   " bricks in replica set"
+                                   % (options, self.volname)))
+        g.log.info("Expected: Unable to set %s for volume %s, "
+                   "quorum-count should be less than number of bricks "
+                   "in replica set" % (options, self.volname))
