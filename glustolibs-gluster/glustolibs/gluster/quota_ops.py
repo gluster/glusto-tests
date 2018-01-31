@@ -20,6 +20,7 @@
 """
 
 from glusto.core import Glusto as g
+from glustolibs.gluster.exceptions import ExecutionError, ExecutionParseError
 
 try:
     import xml.etree.cElementTree as etree
@@ -222,6 +223,93 @@ def get_quota_list(mnode, volname, path=None):
             else:
                 quotalist[path][elem.tag] = elem.text
     return quotalist
+
+
+def is_hard_limit_exceeded(mnode, volname, path=None):
+    """Parse the output of 'gluster quota list' command.
+
+    Args:
+        mnode (str): Node on which command has to be executed.
+        volname (str): volume name
+
+    Kwargs:
+        path (str): Quota path
+
+    Returns:
+        boolean: True if exceeded, False if not.
+
+    Examples:
+        >>> get_quota_list('abc.lab.eng.xyz.com', "testvol")
+        {'/': {'used_space': '0', 'hl_exceeded': 'No', 'soft_limit_percent':
+        '60%', 'avail_space': '2147483648', 'soft_limit_value': '1288490188',
+        'sl_exceeded': 'No', 'hard_limit': '2147483648'}}
+    """
+    if not path:
+        path = ''
+
+    cmd = "gluster volume quota %s list %s --xml" % (volname, path)
+    ret, out, _ = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to execute 'quota list' on node %s. "
+                    "Hence failed to get the quota list." %
+                    mnode)
+        raise ExecutionError("Quota list --xml command failed")
+    else:
+        try:
+            root = etree.XML(out)
+        except etree.ParseError:
+            raise ExecutionParseError("Failed to parse the gluster quota "
+                                      "list xml output.")
+        else:
+            for path in root.findall("volQuota/limit"):
+                for elem in path.getchildren():
+                    if elem.tag == 'hl_exceeded':
+                        if elem.text == 'Yes':
+                            return True
+            return False
+
+
+def is_soft_limit_exceeded(mnode, volname, path=None):
+    """Parse the output of 'gluster quota list' command.
+
+    Args:
+        mnode (str): Node on which command has to be executed.
+        volname (str): volume name
+
+    Kwargs:
+        path (str): Quota path
+
+    Returns:
+        boolean: True if exceeded, False if not.
+    Examples:
+        >>> get_quota_list('abc.lab.eng.xyz.com', "testvol")
+        {'/': {'used_space': '0', 'hl_exceeded': 'No', 'soft_limit_percent':
+        '60%', 'avail_space': '2147483648', 'soft_limit_value': '1288490188',
+        'sl_exceeded': 'No', 'hard_limit': '2147483648'}}
+    """
+    if not path:
+        path = ''
+
+    cmd = "gluster volume quota %s list %s --xml" % (volname, path)
+    ret, out, _ = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to execute 'quota list' on node %s. "
+                    "Hence failed to get the quota list." %
+                    mnode)
+        raise ExecutionError("Quota list --xml command failed")
+    if ret == 0:
+        try:
+            root = etree.XML(out)
+        except etree.ParseError:
+            raise ExecutionParseError("Failed to parse the gluster quota "
+                                      "list xml output.")
+        else:
+            for path in root.findall("volQuota/limit"):
+                for elem in path.getchildren():
+                    if elem.tag == 'sl_exceeded':
+                        if elem.text == 'Yes':
+                            return True
+            return False
 
 
 def set_quota_limit_objects(mnode, volname, path='/', limit='10',

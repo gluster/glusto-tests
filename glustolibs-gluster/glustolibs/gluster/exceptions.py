@@ -15,3 +15,17 @@ class ExecutionError(Exception):
 
     '''
     pass
+
+
+class ExecutionParseError(Exception):
+    '''
+    Custom exception thrown when parsing a command executed by Glusto
+    results in an unexpected error.
+
+    For example, the output of a command when has to be parsed, can have three
+    states. First, the output was as expected. Second, didn't get the expected
+    ouput after the parsing result and Third, didn't get the expected result as
+    the command itself failed.
+
+    '''
+    pass
