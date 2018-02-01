@@ -104,11 +104,13 @@ class GlusterBaseClass(unittest.TestCase):
         if not ret:
             _rc = False
 
-        ret = inject_msg_in_logs(cls.clients, log_msg=msg,
-                                 list_of_dirs=cls.client_gluster_logs_dirs,
-                                 list_of_files=cls.client_gluster_logs_files)
-        if not ret:
-            _rc = False
+        if "glusterfs" in cls.mount_type:
+            ret = inject_msg_in_logs(
+                cls.clients, log_msg=msg,
+                list_of_dirs=cls.client_gluster_logs_dirs,
+                list_of_files=cls.client_gluster_logs_files)
+            if not ret:
+                _rc = False
         return _rc
 
     @classmethod
