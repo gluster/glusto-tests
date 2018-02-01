@@ -19,6 +19,7 @@
 from glusto.core import Glusto as g
 import os
 import sys
+import time
 
 
 def create_dirs(list_of_nodes, list_of_dir_paths):
@@ -409,3 +410,61 @@ def are_nodes_online(nodes):
     ret = all(node_results.values())
 
     return ret, node_results
+
+
+def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
+    """
+    reboot the node and wait for node to come online
+
+    Args:
+        nodes ( str|list ) : Node/Nodes to reboot
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for node
+                       to come online
+
+    Returns:
+        tuple : Tuple containing two elements (_rc, reboot_results).
+        The first element '_rc' is of type 'bool', True if all nodes
+        comes online after reboot. False otherwise.
+
+        The second element 'reboot_results' is of type dictonary and it
+        contains the node and corresponding result for reboot. If reboot is
+        successfull on node, then result contains True else False.
+    """
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    cmd = "reboot"
+    _rc = False
+    for node in nodes:
+        g.log.info("Executing cmd: %s on node %s" % (cmd, node))
+        g.log.info("Rebooting the node %s" % node)
+        ret = g.run(node, cmd)
+
+    # wait for 10 sec for the nodes to come online
+    g.log.info("wait for 10 seconds for nodes to come online .....")
+    time.sleep(10)
+    counter = 0
+
+    while counter < timeout:
+        ret, reboot_results = are_nodes_online(nodes)
+        if not ret:
+            g.log.info("Nodes are offline, Retry after 5 seconds ..... ")
+            time.sleep(5)
+            counter = counter + 5
+        else:
+            _rc = True
+            break
+
+    if not _rc:
+        for node in reboot_results:
+            if reboot_results[node]:
+                g.log.info("Node %s is online" % node)
+            else:
+                g.log.error("Node %s is offline even after "
+                            "%d minutes" % (node, timeout/60.0))
+    else:
+        g.log.info("All nodes %s are up and running" % node)
+
+    return _rc, reboot_results
