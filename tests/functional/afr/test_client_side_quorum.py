@@ -30,7 +30,8 @@ from glustolibs.gluster.volume_ops import get_volume_list, get_volume_options
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            get_all_bricks,
-                                           are_bricks_offline)
+                                           are_bricks_offline,
+                                           bring_bricks_online)
 from glustolibs.io.utils import (validate_io_procs,
                                  is_io_procs_fail_with_rofs,
                                  list_all_files_and_dirs_mounts,
@@ -780,6 +781,501 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             self.assertFalse(ret, 'Failed to ls on %s'
                              % mount_obj.mountpoint)
             g.log.info("ls for %s is successful", mount_obj.mountpoint)
+
+    def test_client_side_quorum_with_fixed_for_cross2(self):
+        """
+        Test Script to verify the Client Side Quorum with fixed
+        for cross 2 volume
+
+        * Disable self heal daemom
+        * set cluster.quorum-type to fixed.
+        * start I/O( write and read )from the mount point - must succeed
+        * Bring down brick1
+        * start I/0 ( write and read ) - must succeed
+        * set the cluster.quorum-count to 1
+        * start I/0 ( write and read ) - must succeed
+        * set the cluster.quorum-count to 2
+        * start I/0 ( write and read ) - read must pass, write will fail
+        * bring back the brick1 online
+        * start I/0 ( write and read ) - must succeed
+        * Bring down brick2
+        * start I/0 ( write and read ) - read must pass, write will fail
+        * set the cluster.quorum-count to 1
+        * start I/0 ( write and read ) - must succeed
+        * cluster.quorum-count back to 2 and cluster.quorum-type to auto
+        * start I/0 ( write and read ) - must succeed
+        * Bring back brick2 online
+        * Bring down brick1
+        * start I/0 ( write and read ) - read must pass, write will fail
+        * set the quorum-type to none
+        * start I/0 ( write and read ) - must succeed
+
+        """
+        # pylint: disable=too-many-branches,too-many-statements
+        # Disable self heal daemon
+        options = {"cluster.self-heal-daemon": "off"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # set cluster.quorum-type to fixed
+        options = {"cluster.quorum-type": "fixed"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # start I/O( write ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # get the subvolumes
+        g.log.info("Starting to get sub-volumes for volume %s", self.volname)
+        subvols_dict = get_subvols(self.mnode, self.volname)
+        num_subvols = len(subvols_dict['volume_subvols'])
+        g.log.info("Number of subvolumes in volume %s:", num_subvols)
+
+        # Bring down brick1 for all the subvolumes
+        subvolumes_first_brick_list = []
+        subvolumes_second_brick_list = []
+        for i in range(0, num_subvols):
+            subvol_brick_list = subvols_dict['volume_subvols'][i]
+            g.log.info("sub-volume %s brick list : %s", i, subvol_brick_list)
+            subvolumes_first_brick_list.append(subvol_brick_list[0])
+            subvolumes_second_brick_list.append(subvol_brick_list[1])
+
+        g.log.info("Going to bring down the brick process "
+                   "for %s", subvolumes_first_brick_list)
+        ret = bring_bricks_offline(self.volname, subvolumes_first_brick_list)
+        self.assertTrue(ret, ("Failed to bring down the bricks. Please "
+                              "check the log file for more details."))
+        g.log.info("Brought down the brick process "
+                   "for %s successfully", subvolumes_first_brick_list)
+
+        # start I/0 ( write and read ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name second_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # set the cluster.quorum-count to 1
+        options = {"cluster.quorum-count": "1"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # start I/0 ( write and read ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name third_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # set the cluster.quorum-count to 2
+        options = {"cluster.quorum-count": "2"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # start I/0 ( write and read ) - read must pass, write will fail
+        g.log.info("Starting IO on all mounts......")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name fourth_file %s" %
+                   (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Validating whether IO failed with Read Only File System")
+        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+                              " on Read-Only File System"))
+        g.log.info("EXPECTED Read-only file system in IO while creating file")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # bring back the brick1 online for all subvolumes
+        g.log.info("bringing up the bricks : %s online",
+                   subvolumes_first_brick_list)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  subvolumes_first_brick_list)
+        self.assertTrue(ret, ("Failed to brought the bricks %s online"
+                              % subvolumes_first_brick_list))
+        g.log.info("Successfully brought the bricks %s online",
+                   subvolumes_first_brick_list)
+
+        # start I/0 ( write and read ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name fifth_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # Bring down brick2 for all the subvolumes
+        g.log.info("Going to bring down the brick process "
+                   "for %s", subvolumes_second_brick_list)
+        ret = bring_bricks_offline(self.volname, subvolumes_second_brick_list)
+        self.assertTrue(ret, ("Failed to bring down the bricks. Please "
+                              "check the log file for more details."))
+        g.log.info("Brought down the brick process "
+                   "for %s succesfully", subvolumes_second_brick_list)
+
+        # start I/0 ( write and read ) - read must pass, write will fail
+        g.log.info("Start creating files on all mounts...")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name sixth_file %s" %
+                   (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Validating whether IO failed with Read Only File System")
+        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+                              " on Read-Only File System"))
+        g.log.info("EXPECTED Read-only file system in IO while creating file")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # set the cluster.quorum-count to 1
+        options = {"cluster.quorum-count": "1"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # start I/0 ( write and read ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name seventh_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # set cluster.quorum-type to auto and cluster.quorum-count back to 2
+        options = {"cluster.quorum-type": "auto",
+                   "cluster.quorum-count": "2"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # start I/0 ( write and read ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name eigth_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # Bring back brick2 online for all the subvolumes
+        g.log.info("bringing up the bricks : %s online",
+                   subvolumes_second_brick_list)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  subvolumes_second_brick_list)
+        self.assertTrue(ret, ("Failed to brought the brick %s online"
+                              % subvolumes_second_brick_list))
+        g.log.info("Successfully brought the brick %s online",
+                   subvolumes_second_brick_list)
+
+        # Bring down brick1 again for all the subvolumes
+        g.log.info("Going to bring down the brick process "
+                   "for %s", subvolumes_first_brick_list)
+        ret = bring_bricks_offline(self.volname, subvolumes_first_brick_list)
+        self.assertTrue(ret, ("Failed to bring down the bricks. Please "
+                              "check the log file for more details."))
+        g.log.info("Brought down the brick process "
+                   "for %s succesfully", subvolumes_first_brick_list)
+
+        # start I/0 ( write and read ) - read must pass, write will fail
+        g.log.info("Start creating files on all mounts...")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name ninth_file %s" %
+                   (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Validating whether IO failed with Read Only File System")
+        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+                              " on Read-Only File System"))
+        g.log.info("EXPECTED Read-only file system in IO while creating file")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
+
+        # set the quorum-type to none
+        options = {"cluster.quorum-type": "none"}
+        g.log.info("setting %s for the volume %s", options, self.volname)
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, ("Unable to set %s for volume %s"
+                              % (options, self.volname)))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # start I/0 ( write and read ) - must succeed
+        g.log.info("Starting IO on all mounts...")
+        g.log.info("mounts: %s", self.mounts)
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s create_files "
+                   "-f 10 --base-file-name tenth_file %s"
+                   % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO.....")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # read the file
+        g.log.info("Start reading files on all mounts")
+        all_mounts_procs = []
+        for mount_obj in self.mounts:
+            cmd = ("python %s read "
+                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("validating reads on all mounts")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "Reads failed on some of the clients")
+        g.log.info("Reads successful on all mounts")
 
 
 @runs_on([['distributed-replicated'],
