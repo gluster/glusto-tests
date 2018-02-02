@@ -468,3 +468,39 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
         g.log.info("All nodes %s are up and running" % node)
 
     return _rc, reboot_results
+
+
+def are_nodes_offline(nodes):
+    """
+    check whether nodes are offline or not
+
+    Args:
+        nodes ( str|list ) : Node/Nodes to check whether offline or not
+
+    Returns:
+        tuple : Tuple containing two elements (ret, node_results).
+        The first element ret is of type 'bool', True if all nodes
+        are offline. False otherwise.
+
+        The second element 'node_results' is of type dictonary and it
+        contains the node and its corresponding result. If node is offline
+        then the result contains True else False.
+    """
+
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    node_results = {}
+    for node in nodes:
+        cmd = "ping %s -c1" % node
+        ret, out, err = g.run_local(cmd)
+        if ret:
+            g.log.info("%s is offline" % node)
+            node_results[node] = True
+        else:
+            g.log.info("%s is online" % node)
+            node_results[node] = False
+
+    ret = all(node_results.values())
+
+    return ret, node_results
