@@ -832,3 +832,48 @@ def is_core_file_created(nodes, testrun_timestamp,
     else:
         g.log.info("No core files found ")
         return True
+
+
+def open_firewall(nodes, firewall_service, permanent=False):
+    """Opening firewall services on nodes
+    This library only for RHEL7, for RHEL6 not required
+        Args:
+            nodes(list|str): List of server on which firewalls services to be
+            removed
+            firewall_service(list|str): List of firewall services to be removed
+            permanent(boolean): True|False
+        Return:
+            bool: True|False(Firewall removed or Failed)
+    """
+
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    if isinstance(firewall_service, str):
+        firewall_service = [firewall_service]
+
+    _rc = True
+    if is_rhel7(nodes):
+        for service in firewall_service:
+            cmd = ("firewall-cmd --zone=public " + "--remove-service=" +
+                   service)
+            results = g.run_parallel(nodes, cmd)
+            # Check for return status
+            for host in results:
+                ret, _, _ = results[host]
+                if ret != 0:
+                    g.log.error("Failed to remove firewall")
+                    _rc = False
+        if permanent and _rc:
+            for service in firewall_service:
+                cmd = ("firewall-cmd --zone=public " + "--remove-service=" +
+                       service + " --permanent")
+                results = g.run_parallel(nodes, cmd)
+                # Check for return status
+                for host in results:
+                    ret, _, _ = results[host]
+                    if ret != 0:
+                        g.log.error("Failed to remove firewall pemanently")
+                        _rc = False
+
+    return _rc
