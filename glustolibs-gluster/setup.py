@@ -19,7 +19,7 @@
 from setuptools import setup, find_packages
 from distutils import dir_util
 
-version = '0.21'
+version = '0.22'
 name = 'glustolibs-gluster'
 
 setup(
@@ -48,4 +48,7 @@ setup(
     namespace_packages = ['glustolibs']
 )
 
-dir_util.copy_tree('./gdeploy_configs', '/usr/share/glustolibs/gdeploy_configs')
+try:
+    dir_util.copy_tree('./gdeploy_configs', '/usr/share/glustolibs/gdeploy_configs')
+except:
+    pass

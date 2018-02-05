@@ -19,7 +19,7 @@ import os
 from setuptools import setup, find_packages
 from distutils import dir_util
 
-version = '0.1.1'
+version = '0.1.2'
 name = 'glustolibs-io'
 
 setup(
@@ -47,4 +47,8 @@ setup(
     dependency_links=['http://github.com/loadtheaccumulator/glusto/tarball/master#egg=glusto'],
     namespace_packages = ['glustolibs']
 )
-dir_util.copy_tree('./shared_files', '/usr/share/glustolibs/io')
+
+try:
+    dir_util.copy_tree('./shared_files', '/usr/share/glustolibs/io')
+except:
+    pass
