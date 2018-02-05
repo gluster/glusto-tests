@@ -14,6 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# pylint: disable=too-many-lines
+
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
@@ -855,3 +857,151 @@ class TestSelfHeal(GlusterBaseClass):
         self.assertItemsEqual(result_before_online, result_after_online,
                               'Checksums are not equal')
         g.log.info('Checksums are equal')
+
+    def test_data_self_heal_algorithm_diff_default(self):
+        """
+        Test Volume Option - 'cluster.data-self-heal-algorithm' : 'diff'
+
+        Description:
+        - set the volume option "data-self-heal-algorithm" to value "diff"
+        - create IO
+        - bring down all bricks processes from selected set
+        - modify the data
+        - calculate areequal
+        - bring bricks online
+        - start healing
+        - calculate areequal and compare with arequal before bringing bricks
+        offline and after bringing bricks online
+        """
+        # pylint: disable=too-many-locals,too-many-statements
+        # Setting options
+        g.log.info('Setting options "data-self-heal-algorithm": "diff"...')
+        options = {"data-self-heal-algorithm": "diff"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options')
+        g.log.info("Option 'data-self-heal-algorithm' is set to 'diff' "
+                   "successfully")
+
+        # Creating files on client side
+        for mount_object in self.mounts:
+            g.log.info("Generating data for %s:%s",
+                       mount_object.client_system, mount_object.mountpoint)
+            # Creating files
+            command = ("python %s create_files -f 100 %s"
+                       % (self.script_upload_path, mount_object.mountpoint))
+
+            proc = g.run_async(mount_object.client_system, command,
+                               user=mount_object.user)
+            self.all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # Select bricks to bring offline
+        bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
+            self.mnode, self.volname))
+        bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline_dict['hot_tier_bricks'] +
+            bricks_to_bring_offline_dict['cold_tier_bricks'] +
+            bricks_to_bring_offline_dict['volume_bricks']))
+
+        # Bring brick offline
+        g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
+        ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
+        self.assertTrue(ret, 'Failed to bring bricks %s offline' %
+                        bricks_to_bring_offline)
+
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 bricks_to_bring_offline)
+        self.assertTrue(ret, 'Bricks %s are not offline'
+                        % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s offline is successful',
+                   bricks_to_bring_offline)
+
+        # Modify the data
+        self.all_mounts_procs = []
+        for mount_object in self.mounts:
+            g.log.info("Modifying data for %s:%s",
+                       mount_object.client_system, mount_object.mountpoint)
+            command = ("python %s create_files -f 100 --fixed-file-size 1M %s"
+                       % (self.script_upload_path, mount_object.mountpoint))
+
+            proc = g.run_async(mount_object.client_system, command,
+                               user=mount_object.user)
+            self.all_mounts_procs.append(proc)
+
+        # Validate IO
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.io_validation_complete = True
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("IO is successful on all mounts")
+
+        # Get areequal before getting bricks online
+        g.log.info('Getting areequal before getting bricks online...')
+        ret, result_before_online = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal before getting bricks online '
+                   'is successful')
+
+        # Bring brick online
+        g.log.info('Bringing bricks %s online...', bricks_to_bring_offline)
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  bricks_to_bring_offline)
+        self.assertTrue(ret, 'Failed to bring bricks %s online' %
+                        bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s online is successful',
+                   bricks_to_bring_offline)
+
+        # Wait for volume processes to be online
+        g.log.info("Wait for volume processes to be online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Failed to wait for volume %s processes to "
+                              "be online", self.volname))
+        g.log.info("Successful in waiting for volume %s processes to be "
+                   "online", self.volname)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online")
+        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online"
+                              % self.volname))
+        g.log.info("Volume %s : All process are online", self.volname)
+
+        # Wait for self-heal-daemons to be online
+        g.log.info("Waiting for self-heal-daemons to be online")
+        ret = is_shd_daemonized(self.all_servers)
+        self.assertTrue(ret, "Either No self heal daemon process found")
+        g.log.info("All self-heal-daemons are online")
+
+        # Monitor heal completion
+        ret = monitor_heal_completion(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal has not yet completed')
+
+        # Check if heal is completed
+        ret = is_heal_complete(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not complete')
+        g.log.info('Heal is completed successfully')
+
+        # Check for split-brain
+        ret = is_volume_in_split_brain(self.mnode, self.volname)
+        self.assertFalse(ret, 'Volume is in split-brain state')
+        g.log.info('Volume is not in split-brain state')
+
+        # Get areequal after getting bricks online
+        g.log.info('Getting areequal after getting bricks online...')
+        ret, result_after_online = collect_mounts_arequal(self.mounts)
+        self.assertTrue(ret, 'Failed to get arequal')
+        g.log.info('Getting areequal after getting bricks online '
+                   'is successful')
+
+        # Checking areequals before bringing bricks online
+        # and after bringing bricks online
+        self.assertItemsEqual(result_before_online, result_after_online,
+                              'Checksums are not equal')
+        g.log.info('Checksums before bringing bricks online '
+                   'and after bringing bricks online are equal')
