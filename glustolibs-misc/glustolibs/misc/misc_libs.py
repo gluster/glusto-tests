@@ -213,7 +213,7 @@ def yum_install_packages(list_of_nodes, yum_packages):
     if _rc:
         g.log.info("Successfully installed yum packages: %s on nodes: %s" %
                    (yum_packages, list_of_nodes))
-    return _rc
+        return _rc
 
 
 def yum_remove_packages(list_of_nodes, yum_packages):
@@ -442,11 +442,25 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
         g.log.info("Rebooting the node %s" % node)
         ret = g.run(node, cmd)
 
-    # wait for 10 sec for the nodes to come online
-    g.log.info("wait for 10 seconds for nodes to come online .....")
-    time.sleep(10)
+    halt = 120
     counter = 0
 
+    g.log.info("Wait for some seconds for the nodes to go offline")
+    while counter < halt:
+        ret,  reboot_time = are_nodes_offline(nodes)
+        if not ret:
+            g.log.info("Nodes are online, Retry after 2 seconds .....")
+            time.sleep(2)
+            counter = counter + 2
+        else:
+            _rc = True
+            g.log.info("All nodes %s are offline" % nodes)
+            break
+    if not _rc:
+        g.log.error("Some nodes %s are online" % reboot_time)
+
+    g.log.info("Wait for some seconds for the nodes to come online"
+               " after reboot")
     while counter < timeout:
         ret, reboot_results = are_nodes_online(nodes)
         if not ret:
@@ -465,7 +479,7 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
                 g.log.error("Node %s is offline even after "
                             "%d minutes" % (node, timeout/60.0))
     else:
-        g.log.info("All nodes %s are up and running" % node)
+        g.log.info("All nodes %s are up and running" % nodes)
 
     return _rc, reboot_results
 
