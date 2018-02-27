@@ -1,9 +1,9 @@
-FROM fedora
+FROM fedora:26
 MAINTAINER loadtheaccumulator@gmail.com
 
 # install gdeploy first due to pip/rpm PyYAML conflict
 RUN dnf install -y wget
-RUN wget -q https://copr.fedorainfracloud.org/coprs/sac/gdeploy/repo/fedora-26/sac-gdeploy-fedora-26.repo -O /etc/yum.repos.d/gdeploy.repo
+RUN wget -q https://copr.fedorainfracloud.org/coprs/sac/gdeploy/repo/fedora-26/ -O /etc/yum.repos.d/gdeploy.repo
 RUN dnf install -y gdeploy*
 
 # install glusto
