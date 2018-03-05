@@ -15,7 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Description : The purpose of this test is to validate create snap>256
+Description : The purpose of this test is to validate snapshot create
 
 """
 
@@ -24,26 +24,34 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs, get_mounts_stat
-from glustolibs.gluster.snap_ops import get_snap_list, snap_delete_all
+from glustolibs.gluster.snap_ops import (get_snap_list, snap_delete_all)
 
 
-@runs_on([['distributed'], ['replicated', 'distributed-replicated',
-          'dispersed', 'distributed-dispersed'],
+@runs_on([['replicated', 'distributed-replicated', 'dispersed',
+           'distributed-dispersed'],
           ['glusterfs', 'nfs', 'cifs']])
-class SanpCreate256(GlusterBaseClass):
+class SnapCreate(GlusterBaseClass):
     """
-    Test for snapshot create for max 256
+    Test for snapshot create
     Steps :
         1. Create and start a volume
-        2. Mount the volume on a client
-        3. Perform some heavy IO
-        4. Varify IO
-        5. modify max snap limit to default to 256.
-        6. Create 256 snapshots
-        7. Varify 256 created sucessfully
-        8. Create 257th snapshot -  check for failure
-          -- it should fail.
-        9. Cleanup
+        2. Create a snapshot of volume using
+           -- gluster snapshot create <snap1> <vol-name(s)>
+        3. Create snapshot of volume using
+           -- gluster snapshot create <snap2> <vol-name(s)> [description
+              <description with words and quotes>]
+        4. Create one more snapshot of volume using
+           -- gluster snapshot create <snap3> <vol-name(s)> force
+        5. Create one snapshot with option no-timestamp
+        6. Mount the volume on a client
+        7. Perform some heavy IO
+        8. While files and directory creation is in progress,
+           create multiple gluster snapshots
+        9. Do a snapshot list to see if all the snapshots are present
+        10. Do a snapshot info to see all the snapshots information
+        11. Verify that the IO is not hindered
+        12. Arequal all the bricks in the snap volume
+        13. Cleanup
 
     """
     @classmethod
@@ -59,7 +67,7 @@ class SanpCreate256(GlusterBaseClass):
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients %s",
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
@@ -74,7 +82,7 @@ class SanpCreate256(GlusterBaseClass):
                                                  volume_create_force=True)
         if not ret:
             raise ExecutionError("Failed to setup and mount volume")
-        g.log.info("Volume %s has been setup successfully" % self.volname)
+        g.log.info("Volume %s has been setup successfully", self.volname)
 
     def tearDown(self):
         """
@@ -98,7 +106,51 @@ class SanpCreate256(GlusterBaseClass):
 
         GlusterBaseClass.tearDownClass.im_func(cls)
 
-    def test_validate_snaps_256(self):
+    def test_validate_snaps_create(self):
+        """
+        Creating snapshot using gluster snapshot create <snap1> <vol-name>
+        """
+        cmd_str = "gluster snapshot create %s %s" % ("snap1", self.volname)
+        ret = g.run(self.mnode, cmd_str)
+        self.assertTrue(ret, ("Failed to create snapshot for %s"
+                              % self.volname))
+        g.log.info("Snapshot snap1 created successfully for volume  %s",
+                   self.volname)
+
+        # Create snapshot of volume using
+        # -- gluster snapshot create <snap2> <vol-name(s)> [description
+        # <description with words and quotes>]
+        desc = 'description this is a snap with "snap2" name and description'
+        cmd_str = ("gluster snapshot create %s %s %s"
+                   % ("snap2", self.volname, desc))
+        ret = g.run(self.mnode, cmd_str)
+        self.assertTrue(ret, ("Failed to create snapshot for %s"
+                              % self.volname))
+        g.log.info("Snapshot snap2 created successfully for volume  %s",
+                   (self.volname))
+
+        # Create one more snapshot of volume using force
+        cmd_str = ("gluster snapshot create %s %s %s"
+                   % ("snap3", self.volname, "force"))
+        ret = g.run(self.mnode, cmd_str)
+        self.assertTrue(ret, ("Failed to create snapshot for %s"
+                              % self.volname))
+        g.log.info("Snapshot snap3 created successfully for volume  %s",
+                   (self.volname))
+
+        # Create one more snapshot of volume using no-timestamp option
+        cmd_str = ("gluster snapshot create %s %s %s"
+                   % ("snap4", self.volname, "no-timestamp"))
+        ret = g.run(self.mnode, cmd_str)
+        self.assertTrue(ret, ("Failed to create snapshot for %s"
+                              % self.volname))
+        g.log.info("Snapshot snap4 created successfully for volume  %s",
+                   (self.volname))
+
+        # Delete all snaps
+        ret, _, _ = snap_delete_all(self.mnode)
+        self.assertEqual(ret, 0, "Snapshot delete failed.")
+        g.log.info("Successfully deleted all snaps")
 
         # Start IO on all mounts.
         all_mounts_procs = []
@@ -118,6 +170,16 @@ class SanpCreate256(GlusterBaseClass):
             all_mounts_procs.append(proc)
             count = count + 10
 
+        # Create 5 snaps while IO is in progress
+        for i in range(0, 5):
+            cmd_str = "gluster snapshot create %s %s %s" % (
+                "snapy%s" % i, self.volname, "no-timestamp")
+            ret = g.run(self.mnode, cmd_str)
+            self.assertTrue(ret, ("Failed to create snapshot for %s"
+                                  % self.volname))
+            g.log.info("Snapshot %s created successfully for volume  %s",
+                       "snapy%s" % i, self.volname)
+
         # Validate IO
         g.log.info("Validating IO's")
         ret = validate_io_procs(all_mounts_procs, self.mounts)
@@ -130,45 +192,14 @@ class SanpCreate256(GlusterBaseClass):
         self.assertTrue(ret, "Stat failed on some of the clients")
         g.log.info("Successfully got stat of all files/dirs created")
 
-        # set config for 256 snpas (to make sure to override)
-        cmd_str = ("gluster snapshot config snap-max-hard-limit 256"
-                   " --mode=script")
-        ret = g.run(self.mnode, cmd_str)
-        self.assertTrue(ret, "Failed to set snap-max-hard-limit to 256.")
-        g.log.info("snap-max-hard limit successfully set for 256.")
-
-        # Create 256 snaps
-        for i in range(1, 257, 1):
-                cmd_str = "gluster snapshot create %s %s %s" % (
-                          "snapy%s" % i, self.volname, "no-timestamp")
-                ret = g.run(self.mnode, cmd_str)
-                self.assertTrue(ret, ("Failed to create snapshot for %s"
-                                      % self.volname))
-                g.log.info("Snapshot %s created successfully for volume  %s"
-                           % ("snapy%s" % i, self.volname))
-
-        # Check for no. of snaps using snap_list it should be 256
+        # Check for no of snaps using snap_list it should be 5 now
         snap_list = get_snap_list(self.mnode)
-        self.assertTrue((len(snap_list) == 256), "No of snaps not consistent "
-                        "for volume %s" % self.volname)
-        g.log.info("Successfully validated number of snaps.")
-
-        # Validate all 256 snap names created during
-        for i in range(1, 257, 1):
-            self.assertTrue(("snapy%s" % i in snap_list), "%s snap not "
-                            "found " % ("snapy%s" % i))
-        g.log.info("Sucessfully validated names of snap")
-
-        # Try to create 257th snapshot
-        cmd_str = "gluster snapshot create %s %s %s" % ("snap", self.volname,
-                                                        "no-timestamp")
-        ret = g.run(self.mnode, cmd_str)
-        self.assertEqual(ret, 1, ("Unexpected: Successfully created 'snap'"
-                                  " for  volume %s" % self.volname))
-        g.log.info("Snapshot 'snap' not created as it is 257th snap")
-
-        # Check for no. of snaps using snap_list it should be 256
-        snap_list = get_snap_list(self.mnode)
-        self.assertEqual(256, len(snap_list), "No of snaps not consistent "
+        self.assertEqual(5, len(snap_list), "No of snaps not consistent "
                          "for volume %s" % self.volname)
         g.log.info("Successfully validated number of snaps.")
+
+        # Validate all snaps created during IO
+        for i in range(0, 5):
+            self.assertIn("snapy%s" % i, snap_list, "%s snap not "
+                          "found " % ("snapy%s" % i))
+        g.log.info("Sucessfully validated names of snap")

@@ -19,6 +19,7 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
+# pylint: disable=no-name-in-module
 from glustolibs.gluster.volume_libs import (form_bricks_list_to_add_brick,
                                             get_subvols, setup_volume,
                                             cleanup_volume)
@@ -61,7 +62,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
                 raise ExecutionError("Unable to delete volume % s" % volume)
-            g.log.info("Volume deleted successfully : %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         # Calling GlusterBaseClass tearDown
         GlusterBaseClass.tearDown.im_func(self)
@@ -73,8 +74,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
                                                     self.servers,
                                                     self.all_servers_info)
         cmd = ("gluster volume add-brick %s " % (' '.join(bricks_list)))
-        g.log.info("Adding bricks without specifying volume name",
-                   self.volname)
+        g.log.info("Adding bricks without specifying volume name")
         _, _, err = g.run(self.mnode, cmd)
         self.assertIn("does not exist", err, "add-brick is successful")
         g.log.info("Volume add-brick failed with error %s ", err)
@@ -127,7 +127,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         bricks_list = get_subvols(self.mnode,
                                   self.volname)['volume_subvols'][0]
         for (i, item) in enumerate(bricks_list):
-            server, bricks = item.split(":")
+            server, _ = item.split(":")
             item.replace(server, "abc.def.ghi.jkl")
             bricks_list[i] = item.replace(server, "abc.def.ghi.jkl")
         g.log.info("Adding bricks to the volume %s from the host which is not"
@@ -155,8 +155,8 @@ class AddBrickAlreadyPartOfAnotherVolume(GlusterBaseClass):
         for volume in vol_list:
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
-                raise ExecutionError("Unable to delete volume % s" % volume)
-            g.log.info("Volume deleted successfully : %s" % volume)
+                raise ExecutionError("Unable to delete volume %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         GlusterBaseClass.tearDown.im_func(self)
 

@@ -29,7 +29,7 @@ class PeerProbeInvalidIpNonExistingHost(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
-        g.log.info("Starting %s " % cls.__name__)
+        g.log.info("Starting %s ", cls.__name__)
 
     def setUp(self):
         """
@@ -57,7 +57,7 @@ class PeerProbeInvalidIpNonExistingHost(GlusterBaseClass):
         '''
         ret, test_timestamp, _ = g.run_local('date +%s')
         test_timestamp = test_timestamp.strip()
-        g.log.info("Running Test : %s" % self.id())
+        g.log.info("Running Test : %s", self.id())
 
         # Assigning non existing ip to variable
         self.non_exist_ip = '256.256.256.256'
@@ -70,21 +70,21 @@ class PeerProbeInvalidIpNonExistingHost(GlusterBaseClass):
 
         # Peer probe checks for non existing host
         g.log.info("peer probe checking for non existing host")
-        ret, out, msg = peer_probe(self.mnode, self.non_exist_host)
+        ret, _, _ = peer_probe(self.mnode, self.non_exist_host)
         self.assertNotEqual(ret, 0, "peer probe should fail for "
                                     "non existhost: %s" % self.non_exist_host)
         g.log.info("peer probe failed for non existing host")
 
         # Peer probe checks for invalid ip
         g.log.info("peer probe checking for invalid ip")
-        ret, out, msg = peer_probe(self.mnode, self.invalid_ip)
+        ret, _, _ = peer_probe(self.mnode, self.invalid_ip)
         self.assertNotEqual(ret, 0, "peer probe shouldfail for "
                                     "invalid ip: %s" % self.invalid_ip)
         g.log.info("peer probe failed for invalid_ip")
 
         # peer probe checks for non existing ip
         g.log.info("peer probe checking for non existing ip")
-        ret, out, msg = peer_probe(self.mnode, self.non_exist_ip)
+        ret, _, _ = peer_probe(self.mnode, self.non_exist_ip)
         self.assertNotEqual(ret, 0, "peer probe should fail for non exist "
                                     "ip :%s" % self.non_exist_ip)
         g.log.info("peer probe failed for non existing ip")

@@ -57,7 +57,7 @@ class TestRebalanceStatus(GlusterBaseClass):
                                    "file_dir_ops.py")
         ret = upload_scripts(self.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients %s",
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  self.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    self.clients)
@@ -76,7 +76,7 @@ class TestRebalanceStatus(GlusterBaseClass):
             for volume in vol_list:
                 ret = cleanup_volume(self.mnode, volume)
                 if ret is True:
-                    g.log.info("Volume deleted successfully : %s" % volume)
+                    g.log.info("Volume deleted successfully : %s", volume)
                 else:
                     raise ExecutionError("Failed Cleanup the"
                                          " Volume %s" % volume)
@@ -122,8 +122,8 @@ class TestRebalanceStatus(GlusterBaseClass):
                          self.mounts[0].client_system, self.mount_type)
         self.assertTrue(ret, "Volume not mounted on mount point: %s"
                         % self.mounts[0].mountpoint)
-        g.log.info("Volume %s mounted on %s" % (self.volname,
-                                                self.mounts[0].mountpoint))
+        g.log.info("Volume %s mounted on %s", self.volname,
+                   self.mounts[0].mountpoint)
 
         # run IOs
         g.log.info("Starting IO on all mounts...")
@@ -148,7 +148,7 @@ class TestRebalanceStatus(GlusterBaseClass):
         brick_to_add = form_bricks_list(self.mnode, self.volname, 1,
                                         self.servers[0:3],
                                         servers_info_from_three_nodes)
-        ret, out, err = add_brick(self.mnode, self.volname, brick_to_add)
+        ret, _, _ = add_brick(self.mnode, self.volname, brick_to_add)
         self.assertEqual(ret, 0, "Failed to add a brick to %s" % self.volname)
 
         ret, _, _ = rebalance_start(self.mnode, self.volname)

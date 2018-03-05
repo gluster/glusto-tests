@@ -15,8 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Description : The purpose of this test is to validate restore of a snapshot.
-
+The purpose of this test is to validate restore of a snapshot.
 """
 
 from glusto.core import Glusto as g
@@ -36,7 +35,7 @@ from glustolibs.gluster.snap_ops import (snap_create,
 
 
 @runs_on([['distributed-replicated', 'distributed-dispersed'],
-         ['glusterfs']])
+          ['glusterfs']])
 class SnapRestore(GlusterBaseClass):
     """
     Test for snapshot restore
@@ -72,7 +71,7 @@ class SnapRestore(GlusterBaseClass):
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients %s",
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
@@ -87,7 +86,7 @@ class SnapRestore(GlusterBaseClass):
                                                  volume_create_force=True)
         if not ret:
             raise ExecutionError("Failed to setup and mount volume")
-        g.log.info("Volume %s has been setup successfully" % self.volname)
+        g.log.info("Volume %s has been setup successfully", self.volname)
 
     def tearDown(self):
         """
@@ -112,6 +111,7 @@ class SnapRestore(GlusterBaseClass):
         GlusterBaseClass.tearDownClass.im_func(cls)
 
     def test_validate_snaps_restore(self):
+        # pylint: disable=too-many-statements
         # Start IO on all mounts.
         all_mounts_procs = []
         count = 1
@@ -154,20 +154,20 @@ class SnapRestore(GlusterBaseClass):
                                   'autoDelete': 'disable'}}
         ret = set_snap_config(self.mnode, option_before_restore)
         self.assertTrue(ret, ("Failed to set vol option on  %s"
-                        % self.volname))
-        g.log.info("Volume options for%s is set successfully" % self.volname)
+                              % self.volname))
+        g.log.info("Volume options for%s is set successfully", self.volname)
 
         # Get brick list befor taking snap_restore
         bricks_before_snap_restore = get_all_bricks(self.mnode, self.volname)
         g.log.info("Brick List before snap restore "
-                   "volume: %s" % bricks_before_snap_restore)
+                   "volume: %s", bricks_before_snap_restore)
 
         # Creating snapshot
         ret = snap_create(self.mnode, self.volname, "snap1")
         self.assertTrue(ret, ("Failed to create snapshot for %s"
                               % self.volname))
-        g.log.info("Snapshot snap1 created successfully for volume  %s"
-                   % (self.volname))
+        g.log.info("Snapshot snap1 created successfully for volume  %s",
+                   self.volname)
 
         # Again start IO on all mounts.
         all_mounts_procs = []
@@ -202,7 +202,7 @@ class SnapRestore(GlusterBaseClass):
         # Reset volume to make sure volume options will reset
         ret = volume_reset(self.mnode, self.volname, force=False)
         self.assertTrue(ret, ("Failed to reset %s" % self.volname))
-        g.log.info("Reset Volume %s is Successful" % self.volname)
+        g.log.info("Reset Volume %s is Successful", self.volname)
 
         # Removing one brick
         g.log.info("Starting volume shrink")
@@ -235,7 +235,7 @@ class SnapRestore(GlusterBaseClass):
         # Get brick list post restore
         bricks_after_snap_restore = get_all_bricks(self.mnode, self.volname)
         g.log.info("Brick List after snap restore "
-                   "volume: %s" % bricks_after_snap_restore)
+                   "volume: %s", bricks_after_snap_restore)
         # Compare brick_list
         self.assertNotEqual(bricks_before_snap_restore,
                             bricks_after_snap_restore,
@@ -245,8 +245,8 @@ class SnapRestore(GlusterBaseClass):
         ret = snap_create(self.mnode, self.volname, "snap2")
         self.assertTrue(ret, ("Failed to create snapshot for %s"
                               % self.volname))
-        g.log.info("Snapshot snap2 created successfully for volume  %s"
-                   % (self.volname))
+        g.log.info("Snapshot snap2 created successfully for volume  %s",
+                   self.volname)
 
         # Again start IO on all mounts after restore
         all_mounts_procs = []

@@ -14,6 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import re
+import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -23,8 +25,6 @@ from glustolibs.gluster.volume_ops import (volume_stop)
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.gluster_init import stop_glusterd, start_glusterd
 from glustolibs.gluster.peer_ops import peer_probe_servers, is_peer_connected
-import re
-import random
 
 
 @runs_on([['distributed', 'replicated', 'distributed-replicated', 'dispersed',
@@ -66,7 +66,7 @@ class TestVolumeDelete(GlusterBaseClass):
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
                 raise ExecutionError("Unable to delete volume % s" % volume)
-            g.log.info("Volume deleted successfully : %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         GlusterBaseClass.tearDown.im_func(self)
 
@@ -104,8 +104,8 @@ class TestVolumeDelete(GlusterBaseClass):
         self.assertEqual(ret, 0, "Volume stop failed")
 
         # try to delete the volume, it should fail
-        ret, out, err = g.run(self.mnode, "gluster volume delete %s "
-                              "--mode=script" % self.volname)
+        ret, _, err = g.run(self.mnode, "gluster volume delete %s "
+                            "--mode=script" % self.volname)
         self.assertNotEqual(ret, 0, "Volume delete succeeded when one of the"
                             " brick node is down")
         if re.search(r'Some of the peers are down', err):

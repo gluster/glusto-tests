@@ -14,6 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
@@ -28,11 +29,13 @@ from glustolibs.gluster.peer_ops import (peer_detach_servers, peer_probe,
                                          peer_detach)
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.gluster_init import start_glusterd, stop_glusterd
-import random
 
 
 @runs_on([['distributed'], ['glusterfs']])
 class TestVolumeCreate(GlusterBaseClass):
+    '''
+    Test glusterd behavior with the gluster volume create command
+    '''
 
     @classmethod
     def setUpClass(cls):
@@ -68,12 +71,19 @@ class TestVolumeCreate(GlusterBaseClass):
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
                 raise ExecutionError("Unable to delete volume % s" % volume)
-            g.log.info("Volume deleted successfully : %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         GlusterBaseClass.tearDown.im_func(self)
 
     def test_volume_create(self):
-
+        '''
+        In this test case, volume create operations such as creating volume
+        with non existing brick path, already used brick, already existing
+        volume name, bring the bricks to online with volume start force,
+        creating a volume with bricks in another cluster, creating a volume
+        when one of the brick node is down are validated.
+        '''
+        # pylint: disable=too-many-statements
         # create and start a volume
         self.volume['name'] = "first_volume"
         self.volname = "first_volume"
@@ -157,15 +167,15 @@ class TestVolumeCreate(GlusterBaseClass):
         ret, _, _ = peer_probe(self.servers[0], self.servers[1])
         self.assertEqual(ret, 0, "Peer probe from %s to %s is failed"
                          % (self.servers[0], self.servers[1]))
-        g.log.info("Peer probe is success from %s to %s"
-                   % (self.servers[0], self.servers[1]))
+        g.log.info("Peer probe is success from %s to %s",
+                   self.servers[0], self.servers[1])
 
         # form cluster 2
         ret, _, _ = peer_probe(self.servers[2], self.servers[3])
         self.assertEqual(ret, 0, "Peer probe from %s to %s is failed"
                          % (self.servers[2], self.servers[3]))
-        g.log.info("Peer probe is success from %s to %s"
-                   % (self.servers[2], self.servers[3]))
+        g.log.info("Peer probe is success from %s to %s",
+                   self.servers[2], self.servers[3])
 
         # Creating a volume with bricks which are part of another
         # cluster should fail

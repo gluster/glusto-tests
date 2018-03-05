@@ -29,7 +29,7 @@ class QuotaNonExistentDir(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
-        g.log.info("Starting %s " % cls.__name__)
+        g.log.info("Starting %s ", cls.__name__)
 
     def setUp(self):
         # SettingUp volume and Mounting the volume
@@ -42,7 +42,7 @@ class QuotaNonExistentDir(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to setup and mount volume %s" %
                                  self.volname)
-        g.log.info("Volume %s has been setup successfully" % self.volname)
+        g.log.info("Volume %s has been setup successfully", self.volname)
 
     def test_non_existent_dir(self):
         # Displaying volume status and info
@@ -64,8 +64,8 @@ class QuotaNonExistentDir(GlusterBaseClass):
         # Set Quota limit on the root of the volume
         g.log.info("Set Quota Limit on the path %s of the volume %s",
                    path, self.volname)
-        ret, out, err = set_quota_limit_usage(self.mnode, self.volname,
-                                              path=path, limit="1GB")
+        ret, _, err = set_quota_limit_usage(self.mnode, self.volname,
+                                            path=path, limit="1GB")
         self.assertIn("No such file or directory", err, "Quota limit set "
                       "on path /foo which does not exist")
 

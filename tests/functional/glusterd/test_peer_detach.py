@@ -14,8 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-""" Description:
-        Test Cases in this module related to Glusterd peer detach.
+"""
+Test Cases in this module related to Glusterd peer detach.
 """
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -28,6 +28,9 @@ from glustolibs.gluster.lib_utils import is_core_file_created
 @runs_on([['distributed', 'replicated', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'], ['glusterfs']])
 class PeerDetachVerification(GlusterBaseClass):
+    """
+    Test that peer detach works as expected
+    """
     @classmethod
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
@@ -38,14 +41,14 @@ class PeerDetachVerification(GlusterBaseClass):
             raise ExecutionError("Peer probe failed ")
         else:
             g.log.info("All server peers are already in connected state "
-                       "%s:" % cls.servers)
+                       "%s:", cls.servers)
 
     @classmethod
     def tearDownClass(cls):
         # stopping the volume and Cleaning up the volume
         ret = cls.cleanup_volume()
         if ret:
-            g.log.info("Volume deleted successfully : %s" % cls.volname)
+            g.log.info("Volume deleted successfully : %s", cls.volname)
         else:
             raise ExecutionError("Failed Cleanup the Volume %s" % cls.volname)
 
@@ -69,33 +72,33 @@ class PeerDetachVerification(GlusterBaseClass):
         self.invalid_ip = '10.11.a'
 
         # Peer detach to specified server
-        g.log.info("Start detach specified server :%s" % self.servers[1])
-        ret, out, _ = peer_detach(self.mnode, self.servers[1])
+        g.log.info("Start detach specified server :%s", self.servers[1])
+        ret, _, _ = peer_detach(self.mnode, self.servers[1])
         self.assertEqual(ret, 0, "Failed to detach server :%s"
                          % self.servers[1])
 
         # Detached server detaching again, Expected to fail detach
         g.log.info("Start detached server detaching "
-                   "again : %s" % self.servers[1])
-        ret, out, _ = peer_detach(self.mnode, self.servers[1])
+                   "again : %s", self.servers[1])
+        ret, _, _ = peer_detach(self.mnode, self.servers[1])
         self.assertNotEqual(ret, 0, "Detach server should "
                                     "fail :%s" % self.servers[1])
 
         # Probing detached server
-        g.log.info("Start probing detached server : %s" % self.servers[1])
+        g.log.info("Start probing detached server : %s", self.servers[1])
         ret = peer_probe_servers(self.mnode, self.servers[1])
         self.assertTrue(ret, "Peer probe failed from %s to other "
                         "server : %s" % (self.mnode, self.servers[1]))
 
         # Detach invalid host
-        g.log.info("Start detaching invalid host :%s " % self.invalid_ip)
-        ret, out, _ = peer_detach(self.mnode, self.invalid_ip)
+        g.log.info("Start detaching invalid host :%s ", self.invalid_ip)
+        ret, _, _ = peer_detach(self.mnode, self.invalid_ip)
         self.assertNotEqual(ret, 0, "Detach invalid host should "
                                     "fail :%s" % self.invalid_ip)
 
         # Detach non exist host
-        g.log.info("Start detaching non exist host : %s" % self.non_exist_host)
-        ret, out, _ = peer_detach(self.mnode, self.non_exist_host)
+        g.log.info("Start detaching non exist host : %s", self.non_exist_host)
+        ret, _, _ = peer_detach(self.mnode, self.non_exist_host)
         self.assertNotEqual(ret, 0, "Detach non existing host "
                                     "should fail :%s" % self.non_exist_host)
 
@@ -107,14 +110,14 @@ class PeerDetachVerification(GlusterBaseClass):
                    "successfully")
 
         # Creating Volume
-        g.log.info("Started creating volume: %s" % self.volname)
+        g.log.info("Started creating volume: %s", self.volname)
         ret = self.setup_volume()
         self.assertTrue(ret, "Volume creation failed: %s" % self.volname)
 
         # Peer detach one node which contains the bricks of the volume created
         g.log.info("Start detaching server %s which is hosting "
-                   "bricks of a volume" % self.servers[1])
-        ret, out, err = peer_detach(self.mnode, self.servers[1])
+                   "bricks of a volume", self.servers[1])
+        ret, _, err = peer_detach(self.mnode, self.servers[1])
         self.assertNotEqual(ret, 0, "detach server should fail: %s"
                             % self.servers[1])
         msg = ('peer detach: failed: Brick(s) with the peer ' +
@@ -124,8 +127,8 @@ class PeerDetachVerification(GlusterBaseClass):
 
         #  Peer detach force a node which is hosting bricks of a volume
         g.log.info("start detaching server %s with force option "
-                   "which is hosting bricks of a volume" % self.servers[1])
-        ret, out, err = peer_detach(self.mnode, self.servers[1], force=True)
+                   "which is hosting bricks of a volume", self.servers[1])
+        ret, _, err = peer_detach(self.mnode, self.servers[1], force=True)
         self.assertNotEqual(ret, 0, "detach server should fail with force "
                                     "option : %s" % self.servers[1])
         msg = ('peer detach: failed: Brick(s) with the peer ' +

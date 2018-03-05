@@ -42,11 +42,10 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
 
         if cls.volume_type == "replicated":
             cls.volume['voltype'] = {
-                    'type': 'replicated',
-                    'replica_count': 3,
-                    'dist_count': 3,
-                    'transport': 'tcp'
-                    }
+                'type': 'replicated',
+                'replica_count': 3,
+                'dist_count': 3,
+                'transport': 'tcp'}
 
     def setUp(self):
         """
@@ -79,6 +78,7 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
         Description:-
         Reduce the replica count from replica 3 to arbiter
         """
+        # pylint: disable=too-many-statements
         # Log Volume Info and Status
         g.log.info("Logging volume info and Status")
         ret = log_volume_info_and_status(self.mnode, self.volname)

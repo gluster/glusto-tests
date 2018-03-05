@@ -16,7 +16,6 @@
 
 """
 Description:
-
 Test Cases in this module tests for
 creating snapshot when the bricks are
 down.
@@ -51,10 +50,10 @@ class CreateSnapwhenBricksareDown(GlusterBaseClass):
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
-        g.log.info("Volume %s has been setup successfully" % self.volname)
+        g.log.info("Volume %s has been setup successfully", self.volname)
 
     def test_create_snap_bricks(self):
-	"""
+        """
         1. get brick list
         2. check all bricks are online
         3. Selecting one brick randomly to bring it offline
@@ -68,9 +67,9 @@ class CreateSnapwhenBricksareDown(GlusterBaseClass):
 
         bricks_list = []
         # get the bricks from the volume
-        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
-        g.log.info("Brick List : %s" % bricks_list)
+        g.log.info("Brick List : %s", bricks_list)
 
         # check all bricks are online
         g.log.info("Verifying all bricks are online or not.....")
@@ -82,16 +81,16 @@ class CreateSnapwhenBricksareDown(GlusterBaseClass):
         # Selecting one brick randomly to bring it offline
         g.log.info("Selecting one brick randomly to bring it offline")
         brick_to_bring_offline = random.choice(bricks_list)
-        g.log.info("Brick to bring offline:%s " % brick_to_bring_offline)
+        g.log.info("Brick to bring offline:%s ", brick_to_bring_offline)
         ret = bring_bricks_offline(self.volname, brick_to_bring_offline,
                                    None)
         self.assertTrue(ret, "Failed to bring the bricks offline")
-        g.log.info("Randomly Selected brick: %s" % brick_to_bring_offline)
+        g.log.info("Randomly Selected brick: %s", brick_to_bring_offline)
 
         # get brick list
-        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
-        g.log.info("Brick List : %s" % bricks_list)
+        g.log.info("Brick List : %s", bricks_list)
 
         # check all bricks are online
         g.log.info("Verifying all bricks are online or not.....")
@@ -101,38 +100,38 @@ class CreateSnapwhenBricksareDown(GlusterBaseClass):
         g.log.info("All bricks are online.")
 
         # get the bricks for the volume
-        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
-        g.log.info("Brick List : %s" % bricks_list)
+        g.log.info("Brick List : %s", bricks_list)
 
         # Offline Bricks list
         offbricks = get_offline_bricks_list(self.mnode, self.volname)
-        g.log.info("Bricks Offline: %s" % offbricks)
+        g.log.info("Bricks Offline: %s", offbricks)
 
         # Online Bricks list
         onbricks = get_online_bricks_list(self.mnode, self.volname)
-        g.log.info("Bricks Online: %s" % onbricks)
+        g.log.info("Bricks Online: %s", onbricks)
 
         # Create snapshot of volume
         ret = snap_create(self.mnode, self.volname, "snap1",
                           False, "Description with $p3c1al characters!")
         self.assertTrue(ret, ("Failed to create snapshot snap1"))
-        g.log.info("Snapshot snap1 of volume %s created Successfully"
-                   % (self.volname))
+        g.log.info("Snapshot snap1 of volume %s created Successfully",
+                   self.volname)
 
         # Volume status
         ret = get_volume_info(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to perform gluster volume"
                               "info on volume %s"
                               % self.volname))
-        g.log.info("Gluster volume info on volume %s is successful"
-                   % self.volname)
+        g.log.info("Gluster volume info on volume %s is successful",
+                   self.volname)
         # snapshot list
         ret = snap_list(self.mnode)
         self.assertTrue(ret, ("Failed to list snapshot of volume %s"
                               % self.volname))
-        g.log.info("Snapshot list command for volume %s was successful"
-                   % self.volname)
+        g.log.info("Snapshot list command for volume %s was successful",
+                   self.volname)
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown

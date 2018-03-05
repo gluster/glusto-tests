@@ -57,7 +57,7 @@ class VolumeAccessibilityTests(GlusterBaseClass):
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients %s",
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
@@ -72,7 +72,7 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         g.log.info("Starting to Setup Volume %s", self.volname)
         ret = self.setup_volume()
         if not ret:
-            raise ExecutionError("Failed to Setup Volume %s", self.volname)
+            raise ExecutionError("Failed to Setup Volume %s" % self.volname)
         g.log.info("Successful in Setup Volume %s", self.volname)
 
     def tearDown(self):
@@ -82,7 +82,7 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         g.log.info("Starting to Setup Volume %s", self.volname)
         ret = self.cleanup_volume()
         if not ret:
-            raise ExecutionError("Failed to Setup_Volume %s", self.volname)
+            raise ExecutionError("Failed to Setup_Volume %s" % self.volname)
         g.log.info("Successful in Setup Volume %s", self.volname)
 
         # Calling GlusterBaseClass tearDown

@@ -47,7 +47,7 @@ class DeleteSnapTests(GlusterBaseClass):
         ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
-        g.log.info("Volume %s has been setup successfully" % self.volname)
+        g.log.info("Volume %s has been setup successfully", self.volname)
 
         # enabling auto-delete
         cmd = "gluster snapshot config auto-delete enable"
@@ -62,7 +62,7 @@ class DeleteSnapTests(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to set snap-max-hardlimit"
                               "config option for volume %s" % self.volname))
         g.log.info("snap-max-hardlimit config option Successfully set for"
-                   "volume %s" % self.volname)
+                   "volume %s", self.volname)
 
         # Validating max-hard-limit
         hardlimit = get_snap_config(self.mnode)
@@ -107,13 +107,13 @@ class DeleteSnapTests(GlusterBaseClass):
         self.assertEqual(ret, 0, ("Failed to list snapshot of volume %s"
                                   % self.volname))
         g.log.info("Total number of snapshots created after auto-delete"
-                   "enabled is %s" % out)
+                   "enabled is %s", out)
         if out != 8:
             g.log.info("Failed to validate snapshots with expected"
                        "number of snapshots")
         g.log.info("Snapshot Validation Successful")
-        g.log.info("Snapshot list command for volume %s was successful"
-                   % self.volname)
+        g.log.info("Snapshot list command for volume %s was successful",
+                   self.volname)
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
@@ -130,8 +130,8 @@ class DeleteSnapTests(GlusterBaseClass):
         ret = snap_delete_all(self.mnode)
         self.assertTrue(ret, ("Failed to delete snapshot of volume"
                               "%s" % self.volname))
-        g.log.info("Successfully deleted snapshots of volume %s"
-                   % self.volname)
+        g.log.info("Successfully deleted snapshots of volume %s",
+                   self.volname)
 
         # setting back default max-soft-limit to 90%
         option = {'snap-max-soft-limit': '90'}
@@ -144,4 +144,4 @@ class DeleteSnapTests(GlusterBaseClass):
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Cleanup Volume")
-        g.log.info("Cleanup volume %s Completed Successfully" % self.volname)
+        g.log.info("Cleanup volume %s Completed Successfully", self.volname)

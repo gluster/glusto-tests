@@ -82,25 +82,24 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterBaseClass):
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients %s",
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
 
         cls.counter = 1
-        """int: Value of counter is used for dirname-start-num argument for
-        file_dir_ops.py create_deep_dirs_with_files.
+        # int: Value of counter is used for dirname-start-num argument for
+        # file_dir_ops.py create_deep_dirs_with_files.
 
-        The --dir-length argument value for
-        file_dir_ops.py create_deep_dirs_with_files is set to 10
-        (refer to the cmd in setUp method). This means every mount will create
-        10 top level dirs. For every mountpoint/testcase to create new set of
-        dirs, we are incrementing the counter by --dir-length value i.e 10
-        in this test suite.
+        # The --dir-length argument value for file_dir_ops.py
+        # create_deep_dirs_with_files is set to 10 (refer to the cmd in setUp
+        # method). This means every mount will create
+        # 10 top level dirs. For every mountpoint/testcase to create new set of
+        # dirs, we are incrementing the counter by --dir-length value i.e 10 in
+        # this test suite.
 
-        If we are changing the --dir-length to new value, ensure the counter
-        is also incremented by same value to create new set of files/dirs.
-        """
+        # If we are changing the --dir-length to new value, ensure the counter
+        # is also incremented by same value to create new set of files/dirs.
 
     def setUp(self):
         """
@@ -692,23 +691,23 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
             - wait for heal to complete
             - validate IO
         """
+        # pylint: disable=too-many-statements
         # Check if volume type is dispersed. If the volume type is
         # dispersed, set the volume option 'disperse.optimistic-change-log'
         # to 'off'
         # Refer to: https://bugzilla.redhat.com/show_bug.cgi?id=1470938
+        # pylint: disable=unsupported-membership-test
         if 'dispersed' in self.volume_type and 'nfs' in self.mount_type:
             g.log.info("Set volume option 'disperse.optimistic-change-log' "
                        "to 'off' on a dispersed volume . "
                        "Refer to bug: "
                        "https://bugzilla.redhat.com/show_bug.cgi?id=1470938")
             ret = set_volume_options(self.mnode, self.volname,
-                                     {'disperse.optimistic-change-log': 'off'}
-                                     )
+                                     {'disperse.optimistic-change-log': 'off'})
             self.assertTrue(ret, ("Failed to set the volume option %s to "
                                   "off on volume %s",
                                   'disperse.optimistic-change-log',
-                                  self.volname)
-                            )
+                                  self.volname))
             g.log.info("Successfully set the volume option "
                        "'disperse.optimistic-change-log' to 'off'")
 

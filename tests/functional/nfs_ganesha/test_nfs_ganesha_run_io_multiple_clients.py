@@ -84,10 +84,3 @@ class TestNfsGaneshaWithDifferentIOPatterns(NfsGaneshaVolumeBaseClass):
 
         # pcs status output
         _, _, _ = g.run(self.servers[0], "pcs status")
-
-    @classmethod
-    def tearDownClass(cls):
-        (NfsGaneshaVolumeBaseClass.
-         tearDownClass.
-         im_func(cls,
-                 teardown_nfs_ganesha_cluster=False))

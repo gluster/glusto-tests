@@ -14,6 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
@@ -22,7 +23,6 @@ from glustolibs.gluster.volume_ops import (get_volume_list)
 from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.rebalance_ops import rebalance_start
-import random
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -50,16 +50,16 @@ class TestVolumeCreate(GlusterBaseClass):
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
                 raise ExecutionError("Unable to delete volume % s" % volume)
-            g.log.info("Volume deleted successfully : %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         GlusterBaseClass.tearDown.im_func(self)
 
     def test_add_brick_functionality(self):
 
         ret = setup_volume(self.mnode, self.all_servers_info, self.volume)
-        self.assertTrue(ret, ("Failed to create and start volume %s"
-                        % self.volname))
-        g.log.info("Volume created and started succssfully")
+        self.assertTrue(ret, "Failed to create and start volume %s"
+                        % self.volname)
+        g.log.info("Volume created and started successfully")
 
         # form bricks list to test add brick functionality
 
@@ -75,7 +75,7 @@ class TestVolumeCreate(GlusterBaseClass):
         # of bricks
 
         bricks_list_to_add = [bricks_list[0]]
-        ret, out, err = add_brick(self.mnode, self.volname, bricks_list_to_add)
+        ret, _, _ = add_brick(self.mnode, self.volname, bricks_list_to_add)
         self.assertNotEqual(ret, 0, "Expected: It should fail to add a single"
                             "brick to a replicated volume. Actual: "
                             "Successfully added single brick to volume")
@@ -94,8 +94,8 @@ class TestVolumeCreate(GlusterBaseClass):
         non_existing_brick = complete_brick + "/non_existing_brick"
         bricks_list_to_add[index_of_non_existing_brick] = non_existing_brick
 
-        ret, out, err = add_brick(self.mnode, self.volname,
-                                  bricks_list_to_add, False, **kwargs)
+        ret, _, _ = add_brick(self.mnode, self.volname,
+                              bricks_list_to_add, False, **kwargs)
         self.assertNotEqual(ret, 0, "Expected: It should fail to add non"
                             "existing brick to a volume. Actual: "
                             "Successfully added non existing brick to volume")
@@ -110,8 +110,8 @@ class TestVolumeCreate(GlusterBaseClass):
         complete_brick = bricks_list_to_add[index_of_node].split(":")
         complete_brick[0] = "abc.def.ghi.jkl"
         bricks_list_to_add[index_of_node] = ":".join(complete_brick)
-        ret, out, err = add_brick(self.mnode, self.volname,
-                                  bricks_list_to_add, False, **kwargs)
+        ret, _, _ = add_brick(self.mnode, self.volname,
+                              bricks_list_to_add, False, **kwargs)
         self.assertNotEqual(ret, 0, "Expected: It should fail to add brick "
                             "from a node which is not part of a cluster."
                             "Actual:Successfully added bricks from node which"
@@ -124,11 +124,11 @@ class TestVolumeCreate(GlusterBaseClass):
 
         bricks_list_to_add = bricks_list[(2 * replica_count_of_volume) + 1:
                                          (3 * replica_count_of_volume) + 1]
-        ret, out, err = add_brick(self.mnode, self.volname,
-                                  bricks_list_to_add, False, **kwargs)
+        ret, _, _ = add_brick(self.mnode, self.volname,
+                              bricks_list_to_add, False, **kwargs)
         self.assertEqual(ret, 0, "Failed to add the bricks to the volume")
         g.log.info("Successfully added bricks to volume")
 
         # Perform rebalance start operation
-        ret, out, err = rebalance_start(self.mnode, self.volname)
+        ret, _, _ = rebalance_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, "Rebalance start is success")

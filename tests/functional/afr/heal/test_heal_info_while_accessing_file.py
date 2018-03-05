@@ -44,8 +44,8 @@ class TestSelfHeal(GlusterBaseClass):
         GlusterBaseClass.setUpClass.im_func(cls)
 
         # Upload io scripts for running IO on mounts
-        g.log.info("Upload io scripts to clients %s for running IO on mounts"
-                   % cls.clients)
+        g.log.info("Upload io scripts to clients %s for running IO on mounts",
+                   cls.clients)
         script_local_path = ("/usr/share/glustolibs/io/scripts/"
                              "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
@@ -54,23 +54,22 @@ class TestSelfHeal(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
-        g.log.info("Successfully uploaded IO scripts to clients %s"
-                   % cls.clients)
+        g.log.info("Successfully uploaded IO scripts to clients %s",
+                   cls.clients)
 
         cls.counter = 1
-        """int: Value of counter is used for dirname-start-num argument for
-        file_dir_ops.py create_deep_dirs_with_files.
+        # int: Value of counter is used for dirname-start-num argument for
+        # file_dir_ops.py create_deep_dirs_with_files.
 
-        The --dir-length argument value for
-        file_dir_ops.py create_deep_dirs_with_files is set to 10
-        (refer to the cmd in setUp method). This means every mount will create
-        10 top level dirs. For every mountpoint/testcase to create new set of
-        dirs, we are incrementing the counter by --dir-length value i.e 10
-        in this test suite.
+        # The --dir-length argument value for file_dir_ops.py
+        # create_deep_dirs_with_files is set to 10 (refer to the cmd in setUp
+        # method). This means every mount will create
+        # 10 top level dirs. For every mountpoint/testcase to create new set of
+        # dirs, we are incrementing the counter by --dir-length value i.e 10 in
+        # this test suite.
 
-        If we are changing the --dir-length to new value, ensure the counter
-        is also incremented by same value to create new set of files/dirs.
-        """
+        # If we are changing the --dir-length to new value, ensure the counter
+        # is also incremented by same value to create new set of files/dirs.
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
@@ -135,7 +134,7 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Bring 1-st brick offline
         brick_to_bring_offline = [self.bricks_list[0]]
-        g.log.info('Bringing bricks %s offline...' % brick_to_bring_offline)
+        g.log.info('Bringing bricks %s offline...', brick_to_bring_offline)
         ret = bring_bricks_offline(self.volname, brick_to_bring_offline)
         self.assertTrue(ret, 'Failed to bring bricks %s offline'
                         % brick_to_bring_offline)
@@ -144,13 +143,13 @@ class TestSelfHeal(GlusterBaseClass):
                                  brick_to_bring_offline)
         self.assertTrue(ret, 'Bricks %s are not offline'
                         % brick_to_bring_offline)
-        g.log.info('Bringing bricks %s offline is successful'
-                   % brick_to_bring_offline)
+        g.log.info('Bringing bricks %s offline is successful',
+                   brick_to_bring_offline)
 
         # Creating files on client side
         for mount_obj in self.mounts:
-            g.log.info("Generating data for %s:%s"
-                       % (mount_obj.client_system, mount_obj.mountpoint))
+            g.log.info("Generating data for %s:%s",
+                       mount_obj.client_system, mount_obj.mountpoint)
 
             # Creating files
             cmd = ("python %s create_files -f 100 %s"
@@ -184,7 +183,7 @@ class TestSelfHeal(GlusterBaseClass):
         # Get first brick server and brick path
         # and get first file from filelist
         subvol_mnode, mnode_brick = subvol_without_offline_brick[0].split(':')
-        ret, file_list, err = g.run(subvol_mnode, 'ls %s' % mnode_brick)
+        ret, file_list, _ = g.run(subvol_mnode, 'ls %s' % mnode_brick)
         file_to_edit = file_list.splitlines()[0]
 
         # Access and modify the file
@@ -200,9 +199,8 @@ class TestSelfHeal(GlusterBaseClass):
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
-            g.log.info("IO on %s:%s is modified successfully"
-                       % (mount_obj.client_system,
-                          mount_obj.mountpoint))
+            g.log.info("IO on %s:%s is modified successfully",
+                       mount_obj.client_system, mount_obj.mountpoint)
         self.io_validation_complete = False
 
         # Get entries while accessing file

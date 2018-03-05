@@ -14,11 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-""" Description:
-        Test Cases for performing NFS disable, enable and
-        performing NFS mount and unmoount on all volumes,
-        performing different types quorum settings
-"""
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -28,10 +23,16 @@ from glustolibs.gluster.volume_ops import set_volume_options
 @runs_on([['distributed', 'replicated', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'], ['nfs']])
 class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
+    """
+    Test Cases for performing NFS disable, enable and
+    performing NFS mount and unmoount on all volumes,
+    performing different types quorum settings
+    """
+
     @classmethod
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
-        g.log.info("Starting %s " % cls.__name__)
+        g.log.info("Starting %s ", cls.__name__)
 
         # checking for peer status from every node
         ret = cls.validate_peers_are_connected()
@@ -50,7 +51,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Volume creation failed: %s" % self.volname)
-        g.log.info("Volme created successfully : %s" % self.volname)
+        g.log.info("Volme created successfully : %s", self.volname)
 
     def tearDown(self):
         """
@@ -60,7 +61,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
-        g.log.info("Volume deleted successfully : %s" % self.volname)
+        g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
         GlusterBaseClass.tearDown.im_func(self)
@@ -81,7 +82,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         # Mounting a NFS volume
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, "NFS volume mount failed for %s" % self.volname)
-        g.log.info("Volume mounted sucessfully : %s" % self.volname)
+        g.log.info("Volume mounted sucessfully : %s", self.volname)
 
         # unmounting NFS Volume
         ret = self.unmount_volume(self.mounts)
@@ -94,14 +95,14 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         self.assertTrue(ret, "gluster volume set %s nfs.disable "
                              "enable failed" % self.volname)
         g.log.info("gluster volume set %s nfs.disable "
-                   "enabled successfully" % self.volname)
+                   "enabled successfully", self.volname)
 
         # Mounting a NFS volume
         ret = self.mount_volume(self.mounts)
         self.assertFalse(ret, "Volume mount should fail for %s, but volume "
                               "mounted successfully after nfs.disable on"
                          % self.volname)
-        g.log.info("Volume mount failed : %s" % self.volname)
+        g.log.info("Volume mount failed : %s", self.volname)
 
         # performing nfs.disable disable
         self.nfs_options['nfs.disable'] = 'disable'
@@ -109,7 +110,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         self.assertTrue(ret, "gluster volume set %s nfs.disable "
                              "disable failed" % self.volname)
         g.log.info("gluster volume set %s nfs.disable "
-                   "disabled successfully" % self.volname)
+                   "disabled successfully", self.volname)
 
         # Enabling server quorum
         self.quorum_options = {'cluster.server-quorum-type': 'server'}
@@ -117,7 +118,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         self.assertTrue(ret, "gluster volume set %s cluster.server-quorum-type"
                              " server Failed" % self.volname)
         g.log.info("gluster volume set %s cluster.server-quorum-type server "
-                   "enabled successfully" % self.volname)
+                   "enabled successfully", self.volname)
 
         # Setting Quorum ratio in percentage
         self.quorum_perecent = {'cluster.server-quorum-ratio': '51%'}
@@ -125,7 +126,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         self.assertTrue(ret, "gluster volume set all cluster.server-quorum-rat"
                              "io percentage Failed :%s" % self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio 51 "
-                   "percentage enabled successfully on :%s" % self.servers)
+                   "percentage enabled successfully on :%s", self.servers)
 
         # Setting quorum ration in numbers
         self.quorum_perecent['cluster.server-quorum-ratio'] = "50"
@@ -133,7 +134,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         self.assertTrue(ret, "gluster volume set all cluster.server-quorum-rat"
                              "io 50 Failed on :%s" % self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio 50 enab"
-                   "led successfully 0n :%s" % self.servers)
+                   "led successfully 0n :%s", self.servers)
 
         # Setting quorum ration in negative numbers
         self.quorum_perecent['cluster.server-quorum-ratio'] = "-50"
@@ -142,7 +143,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
                               "tio should fail for negative numbers on :%s" %
                          self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio Failed "
-                   "for negative number on :%s" % self.servers)
+                   "for negative number on :%s", self.servers)
 
         # Setting quorum ration in negative percentage
         self.quorum_perecent['cluster.server-quorum-ratio'] = "-51%"
@@ -151,7 +152,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
                               "ratio should fail for negative percentage on"
                               ":%s" % self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio Failed "
-                   "for negtive percentage on :%s" % self.servers)
+                   "for negtive percentage on :%s", self.servers)
 
         # Setting quorum ration in fraction numbers
         self.quorum_perecent['cluster.server-quorum-ratio'] = "1/2"
@@ -160,7 +161,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
                               "ratio should fail for fraction numbers :%s"
                          % self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio "
-                   "Failed for fraction number :%s" % self.servers)
+                   "Failed for fraction number :%s", self.servers)
 
         # Setting quorum ration in negative fraction numbers
         self.quorum_perecent['cluster.server-quorum-ratio'] = "-1/2"
@@ -169,4 +170,4 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
                               "ratio should fail for negative fraction numbers"
                               " :%s" % self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio Failed "
-                   "for negative fraction number :%s" % self.servers)
+                   "for negative fraction number :%s", self.servers)

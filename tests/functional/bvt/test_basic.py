@@ -16,8 +16,8 @@
 
 """ Description: BVT-Basic Tests """
 
-import pytest
 import time
+import pytest
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
@@ -112,7 +112,7 @@ class TestGlusterdSanity(GlusterBaseClass):
             ret = restart_glusterd(self.servers)
             if not ret:
                 raise ExecutionError("Failed to restart glusterd on all "
-                                     "servers %s", self.servers)
+                                     "servers %s" % self.servers)
             g.log.info("Successfully restarted glusterd on all servers %s",
                        self.servers)
 

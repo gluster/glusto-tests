@@ -55,8 +55,8 @@ class TestSelfHeal(GlusterBaseClass):
         GlusterBaseClass.setUpClass.im_func(cls)
 
         # Upload io scripts for running IO on mounts
-        g.log.info("Upload io scripts to clients %s for running IO on mounts"
-                   % cls.clients)
+        g.log.info("Upload io scripts to clients %s for running IO on mounts",
+                   cls.clients)
         script_local_path = ("/usr/share/glustolibs/io/scripts/"
                              "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
@@ -65,23 +65,22 @@ class TestSelfHeal(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
-        g.log.info("Successfully uploaded IO scripts to clients %s"
-                   % cls.clients)
+        g.log.info("Successfully uploaded IO scripts to clients %s",
+                   cls.clients)
 
         cls.counter = 1
-        """int: Value of counter is used for dirname-start-num argument for
-        file_dir_ops.py create_deep_dirs_with_files.
+        # int: Value of counter is used for dirname-start-num argument for
+        # file_dir_ops.py create_deep_dirs_with_files.
 
-        The --dir-length argument value for
-        file_dir_ops.py create_deep_dirs_with_files is set to 10
-        (refer to the cmd in setUp method). This means every mount will create
-        10 top level dirs. For every mountpoint/testcase to create new set of
-        dirs, we are incrementing the counter by --dir-length value i.e 10
-        in this test suite.
+        # The --dir-length argument value for file_dir_ops.py
+        # create_deep_dirs_with_files is set to 10 (refer to the cmd in setUp
+        # method). This means every mount will create
+        # 10 top level dirs. For every mountpoint/testcase to create new set of
+        # dirs, we are incrementing the counter by --dir-length value i.e 10
+        # in this test suite.
 
-        If we are changing the --dir-length to new value, ensure the counter
-        is also incremented by same value to create new set of files/dirs.
-        """
+        # If we are changing the --dir-length to new value, ensure the counter
+        # is also incremented by same value to create new set of files/dirs.
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
@@ -129,13 +128,6 @@ class TestSelfHeal(GlusterBaseClass):
         # Calling GlusterBaseClass teardown
         GlusterBaseClass.tearDown.im_func(self)
 
-    @classmethod
-    def tearDownClass(cls):
-        """tearDownClass. This will be executed once per class.
-        """
-        # Calling GlusterBaseClass tearDownClass.
-        GlusterBaseClass.tearDownClass.im_func(cls)
-
     def test_data_self_heal_daemon_off(self):
         """
         Test Data-Self-Heal (heal command)
@@ -166,22 +158,22 @@ class TestSelfHeal(GlusterBaseClass):
         in cycle
         - validate IO
         """
+        # pylint: disable=too-many-statements
 
         # Setting options
         g.log.info('Setting options...')
         options = {"metadata-self-heal": "off",
                    "entry-self-heal": "off",
-                   "data-self-heal": "off",
-                   }
+                   "data-self-heal": "off"}
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, 'Failed to set options %s' % options)
-        g.log.info("Successfully set %s for volume %s"
-                   % (options, self.volname))
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
 
         # Creating files on client side
         for mount_obj in self.mounts:
-            g.log.info("Generating data for %s:%s"
-                       % (mount_obj.client_system, mount_obj.mountpoint))
+            g.log.info("Generating data for %s:%s",
+                       mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
             command = ("python %s create_files -f 100 --fixed-file-size 1k %s"
@@ -217,12 +209,12 @@ class TestSelfHeal(GlusterBaseClass):
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
         bricks_to_bring_offline = filter(None, (
-                bricks_to_bring_offline_dict['hot_tier_bricks'] +
-                bricks_to_bring_offline_dict['cold_tier_bricks'] +
-                bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['hot_tier_bricks'] +
+            bricks_to_bring_offline_dict['cold_tier_bricks'] +
+            bricks_to_bring_offline_dict['volume_bricks']))
 
         # Bring brick offline
-        g.log.info('Bringing bricks %s offline...' % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
         ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
         self.assertTrue(ret, 'Failed to bring bricks %s offline' %
                         bricks_to_bring_offline)
@@ -231,8 +223,8 @@ class TestSelfHeal(GlusterBaseClass):
                                  bricks_to_bring_offline)
         self.assertTrue(ret, 'Bricks %s are not offline'
                         % bricks_to_bring_offline)
-        g.log.info('Bringing bricks %s offline is successful'
-                   % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s offline is successful',
+                   bricks_to_bring_offline)
 
         # Get areequal after getting bricks offline
         g.log.info('Getting areequal after getting bricks offline...')
@@ -252,8 +244,8 @@ class TestSelfHeal(GlusterBaseClass):
         # Modify the data
         self.all_mounts_procs = []
         for mount_obj in self.mounts:
-            g.log.info("Modifying data for %s:%s" %
-                       (mount_obj.client_system, mount_obj.mountpoint))
+            g.log.info("Modifying data for %s:%s", mount_obj.client_system,
+                       mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
             command = ("python %s create_files -f 100 --fixed-file-size 10k %s"
@@ -272,13 +264,13 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("IO is successful on all mounts")
 
         # Bring brick online
-        g.log.info('Bringing bricks %s online...' % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s online...', bricks_to_bring_offline)
         ret = bring_bricks_online(self.mnode, self.volname,
                                   bricks_to_bring_offline)
         self.assertTrue(ret, 'Failed to bring bricks %s online' %
                         bricks_to_bring_offline)
-        g.log.info('Bringing bricks %s online is successful'
-                   % bricks_to_bring_offline)
+        g.log.info('Bringing bricks %s online is successful',
+                   bricks_to_bring_offline)
 
         # Setting options
         g.log.info('Setting options...')
@@ -300,7 +292,7 @@ class TestSelfHeal(GlusterBaseClass):
         ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
         self.assertTrue(ret, ("Volume %s : All process are not online"
                               % self.volname))
-        g.log.info("Volume %s : All process are online" % self.volname)
+        g.log.info("Volume %s : All process are online", self.volname)
 
         # Wait for self-heal-daemons to be online
         g.log.info("Waiting for self-heal-daemons to be online")
@@ -333,10 +325,10 @@ class TestSelfHeal(GlusterBaseClass):
                             self.all_servers_info)
         self.assertTrue(ret, ("Failed to expand the volume %s", self.volname))
         g.log.info("Expanding volume is successful on "
-                   "volume %s" % self.volname)
+                   "volume %s", self.volname)
 
         # Do rebalance
-        ret, out, err = rebalance_start(self.mnode, self.volname)
+        ret, _, _ = rebalance_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, 'Failed to start rebalance')
         g.log.info('Rebalance is started')
 
@@ -347,8 +339,8 @@ class TestSelfHeal(GlusterBaseClass):
         # Create 1k files
         self.all_mounts_procs = []
         for mount_obj in self.mounts:
-            g.log.info("Modifying data for %s:%s" %
-                       (mount_obj.client_system, mount_obj.mountpoint))
+            g.log.info("Modifying data for %s:%s", mount_obj.client_system,
+                       mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
             command = ("python %s create_files -f 1000 %s"
@@ -363,7 +355,7 @@ class TestSelfHeal(GlusterBaseClass):
         bricks_list = get_all_bricks(self.mnode, self.volname)
         for brick in bricks_list:
             # Bring brick offline
-            g.log.info('Bringing bricks %s offline' % brick)
+            g.log.info('Bringing bricks %s offline', brick)
             ret = bring_bricks_offline(self.volname, [brick])
             self.assertTrue(ret, 'Failed to bring bricks %s offline' % brick)
 
@@ -371,17 +363,17 @@ class TestSelfHeal(GlusterBaseClass):
                                      [brick])
             self.assertTrue(ret, 'Bricks %s are not offline'
                             % brick)
-            g.log.info('Bringing bricks %s offline is successful'
-                       % bricks_to_bring_offline)
+            g.log.info('Bringing bricks %s offline is successful',
+                       bricks_to_bring_offline)
 
             # Bring brick online
-            g.log.info('Bringing bricks %s online...' % brick)
+            g.log.info('Bringing bricks %s online...', brick)
             ret = bring_bricks_online(self.mnode, self.volname,
                                       [brick])
             self.assertTrue(ret, 'Failed to bring bricks %s online' %
                             bricks_to_bring_offline)
-            g.log.info('Bringing bricks %s online is successful'
-                       % bricks_to_bring_offline)
+            g.log.info('Bringing bricks %s online is successful',
+                       bricks_to_bring_offline)
 
             # Wait for volume processes to be online
             g.log.info("Wait for volume processes to be online")
@@ -398,7 +390,7 @@ class TestSelfHeal(GlusterBaseClass):
                                                           self.volname)
             self.assertTrue(ret, ("Volume %s : All process are not online"
                                   % self.volname))
-            g.log.info("Volume %s : All process are online" % self.volname)
+            g.log.info("Volume %s : All process are online", self.volname)
 
             # Wait for self-heal-daemons to be online
             g.log.info("Waiting for self-heal-daemons to be online")
@@ -442,13 +434,13 @@ class TestSelfHeal(GlusterBaseClass):
         - get areequal after getting bricks online and compare with
         arequal before bringing bricks online
         """
+        # pylint: disable=too-many-statements
 
         # Setting options
         g.log.info('Setting options...')
         options = {"metadata-self-heal": "off",
                    "entry-self-heal": "off",
-                   "data-self-heal": "off",
-                   }
+                   "data-self-heal": "off"}
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, 'Failed to set options %s' % options)
         g.log.info("Options "
@@ -461,9 +453,8 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         self.all_mounts_procs = []
         for mount_obj in self.mounts:
-            g.log.info("Starting IO on %s:%s"
-                       % (mount_obj.client_system,
-                          mount_obj.mountpoint))
+            g.log.info("Starting IO on %s:%s", mount_obj.client_system,
+                       mount_obj.mountpoint)
             cmd = ("python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-length 2 "
@@ -476,9 +467,8 @@ class TestSelfHeal(GlusterBaseClass):
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
             self.counter = self.counter + 10
-            g.log.info("IO on %s:%s is started successfully"
-                       % (mount_obj.client_system,
-                          mount_obj.mountpoint))
+            g.log.info("IO on %s:%s is started successfully",
+                       mount_obj.client_system, mount_obj.mountpoint)
         self.io_validation_complete = False
 
         # Validate IO
@@ -493,8 +483,7 @@ class TestSelfHeal(GlusterBaseClass):
         cmd_list = ["python %s create_files -f 20 %s",
                     "python %s mv -i '.trashcan' %s",
                     "python %s copy --dest-dir new_dir %s",
-                    "python %s delete %s",
-                    ]
+                    "python %s delete %s"]
 
         for cmd in cmd_list:
             # Get areequal before getting bricks offline
@@ -506,8 +495,7 @@ class TestSelfHeal(GlusterBaseClass):
 
             # Setting options
             g.log.info('Setting options...')
-            options = {"self-heal-daemon": "off",
-                       }
+            options = {"self-heal-daemon": "off"}
             ret = set_volume_options(self.mnode, self.volname, options)
             self.assertTrue(ret, 'Failed to set options %s' % options)
             g.log.info("Option 'self-heal-daemon' "
@@ -517,13 +505,13 @@ class TestSelfHeal(GlusterBaseClass):
             bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
                 self.mnode, self.volname))
             bricks_to_bring_offline = filter(None, (
-                    bricks_to_bring_offline_dict['hot_tier_bricks'] +
-                    bricks_to_bring_offline_dict['cold_tier_bricks'] +
-                    bricks_to_bring_offline_dict['volume_bricks']))
+                bricks_to_bring_offline_dict['hot_tier_bricks'] +
+                bricks_to_bring_offline_dict['cold_tier_bricks'] +
+                bricks_to_bring_offline_dict['volume_bricks']))
 
             # Bring brick offline
-            g.log.info('Bringing bricks %s offline...'
-                       % bricks_to_bring_offline)
+            g.log.info('Bringing bricks %s offline...',
+                       bricks_to_bring_offline)
             ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
             self.assertTrue(ret, 'Failed to bring bricks %s offline' %
                             bricks_to_bring_offline)
@@ -532,8 +520,8 @@ class TestSelfHeal(GlusterBaseClass):
                                      bricks_to_bring_offline)
             self.assertTrue(ret, 'Bricks %s are not offline'
                             % bricks_to_bring_offline)
-            g.log.info('Bringing bricks %s offline is successful'
-                       % bricks_to_bring_offline)
+            g.log.info('Bringing bricks %s offline is successful',
+                       bricks_to_bring_offline)
 
             # Get areequal after getting bricks offline
             g.log.info('Getting areequal after getting bricks offline...')
@@ -559,9 +547,8 @@ class TestSelfHeal(GlusterBaseClass):
                 proc = g.run_async(mount_obj.client_system, cmd,
                                    user=mount_obj.user)
                 self.all_mounts_procs.append(proc)
-                g.log.info("IO on %s:%s is modified successfully"
-                           % (mount_obj.client_system,
-                              mount_obj.mountpoint))
+                g.log.info("IO on %s:%s is modified successfully",
+                           mount_obj.client_system, mount_obj.mountpoint)
             self.io_validation_complete = False
 
             # Validate IO
@@ -586,19 +573,18 @@ class TestSelfHeal(GlusterBaseClass):
             g.log.info("Listing all files and directories is successful")
 
             # Bring brick online
-            g.log.info('Bringing bricks %s online...'
-                       % bricks_to_bring_offline)
+            g.log.info('Bringing bricks %s online...',
+                       bricks_to_bring_offline)
             ret = bring_bricks_online(self.mnode, self.volname,
                                       bricks_to_bring_offline)
             self.assertTrue(ret, 'Failed to bring bricks %s online'
                             % bricks_to_bring_offline)
-            g.log.info('Bringing bricks %s online is successful'
-                       % bricks_to_bring_offline)
+            g.log.info('Bringing bricks %s online is successful',
+                       bricks_to_bring_offline)
 
             # Setting options
             g.log.info('Setting options...')
-            options = {"self-heal-daemon": "on",
-                       }
+            options = {"self-heal-daemon": "on"}
             ret = set_volume_options(self.mnode, self.volname, options)
             self.assertTrue(ret, 'Failed to set options %s' % options)
             g.log.info("Option 'self-heal-daemon' is set to 'on' successfully")
@@ -618,7 +604,7 @@ class TestSelfHeal(GlusterBaseClass):
                                                           self.volname)
             self.assertTrue(ret, ("Volume %s : All process are not online"
                                   % self.volname))
-            g.log.info("Volume %s : All process are online" % self.volname)
+            g.log.info("Volume %s : All process are online", self.volname)
 
             # Wait for self-heal-daemons to be online
             g.log.info("Waiting for self-heal-daemons to be online")

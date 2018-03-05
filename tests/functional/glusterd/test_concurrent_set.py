@@ -29,17 +29,12 @@ class TestConcurrentSet(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         GlusterBaseClass.setUpClass.im_func(cls)
-        g.log.info("Starting %s " % cls.__name__)
-        '''
-        checking for peer status from every node, if peers are  in not
-        connected state, performing peer probe.
-        '''
+        g.log.info("Starting %s ", cls.__name__)
         ret = cls.validate_peers_are_connected()
         if not ret:
             raise ExecutionError("Nodes are not in peer probe state")
 
     def tearDown(self):
-
         '''
         clean up all volumes and detaches peers from cluster
         '''
@@ -47,7 +42,7 @@ class TestConcurrentSet(GlusterBaseClass):
         for volume in vol_list:
             ret = cleanup_volume(self.mnode, volume)
             self.assertTrue(ret, "Failed to Cleanup the Volume %s" % volume)
-            g.log.info("Volume deleted successfully : %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         GlusterBaseClass.tearDown.im_func(self)
 
@@ -64,8 +59,8 @@ class TestConcurrentSet(GlusterBaseClass):
         ret = volume_create(self.mnode, self.volname,
                             self.brick_list, force=False)
         self.assertEqual(ret[0], 0, ("Unable"
-                         "to create volume % s" % self.volname))
-        g.log.info("Volume created successfuly % s" % self.volname)
+                                     "to create volume %s" % self.volname))
+        g.log.info("Volume created successfuly %s", self.volname)
 
         # Create a volume
         self.volname = "second-vol"
@@ -76,8 +71,8 @@ class TestConcurrentSet(GlusterBaseClass):
         ret = volume_create(self.mnode, self.volname,
                             self.brick_list, force=False)
         self.assertEqual(ret[0], 0, ("Unable"
-                         "to create volume % s" % self.volname))
-        g.log.info("Volume created successfuly % s" % self.volname)
+                                     "to create volume %s" % self.volname))
+        g.log.info("Volume created successfuly %s", self.volname)
 
         cmd1 = ("for i in `seq 1 100`; do gluster volume set first-vol "
                 "read-ahead on; done")
@@ -87,8 +82,8 @@ class TestConcurrentSet(GlusterBaseClass):
         proc1 = g.run_async(random.choice(self.servers), cmd1)
         proc2 = g.run_async(random.choice(self.servers), cmd2)
 
-        ret1, out1, err1 = proc1.async_communicate()
-        ret2, out2, err2 = proc2.async_communicate()
+        ret1, _, _ = proc1.async_communicate()
+        ret2, _, _ = proc2.async_communicate()
 
         self.assertEqual(ret1, 0, "Concurrent volume set on different volumes "
                          "simultaneously failed")
@@ -98,7 +93,7 @@ class TestConcurrentSet(GlusterBaseClass):
         g.log.info("Setting options on different volumes @ same time "
                    "successfully completed")
         ret = is_core_file_created(self.servers, test_timestamp)
-        if (ret):
+        if ret:
             g.log.info("No core file found, glusterd service "
                        "running successfully")
         else:

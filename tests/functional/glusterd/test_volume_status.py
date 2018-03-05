@@ -14,18 +14,18 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-""" Description:
-        Test Cases in this module related to Glusterd volume status while
-        IOs in progress
 """
+Test Cases in this module related to Glusterd volume status while
+IOs in progress
+"""
+import random
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import (validate_io_procs, wait_for_io_to_complete,
                                  list_all_files_and_dirs_mounts)
-import random
-from time import sleep
 
 
 @runs_on([['distributed', 'replicated', 'distributed-replicated',
@@ -42,7 +42,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
             raise ExecutionError("Peer probe failed ")
         else:
             g.log.info("All server peers are already in connected state "
-                       "%s:" % cls.servers)
+                       "%s:", cls.servers)
 
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -53,7 +53,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, script_local_path)
         if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients %s",
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
@@ -69,7 +69,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         g.log.info("Started creating volume")
         ret = self.setup_volume()
         if ret:
-            g.log.info("Volme created successfully : %s" % self.volname)
+            g.log.info("Volme created successfully : %s", self.volname)
         else:
             raise ExecutionError("Volume creation failed: %s" % self.volname)
 
@@ -95,7 +95,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         # unmounting the volume and Cleaning up the volume
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if ret:
-            g.log.info("Volume deleted successfully : %s" % self.volname)
+            g.log.info("Volume deleted successfully : %s", self.volname)
         else:
             raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
 
@@ -117,7 +117,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         # Mounting a volume
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, "Volume mount failed for %s" % self.volname)
-        g.log.info("Volume mounted sucessfully : %s" % self.volname)
+        g.log.info("Volume mounted sucessfully : %s", self.volname)
 
         # After Mounting immediately writting IO's are failing some times,
         # thats why keeping sleep for 10 secs
@@ -147,14 +147,15 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         # performing  "gluster volume status volname inode" command on
         # all cluster servers randomly while io is in progress,
         # this command should not get hang while io is in progress
+        # pylint: disable=unused-variable
         for i in range(20):
-            ret, out, err = g.run(random.choice(self.servers),
-                                  "gluster --timeout=12000 volume status %s "
-                                  "inode" % self.volname)
+            ret, _, _ = g.run(random.choice(self.servers),
+                              "gluster --timeout=12000 volume status %s "
+                              "inode" % self.volname)
             self.assertEqual(ret, 0, ("Volume status 'inode' failed on "
                                       "volume %s" % self.volname))
             g.log.info("Successful in logging volume status"
-                       "'inode' of volume %s" % self.volname)
+                       "'inode' of volume %s", self.volname)
 
         # Validate IO
         g.log.info("Wait for IO to complete and validate IO ...")

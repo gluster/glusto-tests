@@ -47,6 +47,7 @@ class TestNfsGaneshaAcls(NfsGaneshaVolumeBaseClass):
                                  "ganesha cluster")
 
     def test_nfsv4_acls(self):
+        # pylint: disable=too-many-locals
 
         source_file = ("/usr/share/glustolibs/io/scripts/nfs_ganesha/"
                        "nfsv4_acl_test.sh")
@@ -75,32 +76,32 @@ class TestNfsGaneshaAcls(NfsGaneshaVolumeBaseClass):
 
             if option_flag:
                 g.log.info("This acl test required mount option to be "
-                           "vers=4 in %s" % client)
+                           "vers=4 in %s", client)
                 continue
 
             dirname = mountpoint + "/" + "testdir_" + client
             cmd = "[ -d %s ] || mkdir %s" % (dirname, dirname)
             ret, _, _ = g.run(client, cmd)
-            self.assertEqual(ret, 0, ("Failed to create dir %s for running "
-                             "acl test" % dirname))
+            self.assertEqual(ret, 0, "Failed to create dir %s for running "
+                             "acl test" % dirname)
 
             cmd = "sh %s %s" % (test_acl_file, dirname)
             ret, out, _ = g.run(client, cmd)
             self.assertEqual(ret, 0, ("Failed to execute acl test on %s"
                                       % client))
 
-            g.log.info("ACL test output in %s : %s" % (client, out))
+            g.log.info("ACL test output in %s : %s", client, out)
             acl_output = out.split('\n')[:-1]
             for output in acl_output:
                 match = re.search("^OK.*", output)
                 if match is None:
-                    self.assertTrue(False, ("Unexpected behaviour in acl "
-                                    "functionality in %s" % client))
+                    self.assertTrue(False, "Unexpected behaviour in acl "
+                                    "functionality in %s" % client)
 
             cmd = "rm -rf %s" % dirname
             ret, _, _ = g.run(client, cmd)
-            self.assertEqual(ret, 0, ("Failed to remove dir %s after running "
-                             "acl test" % dirname))
+            self.assertEqual(ret, 0, "Failed to remove dir %s after running "
+                             "acl test" % dirname)
 
     def tearDown(self):
         ret = disable_acl(self.servers[0], self.volname)

@@ -14,8 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-""" Description:
-        Test Cases in this module related to Gluster volume get functionality
+"""
+Test Cases in this module related to Gluster volume get functionality
 """
 
 from glusto.core import Glusto as g
@@ -85,6 +85,7 @@ class TestVolumeGet(GlusterBaseClass):
                 gluster volume get <vol-name> all
         12.  Check for any cores in "cd /"
         """
+        # pylint: disable=too-many-statements
 
         # time stamp of current test case
         ret, test_timestamp, _ = g.run_local('date +%s')
@@ -92,8 +93,8 @@ class TestVolumeGet(GlusterBaseClass):
 
         # performing gluster volume get command for non exist volume io-cache
         self.non_exist_volume = "abc99"
-        ret, out, err = g.run(self.mnode, "gluster volume get %s io-cache"
-                              % self.non_exist_volume)
+        ret, _, err = g.run(self.mnode, "gluster volume get %s io-cache"
+                            % self.non_exist_volume)
         self.assertNotEqual(ret, 0, "gluster volume get command should fail "
                                     "for non existing volume with io-cache "
                                     "option :%s" % self.non_exist_volume)
@@ -103,11 +104,11 @@ class TestVolumeGet(GlusterBaseClass):
                       % self.non_exist_volume)
         g.log.info("gluster volume get command failed successfully for non "
                    "existing volume with io-cache option"
-                   ":%s" % self.non_exist_volume)
+                   ":%s", self.non_exist_volume)
 
         # performing gluster volume get all command for non exist volume
-        ret, out, err = g.run(self.mnode, "gluster volume get "
-                                          "%s all" % self.non_exist_volume)
+        ret, _, err = g.run(self.mnode, "gluster volume get %s all" %
+                            self.non_exist_volume)
         self.assertNotEqual(ret, 0, "gluster volume get command should fail "
                                     "for non existing volume %s with all "
                                     "option" % self.non_exist_volume)
@@ -115,12 +116,12 @@ class TestVolumeGet(GlusterBaseClass):
                                 "volume with all option:%s"
                       % self.non_exist_volume)
         g.log.info("gluster volume get command failed successfully for non "
-                   "existing volume with all option :%s"
-                   % self.non_exist_volume)
+                   "existing volume with all option :%s",
+                   self.non_exist_volume)
 
         # performing gluster volume get command for non exist volume
-        ret, out, err = g.run(self.mnode, "gluster volume get "
-                                          "%s" % self.non_exist_volume)
+        ret, _, err = g.run(self.mnode, "gluster volume get "
+                            "%s" % self.non_exist_volume)
         self.assertNotEqual(ret, 0, "gluster volume get command should "
                                     "fail for non existing volume :%s"
                             % self.non_exist_volume)
@@ -128,10 +129,10 @@ class TestVolumeGet(GlusterBaseClass):
         self.assertIn(msg, err, "No proper error message for non existing "
                                 "volume :%s" % self.non_exist_volume)
         g.log.info("gluster volume get command failed successfully for non "
-                   "existing volume :%s" % self.non_exist_volume)
+                   "existing volume :%s", self.non_exist_volume)
 
         # performing gluster volume get command without any volume name given
-        ret, out, err = g.run(self.mnode, "gluster volume get")
+        ret, _, err = g.run(self.mnode, "gluster volume get")
         self.assertNotEqual(ret, 0, "gluster volume get command should fail")
         self.assertIn(msg, err, "No proper error message for gluster "
                                 "volume get command")
@@ -139,7 +140,7 @@ class TestVolumeGet(GlusterBaseClass):
 
         # performing gluster volume get io-cache command
         # without any volume name given
-        ret, out, err = g.run(self.mnode, "gluster volume get io-cache")
+        ret, _, err = g.run(self.mnode, "gluster volume get io-cache")
         self.assertNotEqual(ret, 0, "gluster volume get io-cache command "
                                     "should fail")
         self.assertIn(msg, err, "No proper error message for gluster volume "
@@ -147,8 +148,8 @@ class TestVolumeGet(GlusterBaseClass):
         g.log.info("gluster volume get io-cache command failed successfully")
 
         # gluster volume get volname with non existing option
-        ret, out, err = g.run(self.mnode, "gluster volume "
-                                          "get %s temp.key" % self.volname)
+        ret, _, err = g.run(self.mnode, "gluster volume "
+                                        "get %s temp.key" % self.volname)
         self.assertNotEqual(ret, 0, "gluster volume get command should fail "
                                     "for existing volume %s with non-existing "
                                     "option" % self.volname)
@@ -157,8 +158,8 @@ class TestVolumeGet(GlusterBaseClass):
                                 "volume %s with non-existing option"
                       % self.volname)
         g.log.info("gluster volume get command failed successfully for "
-                   "existing volume %s with non existing option"
-                   % self.volname)
+                   "existing volume %s with non existing option",
+                   self.volname)
 
         # perfroming gluster volume get volname all
 
@@ -166,7 +167,7 @@ class TestVolumeGet(GlusterBaseClass):
         self.assertIsNotNone(ret, "gluster volume get %s all command "
                                   "failed" % self.volname)
         g.log.info("gluster volume get %s all command executed "
-                   "successfully" % self.volname)
+                   "successfully", self.volname)
 
         # performing gluster volume get volname io-cache
         ret = get_volume_options(self.mnode, self.volname, "io-cache")
@@ -182,8 +183,8 @@ class TestVolumeGet(GlusterBaseClass):
         self.assertTrue(ret, "gluster volume set %s performance.low-prio-"
                              "threads failed" % self.volname)
         g.log.info("gluster volume set %s "
-                   "performance.low-prio-threads executed successfully"
-                   % self.volname)
+                   "performance.low-prio-threads executed successfully",
+                   self.volname)
 
         # Performing gluster volume get all, checking low-prio threads value
         ret = get_volume_options(self.mnode, self.volname, "all")
@@ -198,7 +199,7 @@ class TestVolumeGet(GlusterBaseClass):
         self.assertIsNotNone(ret, "gluster volume get %s all command "
                                   "failed" % self.volname)
         g.log.info("gluster volume get %s all command executed "
-                   "successfully" % self.volname)
+                   "successfully", self.volname)
 
         # Checking core file created or not in "/" directory
         ret = is_core_file_created(self.servers, test_timestamp)

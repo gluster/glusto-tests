@@ -19,6 +19,9 @@
         refresh configs, cluster enable/disable functionality.
 """
 
+import time
+import os
+import re
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on
 from glustolibs.gluster.nfs_ganesha_libs import (
@@ -37,13 +40,10 @@ from glustolibs.gluster.volume_ops import (volume_stop, volume_start,
 from glustolibs.gluster.volume_libs import (get_volume_options, setup_volume,
                                             cleanup_volume, is_volume_exported,
                                             log_volume_info_and_status)
-import time
 from glustolibs.io.utils import (validate_io_procs,
                                  list_all_files_and_dirs_mounts,
                                  wait_for_io_to_complete)
 from glustolibs.gluster.exceptions import ExecutionError
-import os
-import re
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
@@ -67,7 +67,7 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaVolumeBaseClass):
 
         for i in range(5):
             g.log.info("Testing nfs ganesha export after volume stop/start."
-                       "Count : %s " % str(i))
+                       "Count : %s", str(i))
 
             # Stoping volume
             ret = volume_stop(self.mnode, self.volname)
@@ -99,7 +99,7 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaVolumeBaseClass):
 
         for i in range(5):
             g.log.info("Executing multiple enable/disable of nfs ganesha "
-                       "cluster. Count : %s " % str(i))
+                       "cluster. Count : %s ", str(i))
 
             ret, _, _ = disable_nfs_ganesha(self.mnode)
             self.assertEqual(ret, 0, ("Failed to disable nfs-ganesha cluster"))
@@ -111,9 +111,9 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaVolumeBaseClass):
                 self.assertEqual(ret, 0, ("Failed to get ganesha.enable volume"
                                           " option for %s " % self.volume))
 
-            if vol_option['ganesha.enable'] != 'off':
-                self.assertTrue(False, ("Failed to unexport volume by default "
-                                        "after disabling cluster"))
+            self.assertEqual(vol_option.get('ganesha.enable'), 'off', "Failed "
+                             "to unexport volume by default after disabling "
+                             "cluster")
 
             ret, _, _ = enable_nfs_ganesha(self.mnode)
             self.assertEqual(ret, 0, ("Failed to enable nfs-ganesha cluster"))
@@ -125,11 +125,10 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaVolumeBaseClass):
                 self.assertEqual(ret, 0, ("Failed to get ganesha.enable volume"
                                           " option for %s " % self.volume))
 
-            if vol_option['ganesha.enable'] != 'off':
-                self.assertTrue(False, ("Volume %s is exported by default "
-                                        "after disable and enable of cluster"
-                                        "which is unexpected."
-                                        % self.volname))
+            self.assertEqual(vol_option.get('ganesha.enable'), 'off', "Volume "
+                             "%s is exported by default after disable and "
+                             "enable of cluster which is unexpected." %
+                             self.volname)
 
         # Export volume after disable and enable of cluster
         ret, _, _ = export_nfs_ganesha_volume(
@@ -250,21 +249,17 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaIOBaseClass):
             # Export volume with nfs ganesha, if it is not exported already
             vol_option = get_volume_options(self.mnode, self.volume['name'],
                                             option='ganesha.enable')
-            if vol_option is None:
-                self.assertTrue(False, ("Failed to get ganesha.enable volume"
-                                        " option for %s "
-                                        % self.volume['name']))
+            self.assertIsNotNone(vol_option, "Failed to get ganesha.enable "
+                                 "volume option for %s" % self.volume['name'])
             if vol_option['ganesha.enable'] != 'on':
-                ret, out, err = export_nfs_ganesha_volume(
+                ret, _, _ = export_nfs_ganesha_volume(
                     mnode=self.mnode, volname=self.volume['name'])
-                if ret != 0:
-                    self.assertTrue(False, ("Failed to export volume %s "
-                                            "as NFS export"
-                                            % self.volume['name']))
+                self.assertEqual(ret, 0, "Failed to export volume %s as NFS "
+                                 "export" % self.volume['name'])
                 time.sleep(5)
             else:
-                g.log.info("Volume %s is exported already"
-                           % self.volume['name'])
+                g.log.info("Volume %s is exported already",
+                           self.volume['name'])
 
             # Waiting for few seconds for volume export. Max wait time is
             # 120 seconds.
@@ -277,9 +272,8 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaIOBaseClass):
 
             # Log Volume Info and Status
             ret = log_volume_info_and_status(self.mnode, self.volume['name'])
-            if not ret:
-                self.assertTrue(False, ("Logging volume %s info and status ",
-                                        "failed " % self.volume['name']))
+            self.assertTrue(ret, "Logging volume %s info and status failed"
+                            % self.volume['name'])
 
         # Validate IO
         g.log.info("Wait for IO to complete and validate IO ...")
@@ -301,8 +295,8 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaIOBaseClass):
             volname = "nfsvol" + str(i)
             volinfo = get_volume_info(self.mnode, volname)
             if volinfo is None or volname not in volinfo:
-                g.log.info("Volume %s does not exist in %s"
-                           % (volname, self.mnode))
+                g.log.info("Volume %s does not exist in %s",
+                           volname, self.mnode)
                 continue
 
             # Unexport volume, if it is not unexported already
@@ -313,15 +307,14 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaIOBaseClass):
                                      " option for %s " % volname)
             if vol_option['ganesha.enable'] != 'off':
                 if is_volume_exported(self.mnode, volname, "nfs"):
-                    ret, out, err = unexport_nfs_ganesha_volume(
+                    ret, _, _ = unexport_nfs_ganesha_volume(
                         mnode=self.mnode, volname=volname)
                     if ret != 0:
                         raise ExecutionError("Failed to unexport volume %s "
                                              % volname)
                     time.sleep(5)
             else:
-                g.log.info("Volume %s is unexported already"
-                           % volname)
+                g.log.info("Volume %s is unexported already", volname)
 
             _, _, _ = g.run(self.mnode, "showmount -e")
 
@@ -420,7 +413,7 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaIOBaseClass):
 
         # Select the subdirectory required for the test.
         cmd = "find %s -type d -links 2 | grep -ve '.trashcan'" % mountpoint
-        ret, out, err = g.run(client, cmd)
+        ret, out, _ = g.run(client, cmd)
         if ret != 0:
             raise ExecutionError("Failed to list the deep level directories")
         self.subdir_path = out.split("\n")[0]

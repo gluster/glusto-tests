@@ -48,63 +48,45 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
     SelfHealDaemonProcessTests contains tests which verifies the
     self-heal daemon process of the nodes
     """
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """
         setup volume, mount volume and initialize necessary variables
         which is used in tests
         """
 
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        GlusterBaseClass.setUp.im_func(self)
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
-        ret = cls.setup_volume_and_mount_volume(mounts=cls.mounts)
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
         # Verfiy glustershd process releases its parent process
-        ret = is_shd_daemonized(cls.servers)
+        ret = is_shd_daemonized(self.servers)
         if not ret:
             raise ExecutionError("Self Heal Daemon process was still"
                                  " holding parent process.")
         g.log.info("Self Heal Daemon processes are online")
 
-        cls.GLUSTERSHD = "/var/lib/glusterd/glustershd/glustershd-server.vol"
-
-    def setUp(self):
-        """
-        setUp method for every test
-        """
-
-        # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.glustershd = "/var/lib/glusterd/glustershd/glustershd-server.vol"
 
     def tearDown(self):
-        """
-        tearDown for every test
-        """
-
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
-
-    @classmethod
-    def tearDownClass(cls):
         """
         Clean up the volume and umount volume from client
         """
 
         # stopping the volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        GlusterBaseClass.tearDown.im_func(self)
 
     def test_glustershd_with_add_remove_brick(self):
         """
@@ -126,40 +108,40 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
           in glustershd-server.vol file
 
         """
-
+        # pylint: disable=too-many-statements
         nodes = self.volume['servers']
         bricks_list = []
         glustershd_pids = {}
 
         # check the self-heal daemon process
         g.log.info("Starting to get self-heal daemon process on "
-                   "nodes %s" % nodes)
+                   "nodes %s", nodes)
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process "
-                              "found : %s" % pids))
+                              "found : %s", pids))
         g.log.info("Successful in getting Single self heal daemon process"
                    " on all nodes %s", nodes)
         glustershd_pids = pids
 
         # get the bricks for the volume
-        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
-        g.log.info("Brick List : %s" % bricks_list)
+        g.log.info("Brick List : %s", bricks_list)
 
         # validate the bricks present in volume info with
         # glustershd server volume file
         g.log.info("Starting parsing file %s on "
-                   "node %s" % (self.GLUSTERSHD, self.mnode))
+                   "node %s", self.glustershd, self.mnode)
         ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
                                              bricks_list)
         self.assertTrue(ret, ("Brick List from volume info is different "
                               "from glustershd server volume file. "
                               "Please check log file for details"))
-        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+        g.log.info("Successfully parsed %s file", self.glustershd)
 
         # expanding volume
-        g.log.info("Start adding bricks to volume %s" % self.volname)
+        g.log.info("Start adding bricks to volume %s", self.volname)
         ret = expand_volume(self.mnode, self.volname, self.servers,
                             self.all_servers_info)
         self.assertTrue(ret, ("Failed to add bricks to "
@@ -185,7 +167,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
 
         # Start Rebalance
         g.log.info("Starting Rebalance on the volume")
-        ret, out, err = rebalance_start(self.mnode, self.volname)
+        ret, _, err = rebalance_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to start rebalance on "
                                   "the volume %s with error %s" %
                                   (self.volname, err)))
@@ -214,17 +196,17 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
 
         # Check the self-heal daemon process after adding bricks
         g.log.info("Starting to get self-heal daemon process on "
-                   "nodes %s" % nodes)
+                   "nodes %s", nodes)
         glustershd_pids_after_expanding = {}
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
         g.log.info("Successfull in getting self-heal daemon process "
-                   "on nodes %s" % nodes)
+                   "on nodes %s", nodes)
 
         glustershd_pids_after_expanding = pids
         g.log.info("Self Heal Daemon Process ID's afetr expanding "
-                   "volume: %s" % glustershd_pids_after_expanding)
+                   "volume: %s", glustershd_pids_after_expanding)
 
         self.assertNotEqual(glustershd_pids,
                             glustershd_pids_after_expanding,
@@ -236,11 +218,11 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         # get the bricks for the volume after expanding
         bricks_list_after_expanding = get_all_bricks(self.mnode, self.volname)
         g.log.info("Brick List after expanding "
-                   "volume: %s" % bricks_list_after_expanding)
+                   "volume: %s", bricks_list_after_expanding)
 
         # validate the bricks present in volume info
         # with glustershd server volume file after adding bricks
-        g.log.info("Starting parsing file %s" % self.GLUSTERSHD)
+        g.log.info("Starting parsing file %s", self.glustershd)
         ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
                                              bricks_list_after_expanding)
 
@@ -248,7 +230,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
                               "from glustershd server volume file after "
                               "expanding bricks. Please check log file "
                               "for details"))
-        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+        g.log.info("Successfully parsed %s file", self.glustershd)
 
         # shrink the volume
         g.log.info("Starting volume shrink")
@@ -269,7 +251,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         # get the bricks after shrinking the volume
         bricks_list_after_shrinking = get_all_bricks(self.mnode, self.volname)
         g.log.info("Brick List after shrinking "
-                   "volume: %s" % bricks_list_after_shrinking)
+                   "volume: %s", bricks_list_after_shrinking)
 
         self.assertEqual(len(bricks_list_after_shrinking), len(bricks_list),
                          "Brick Count is mismatched after "
@@ -284,7 +266,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
 
         # check the self-heal daemon process after removing bricks
         g.log.info("Starting to get self-heal daemon process "
-                   "on nodes %s" % nodes)
+                   "on nodes %s", nodes)
         glustershd_pids_after_shrinking = {}
         ret, pids = get_self_heal_daemon_pid(nodes)
         glustershd_pids_after_shrinking = pids
@@ -297,14 +279,14 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
 
         # validate bricks present in volume info
         # with glustershd server volume file after removing bricks
-        g.log.info("Starting parsing file %s" % self.GLUSTERSHD)
+        g.log.info("Starting parsing file %s", self.glustershd)
         ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
                                              bricks_list_after_shrinking)
         self.assertTrue(ret, ("Brick List from volume info is different "
                               "from glustershd server volume file after "
                               "removing bricks. Please check log file "
                               "for details"))
-        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+        g.log.info("Successfully parsed %s file", self.glustershd)
 
     def test_glustershd_with_restarting_glusterd(self):
         """
@@ -322,23 +304,23 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         * brought up the brick
 
         """
-
+        # pylint: disable=too-many-statements
         nodes = self.volume['servers']
 
         # stop the volume
-        g.log.info("Stopping the volume %s" % self.volname)
+        g.log.info("Stopping the volume %s", self.volname)
         ret = volume_stop(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to stop volume %s" % self.volname))
-        g.log.info("Successfully stopped volume %s" % self.volname)
+        g.log.info("Successfully stopped volume %s", self.volname)
 
         # check the self heal daemon process after stopping the volume
         g.log.info("Verifying the self heal daemon process for "
-                   "volume %s" % self.volname)
+                   "volume %s", self.volname)
         ret = are_all_self_heal_daemons_are_online(self.mnode, self.volname)
         self.assertFalse(ret, ("Self Heal Daemon process is still running "
                                "even after stopping volume %s" % self.volname))
         g.log.info("Self Heal Daemon is not running after stopping  "
-                   "volume %s" % self.volname)
+                   "volume %s", self.volname)
 
         # restart glusterd service on all the servers
         g.log.info("Restarting glusterd on all servers %s", nodes)
@@ -350,30 +332,30 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
 
         # check the self heal daemon process after restarting glusterd process
         g.log.info("Starting to get self-heal daemon process on"
-                   " nodes %s" % nodes)
+                   " nodes %s", nodes)
         ret = are_all_self_heal_daemons_are_online(self.mnode, self.volname)
         self.assertFalse(ret, ("Self Heal Daemon process is running after "
                                "glusterd restart with volume %s in "
                                "stop state" % self.volname))
         g.log.info("Self Heal Daemon is not running after stopping  "
-                   "volume and restarting glusterd %s" % self.volname)
+                   "volume and restarting glusterd %s", self.volname)
 
         # start the volume
-        g.log.info("Starting the volume %s" % self.volname)
+        g.log.info("Starting the volume %s", self.volname)
         ret = volume_start(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to start volume %s" % self.volname))
-        g.log.info("Volume %s started successfully" % self.volname)
+        g.log.info("Volume %s started successfully", self.volname)
 
         # Verfiy glustershd process releases its parent process
         g.log.info("Checking whether glustershd process is daemonized or not")
         ret = is_shd_daemonized(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
-        g.log.info("Single self heal daemon process on all nodes %s" % nodes)
+        g.log.info("Single self heal daemon process on all nodes %s", nodes)
 
         # get the self heal daemon pids after starting volume
         g.log.info("Starting to get self-heal daemon process "
-                   "on nodes %s" % nodes)
+                   "on nodes %s", nodes)
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
@@ -381,20 +363,20 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         glustershd_pids = pids
 
         # get the bricks for the volume
-        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
-        g.log.info("Brick List : %s" % bricks_list)
+        g.log.info("Brick List : %s", bricks_list)
 
         # validate the bricks present in volume info
         # with glustershd server volume file
         g.log.info("Starting parsing file %s on "
-                   "node %s" % (self.GLUSTERSHD, self.mnode))
+                   "node %s", self.glustershd, self.mnode)
         ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
                                              bricks_list)
         self.assertTrue(ret, ("Brick List from volume info is different from "
                               "glustershd server volume file. "
                               "Please check log file for details."))
-        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+        g.log.info("Successfully parsed %s file", self.glustershd)
 
         # restart glusterd service on all the servers
         g.log.info("Restarting glusterd on all servers %s", nodes)
@@ -421,7 +403,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         # check the self heal daemon process after starting volume and
         # restarting glusterd process
         g.log.info("Starting to get self-heal daemon process "
-                   "on nodes %s" % nodes)
+                   "on nodes %s", nodes)
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
@@ -444,12 +426,12 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
 
         # bring bricks offline
         g.log.info("Going to bring down the brick process "
-                   "for %s" % bricks_to_bring_offline)
+                   "for %s", bricks_to_bring_offline)
         ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully" % bricks_to_bring_offline)
+                   "for %s succesfully", bricks_to_bring_offline)
 
         # restart glusterd after brought down the brick
         g.log.info("Restart glusterd on all servers %s", nodes)
@@ -476,7 +458,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         # check the self heal daemon process after killing brick and
         # restarting glusterd process
         g.log.info("Starting to get self-heal daemon process "
-                   "on nodes %s" % nodes)
+                   "on nodes %s", nodes)
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
@@ -490,7 +472,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
                    "brick, restarting the glusterd process")
 
         # brought the brick online
-        g.log.info("bringing up the bricks : %s online" %
+        g.log.info("bringing up the bricks : %s online",
                    bricks_to_bring_offline)
         ret = bring_bricks_online(self.mnode, self.volname,
                                   bricks_to_bring_offline)
@@ -528,7 +510,7 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
                 'arbiter_count': 1,
                 'transport': 'tcp'}
 
-        cls.GLUSTERSHD = "/var/lib/glusterd/glustershd/glustershd-server.vol"
+        cls.glustershd = "/var/lib/glusterd/glustershd/glustershd-server.vol"
 
     def setUp(self):
         """
@@ -542,7 +524,7 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup Volume %s" % self.volname)
+        g.log.info("Starting to Setup Volume %s", self.volname)
         ret = self.setup_volume_and_mount_volume(self.mounts,
                                                  volume_create_force=False)
         if not ret:
@@ -571,7 +553,7 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
 
         # check the self-heal daemon process
         g.log.info("Starting to get self-heal daemon process on "
-                   "nodes %s" % nodes)
+                   "nodes %s", nodes)
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process "
@@ -581,31 +563,31 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
         glustershd_pids = pids
 
         # get the bricks for the volume
-        g.log.info("Fetching bricks for the volume : %s" % self.volname)
+        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
-        g.log.info("Brick List : %s" % bricks_list)
+        g.log.info("Brick List : %s", bricks_list)
 
         # validate the bricks present in volume info with
         # glustershd server volume file
         g.log.info("Starting parsing file %s on "
-                   "node %s" % (self.GLUSTERSHD, self.mnode))
+                   "node %s", self.glustershd, self.mnode)
         ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
                                              bricks_list)
         self.assertTrue(ret, ("Brick List from volume info is different "
                               "from glustershd server volume file. "
                               "Please check log file for details"))
-        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+        g.log.info("Successfully parsed %s file", self.glustershd)
 
         # replace brick
         brick_to_replace = bricks_list[-1]
         new_brick = brick_to_replace + 'new'
-        g.log.info("Replacing the brick %s for the volume : %s"
-                   % (brick_to_replace, self.volname))
-        ret, out, err = replace_brick(self.mnode, self.volname,
-                                      brick_to_replace, new_brick)
+        g.log.info("Replacing the brick %s for the volume : %s",
+                   brick_to_replace, self.volname)
+        ret, _, err = replace_brick(self.mnode, self.volname,
+                                    brick_to_replace, new_brick)
         self.assertFalse(ret, err)
-        g.log.info('Replaced brick %s to %s successfully'
-                   % (brick_to_replace, new_brick))
+        g.log.info('Replaced brick %s to %s successfully',
+                   brick_to_replace, new_brick)
 
         # check bricks
         bricks_list = get_all_bricks(self.mnode, self.volname)
@@ -628,7 +610,7 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
 
         # check the self-heal daemon process
         g.log.info("Starting to get self-heal daemon process on "
-                   "nodes %s" % nodes)
+                   "nodes %s", nodes)
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process "
@@ -648,11 +630,11 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
         # get the bricks for the volume after replacing
         bricks_list_after_replacing = get_all_bricks(self.mnode, self.volname)
         g.log.info("Brick List after expanding "
-                   "volume: %s" % bricks_list_after_replacing)
+                   "volume: %s", bricks_list_after_replacing)
 
         # validate the bricks present in volume info
         # with glustershd server volume file after replacing bricks
-        g.log.info("Starting parsing file %s" % self.GLUSTERSHD)
+        g.log.info("Starting parsing file %s", self.glustershd)
         ret = do_bricks_exist_in_shd_volfile(self.mnode, self.volname,
                                              bricks_list_after_replacing)
 
@@ -660,4 +642,4 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
                               "from glustershd server volume file after "
                               "replacing bricks. Please check log file "
                               "for details"))
-        g.log.info("Successfully parsed %s file" % self.GLUSTERSHD)
+        g.log.info("Successfully parsed %s file", self.glustershd)
