@@ -146,3 +146,24 @@ def is_snapd_running(mnode, volname):
                     % mnode)
         return False
     return True
+
+
+def uss_list_snaps(client, mount):
+
+    """List snapshots under .snaps directory
+    Args:
+        client(str):client on which commands has to be executed
+        mount(str): Mount points to be executed
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+    """
+    cmd = "ls -R %s/.snaps" % (mount)
+    return g.run(client, cmd)
