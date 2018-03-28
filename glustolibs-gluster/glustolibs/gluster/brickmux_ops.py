@@ -38,3 +38,19 @@ def is_brick_mux_enabled(mnode):
         return True
     else:
         return False
+
+
+def enable_brick_mux(mnode):
+    """Enables brick multiplex operation on all servers
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+        bool : True if successfully enabled brickmux. False otherwise.
+    """
+    cmd = ("gluster v set all cluster.brick-multiplex enable")
+    _, out, _ = g.run(mnode, cmd)
+    if "success" in out:
+        return True
+    return False
