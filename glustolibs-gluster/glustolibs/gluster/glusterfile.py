@@ -49,7 +49,7 @@ def calculate_hash(host, filename):
         glusterfs = ctypes.cdll.LoadLibrary("libglusterfs.so.0")
         g.log.debug("Library libglusterfs.so.0 loaded locally")
     except OSError:
-        conn = g.get_connection(host)
+        conn = g.rpyc_get_connection(host)
         glusterfs = \
             conn.modules.ctypes.cdll.LoadLibrary("libglusterfs.so.0")
         g.log.debug("Library libglusterfs.so.0 loaded via rpyc")
