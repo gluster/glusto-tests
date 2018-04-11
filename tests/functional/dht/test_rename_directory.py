@@ -1,15 +1,36 @@
+#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+"""
+Description:
+    Test cases in this module tests DHT Rename directory
+"""
+
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
-                                                   runs_on)
-from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.glusterdir import mkdir
+
 from glustolibs.gluster.brick_libs import get_all_bricks
-from glustolibs.gluster.glusterfile import file_exists, move_file
+from glustolibs.gluster.constants import FILETYPE_DIRS
+from glustolibs.gluster.constants import \
+    TEST_FILE_EXISTS_ON_HASHED_BRICKS as FILE_ON_HASHED_BRICKS
+from glustolibs.gluster.constants import \
+    TEST_LAYOUT_IS_COMPLETE as LAYOUT_IS_COMPLETE
 from glustolibs.gluster.dht_test_utils import validate_files_in_dir
-import glustolibs.gluster.constants as k
-
-
-_TEST_FILE_ON_HASHED_BRICKS = k.TEST_FILE_EXISTS_ON_HASHED_BRICKS
+from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.gluster.glusterdir import mkdir
+from glustolibs.gluster.glusterfile import file_exists, move_file
 
 
 @runs_on([['distributed-replicated', 'replicated', 'distributed',
@@ -93,8 +114,8 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             )
 
             ret = validate_files_in_dir(client_host, mountpoint,
-                                        test_type=k.TEST_LAYOUT_IS_COMPLETE,
-                                        file_type=k.FILETYPE_DIRS)
+                                        test_type=LAYOUT_IS_COMPLETE,
+                                        file_type=FILETYPE_DIRS)
             self.assertTrue(ret, "Expected - Layout is complete")
             g.log.info('Layout is complete')
 
@@ -112,7 +133,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             g.log.info('Files and directories are created')
 
             ret = validate_files_in_dir(client_host, mountpoint,
-                                        test_type=_TEST_FILE_ON_HASHED_BRICKS)
+                                        test_type=FILE_ON_HASHED_BRICKS)
             self.assertTrue(ret, "Expected - Files and dirs are stored "
                                  "on hashed bricks")
             g.log.info('Files and dirs are stored on hashed bricks')
@@ -131,7 +152,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             g.log.info('Renamed directory %s to %s', initial_folder,
                        new_folder_name)
 
-            # Old dir does not exist and destination is presented
+            # Old dir does not exists and destination is presented
             self.assertFalse(file_exists(client_host, initial_folder),
                              '%s should be not listed' % initial_folder)
             g.log.info('The old directory %s does not exists on mount point',
@@ -165,7 +186,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
                            ' %s is presented' %
                            (initial_folder, new_folder_name))
         g.log.info('Rename directory when destination directory '
-                   'does not exist is successful')
+                   'does not exists is successful')
 
     def test_rename_directory_with_dest_folder(self):
         """Test rename directory with presented destination folder
@@ -185,8 +206,8 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             )
 
             ret = validate_files_in_dir(client_host, mountpoint,
-                                        test_type=k.TEST_LAYOUT_IS_COMPLETE,
-                                        file_type=k.FILETYPE_DIRS)
+                                        test_type=LAYOUT_IS_COMPLETE,
+                                        file_type=FILETYPE_DIRS)
             self.assertTrue(ret, "Expected - Layout is complete")
             g.log.info('Layout is complete')
 
@@ -215,7 +236,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             g.log.info('Files and directories are created')
 
             ret = validate_files_in_dir(client_host, mountpoint,
-                                        test_type=_TEST_FILE_ON_HASHED_BRICKS)
+                                        test_type=FILE_ON_HASHED_BRICKS)
             self.assertTrue(ret, "Expected - Files and dirs are stored "
                                  "on hashed bricks")
             g.log.info('Files and dirs are stored on hashed bricks')
@@ -226,7 +247,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             g.log.info('Renamed folder %s to %s', initial_folder,
                        new_folder_name)
 
-            # Old dir does not exist and destination is presented
+            # Old dir does not exists and destination is presented
             self.assertFalse(file_exists(client_host, initial_folder),
                              '%s should be not listed' % initial_folder)
             g.log.info('The old directory %s does not exists on mount point',
@@ -250,7 +271,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
                 )
 
                 self.assertFalse(file_exists(brick_host, initial_folder),
-                                 "Expected folder %s not to be presented" %
+                                 "Expected folder %s to be not presented" %
                                  initial_folder)
                 self.assertTrue(file_exists(brick_host, new_folder_name),
                                 'Expected folder %s to be presented' %
@@ -260,14 +281,14 @@ class TestDHTRenameDirectory(GlusterBaseClass):
                            ' %s is presented' %
                            (initial_folder, new_folder_name))
         g.log.info('Rename directory when destination directory '
-                   'exist is successful')
+                   'exists is successful')
 
-    def tearDown(cls):
+    def tearDown(self):
         # Unmount Volume and Cleanup Volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        GlusterBaseClass.tearDownClass.im_func(self)
