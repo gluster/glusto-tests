@@ -293,7 +293,19 @@ def bring_bricks_online(mnode, volname, bricks_list,
     failed_to_bring_online_list = []
     for brick in bricks_list:
         bring_brick_online_method = random.choice(bring_bricks_online_methods)
-        if bring_brick_online_method == 'glusterd_restart':
+        if is_brick_mux_enabled(mnode):
+            bring_bricks_online_command = ("gluster volume start %s force" %
+                                           volname)
+            ret, _, _ = g.run(mnode, bring_bricks_online_command)
+            if ret != 0:
+                g.log.error("Unable to start the volume %s with force option",
+                            volname)
+                _rc = False
+            else:
+                g.log.info("Successfully restarted volume %s to bring all "
+                           "the bricks '%s' online", volname, bricks_list)
+
+        elif bring_brick_online_method == 'glusterd_restart':
             bring_brick_online_command = "service glusterd restart"
             brick_node, _ = brick.split(":")
             ret, _, _ = g.run(brick_node, bring_brick_online_command)
@@ -305,6 +317,7 @@ def bring_bricks_online(mnode, volname, bricks_list,
             else:
                 g.log.info("Successfully restarted glusterd on node %s to "
                            "bring back brick %s online", brick_node, brick)
+
         elif bring_brick_online_method == 'volume_start_force':
             bring_brick_online_command = ("gluster volume start %s force" %
                                           volname)
