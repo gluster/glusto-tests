@@ -20,6 +20,7 @@ import random
 from math import ceil
 import time
 from glusto.core import Glusto as g
+from glustolibs.gluster.brickmux_ops import is_brick_mux_enabled
 from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
 from glustolibs.gluster.volume_libs import (get_subvols, is_tiered_volume,
                                             get_client_quorum_info,
@@ -176,7 +177,7 @@ def bring_bricks_offline(volname, bricks_list,
 
     Returns:
         bool : True on successfully bringing all bricks offline.
-            False otherwise
+               False otherwise
     """
     if bring_bricks_offline_methods is None:
         bring_bricks_offline_methods = ['service_kill']
@@ -185,6 +186,45 @@ def bring_bricks_offline(volname, bricks_list,
 
     if isinstance(bricks_list, str):
         bricks_list = [bricks_list]
+
+    node_list = []
+    for brick in bricks_list:
+        node, _ = brick.split(":")
+        node_list.append(node)
+
+    if is_brick_mux_enabled(node_list[0]):
+        _rc = True
+        failed_to_bring_offline_list = []
+        for brick in bricks_list:
+            brick_node, brick_path = brick.split(":")
+            cmd = ("pgrep glusterfsd")
+            _, out, _ = g.run(brick_node, cmd)
+            if(len(out.split()) > 1):
+                cmd = ("ps -eaf | grep glusterfsd | "
+                       " grep %s.%s | grep -o '/var/run/gluster/.*' | "
+                       " awk '{ print $3 }' | grep -v 'awk' "
+                       % (volname, brick_node))
+            else:
+                cmd = ("ps -eaf | grep glusterfsd | "
+                       "grep -o '/var/run/gluster.*' | "
+                       " awk '{ print $3 }' | grep -v 'awk'")
+            _, socket_path, _ = g.run(brick_node, cmd)
+            uds_path = socket_path.strip()
+            kill_cmd = ("gf_attach -d %s %s"
+                        % (uds_path, brick_path))
+            ret, _, _ = g.run(brick_node, kill_cmd)
+            if ret != 0:
+                g.log.error("Unable to kill the brick %s", brick)
+                failed_to_bring_offline_list.append(brick)
+                _rc = False
+
+        if not _rc:
+            g.log.error("Unable to bring some of the bricks %s offline",
+                        failed_to_bring_offline_list)
+            return False
+
+        g.log.info("All the bricks : %s are brought offline", bricks_list)
+        return True
 
     _rc = True
     failed_to_bring_offline_list = []
