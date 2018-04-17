@@ -183,8 +183,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
                                 new_folder_name)
 
                 g.log.info('The old directory %s does not exists and directory'
-                           ' %s is presented' %
-                           (initial_folder, new_folder_name))
+                           ' %s is presented', initial_folder, new_folder_name)
         g.log.info('Rename directory when destination directory '
                    'does not exists is successful')
 
@@ -278,8 +277,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
                                 new_folder_name)
 
                 g.log.info('The old directory %s does not exists and directory'
-                           ' %s is presented' %
-                           (initial_folder, new_folder_name))
+                           ' %s is presented', initial_folder, new_folder_name)
         g.log.info('Rename directory when destination directory '
                    'exists is successful')
 

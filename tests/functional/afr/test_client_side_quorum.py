@@ -364,8 +364,8 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         GlusterBaseClass.setUpClass.im_func(cls)
 
         # Upload io scripts for running IO on mounts
-        g.log.info("Upload io scripts to clients %s for running IO on mounts"
-                   % cls.clients)
+        g.log.info("Upload io scripts to clients %s for running IO on mounts",
+                   cls.clients)
         script_local_path = ("/usr/share/glustolibs/io/scripts/"
                              "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
@@ -374,23 +374,22 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
-        g.log.info("Successfully uploaded IO scripts to clients %s"
-                   % cls.clients)
+        g.log.info("Successfully uploaded IO scripts to clients %s",
+                   cls.clients)
 
         cls.counter = 1
-        """int: Value of counter is used for dirname-start-num argument for
-        file_dir_ops.py create_deep_dirs_with_files.
+        # int: Value of counter is used for dirname-start-num argument for
+        # file_dir_ops.py create_deep_dirs_with_files.
 
-        The --dir-length argument value for
-        file_dir_ops.py create_deep_dirs_with_files is set to 10
-        (refer to the cmd in setUp method). This means every mount will create
-        10 top level dirs. For every mountpoint/testcase to create new set of
-        dirs, we are incrementing the counter by --dir-length value i.e 10
-        in this test suite.
+        # The --dir-length argument value for file_dir_ops.py
+        # create_deep_dirs_with_files is set to 10 (refer to the cmd in setUp
+        # method). This means every mount will create
+        # 10 top level dirs. For every mountpoint/testcase to create new set of
+        # dirs, we are incrementing the counter by --dir-length value i.e 10 in
+        # this test suite.
 
-        If we are changing the --dir-length to new value, ensure the counter
-        is also incremented by same value to create new set of files/dirs.
-        """
+        # If we are changing the --dir-length to new value, ensure the counter
+        # is also incremented by same value to create new set of files/dirs.
 
         # Override Volumes
         if cls.volume_type == "distributed-replicated":
@@ -417,7 +416,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         GlusterBaseClass.setUp.im_func(self)
 
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup Volume %s" % self.volname)
+        g.log.info("Starting to Setup Volume %s", self.volname)
         ret = self.setup_volume_and_mount_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
@@ -448,23 +447,22 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         * perform ops
 
         """
+        # pylint: disable=too-many-branches,too-many-statements
         # set cluster.quorum-type to auto
         options = {"cluster.quorum-type": "auto"}
         g.log.info("setting cluster.quorum-type to auto on "
-                   "volume %s" % self.volname)
+                   "volume %s", self.volname)
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, ("Unable to set volume option %s for"
                               "volume %s" % (options, self.volname)))
-        g.log.info("Sucessfully set %s for volume %s"
-                   % (options, self.volname))
+        g.log.info("Sucessfully set %s for volume %s", options, self.volname)
 
         # Start IO on mounts
         g.log.info("Starting IO on all mounts...")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            g.log.info("Starting IO on %s:%s"
-                       % (mount_obj.client_system,
-                          mount_obj.mountpoint))
+            g.log.info("Starting IO on %s:%s", mount_obj.client_system,
+                       mount_obj.mountpoint)
             cmd = ("python %s create_files "
                    "-f 10 --base-file-name file %s" % (self.script_upload_path,
                                                        mount_obj.mountpoint))
@@ -479,24 +477,23 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("IO is successful on all mounts")
 
         # get the subvolumes
-        g.log.info("Starting to get sub-volumes for volume %s" % self.volname)
+        g.log.info("Starting to get sub-volumes for volume %s", self.volname)
         subvols_dict = get_subvols(self.mnode, self.volname)
         num_subvols = len(subvols_dict['volume_subvols'])
-        g.log.info("Number of subvolumes in volume %s:" % num_subvols)
+        g.log.info("Number of subvolumes in volume %s:", num_subvols)
 
         # bring 2-nd bricks offline for all the subvolumes
         for i in range(0, num_subvols):
             subvol_brick_list = subvols_dict['volume_subvols'][i]
-            g.log.info("sub-volume %s brick list : %s"
-                       % (i, subvol_brick_list))
+            g.log.info("sub-volume %s brick list : %s", i, subvol_brick_list)
             bricks_to_bring_offline = subvol_brick_list[1]
             g.log.info("Going to bring down the brick process "
-                       "for %s" % bricks_to_bring_offline)
+                       "for %s", bricks_to_bring_offline)
             ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
             g.log.info("Brought down the brick process "
-                       "for %s successfully" % bricks_to_bring_offline)
+                       "for %s successfully", bricks_to_bring_offline)
 
         # create new file named newfile0.txt
         g.log.info("Start creating new file on all mounts...")
@@ -536,56 +533,56 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         for mount_obj in self.mounts:
             cmd = ("ln %s/file0.txt %s/file0.txt_hwlink"
                    % (mount_obj.mountpoint, mount_obj.mountpoint))
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to create hard link '
                                   'for file0.txt on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Hard link for file0.txt on %s is created successfully"
-                       % mount_obj.mountpoint)
+            g.log.info("Hard link for file0.txt on %s is created successfully",
+                       mount_obj.mountpoint)
 
         # create s/w link
         g.log.info("Start creating soft link for file1.txt on all mounts")
         for mount_obj in self.mounts:
             cmd = ("ln -s %s/file1.txt %s/file1.txt_swlink"
                    % (mount_obj.mountpoint, mount_obj.mountpoint))
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to create soft link '
                                   'for file1.txt on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Soft link for file1.txt on %s is created successfully"
-                       % mount_obj.mountpoint)
+            g.log.info("Soft link for file1.txt on %s is created successfully",
+                       mount_obj.mountpoint)
 
         # append to file
         g.log.info("Appending to file1.txt on all mounts")
         for mount_obj in self.mounts:
             cmd = ("cat %s/file0.txt >> %s/file1.txt"
                    % (mount_obj.mountpoint, mount_obj.mountpoint))
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to append file1.txt on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Appending for file1.txt on %s is successful"
-                       % mount_obj.mountpoint)
+            g.log.info("Appending for file1.txt on %s is successful",
+                       mount_obj.mountpoint)
 
         # modify the file
         g.log.info("Modifying file1.txt on all mounts")
         for mount_obj in self.mounts:
             cmd = ("echo 'Modify Contents' > %s/file1.txt"
                    % mount_obj.mountpoint)
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to modify file1.txt on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Modifying for file1.txt on %s is successful"
-                       % mount_obj.mountpoint)
+            g.log.info("Modifying for file1.txt on %s is successful",
+                       mount_obj.mountpoint)
 
         # truncate the file
         g.log.info("Truncating file1.txt on all mounts")
         for mount_obj in self.mounts:
             cmd = "truncate -s 0 %s/file1.txt" % mount_obj.mountpoint
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to truncate file1.txt on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Truncating for file1.txt on %s is successful"
-                       % mount_obj.mountpoint)
+            g.log.info("Truncating for file1.txt on %s is successful",
+                       mount_obj.mountpoint)
 
         # read the file
         g.log.info("Starting reading files on all mounts")
@@ -607,32 +604,32 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("stat on file1.txt on all mounts")
         for mount_obj in self.mounts:
             cmd = "stat %s/file1.txt" % mount_obj.mountpoint
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to stat file1.txt on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Stat for file1.txt on %s is successful"
-                       % mount_obj.mountpoint)
+            g.log.info("Stat for file1.txt on %s is successful",
+                       mount_obj.mountpoint)
 
         # stat on dir
         g.log.info("stat on directory on all mounts")
         for mount_obj in self.mounts:
             cmd = ("python %s stat %s"
                    % (self.script_upload_path, mount_obj.mountpoint))
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to stat directory on %s'
                              % mount_obj.mountpoint)
-            g.log.info("Stat for directory on %s is successful"
-                       % mount_obj.mountpoint)
+            g.log.info("Stat for directory on %s is successful",
+                       mount_obj.mountpoint)
 
         # ls on mount point
         g.log.info("ls on mount point on all mounts")
         for mount_obj in self.mounts:
             cmd = ("python %s ls %s"
                    % (self.script_upload_path, mount_obj.mountpoint))
-            ret, out, err = g.run(mount_obj.client_system, cmd)
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to ls on %s'
                              % mount_obj.mountpoint)
-            g.log.info("ls for %s is successful" % mount_obj.mountpoint)
+            g.log.info("ls for %s is successful", mount_obj.mountpoint)
 
 
 @runs_on([['distributed-replicated'],
