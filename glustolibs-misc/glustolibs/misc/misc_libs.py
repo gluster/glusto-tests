@@ -412,6 +412,47 @@ def are_nodes_online(nodes):
     return ret, node_results
 
 
+def reboot_nodes(nodes):
+    """
+    reboot the nodes and checks whether nodes are offline or not
+
+    Args:
+        nodes ( str|list ) : Node/Nodes to reboot
+
+    Returns:
+        bool : '_rc' is of type 'bool', True if all nodes
+        comes offline after reboot. False otherwise.
+    """
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    cmd = "reboot"
+    _rc = False
+    for node in nodes:
+        g.log.info("Executing cmd: %s on node %s", cmd, node)
+        g.log.info("Rebooting the node %s", node)
+        ret = g.run(node, cmd)
+
+    halt = 120
+    counter = 0
+
+    g.log.info("Wait for some seconds for the nodes to go offline")
+    while counter < halt:
+        ret, reboot_time = are_nodes_offline(nodes)
+        if not ret:
+            g.log.info("Nodes are online, Retry after 2 seconds .....")
+            time.sleep(2)
+            counter = counter + 2
+        else:
+            _rc = True
+            g.log.info("All nodes %s are offline", nodes)
+            break
+    if not _rc:
+        g.log.error("Some nodes %s are online", nodes)
+
+    return _rc
+
+
 def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
     """
     reboot the node and wait for node to come online
@@ -432,35 +473,12 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
         contains the node and corresponding result for reboot. If reboot is
         successfull on node, then result contains True else False.
     """
-    if isinstance(nodes, str):
-        nodes = [nodes]
-
-    cmd = "reboot"
-    _rc = False
-    for node in nodes:
-        g.log.info("Executing cmd: %s on node %s" % (cmd, node))
-        g.log.info("Rebooting the node %s" % node)
-        ret = g.run(node, cmd)
-
-    halt = 120
+    _rc = reboot_nodes(nodes)
     counter = 0
-
-    g.log.info("Wait for some seconds for the nodes to go offline")
-    while counter < halt:
-        ret,  reboot_time = are_nodes_offline(nodes)
-        if not ret:
-            g.log.info("Nodes are online, Retry after 2 seconds .....")
-            time.sleep(2)
-            counter = counter + 2
-        else:
-            _rc = True
-            g.log.info("All nodes %s are offline" % nodes)
-            break
-    if not _rc:
-        g.log.error("Some nodes %s are online" % reboot_time)
 
     g.log.info("Wait for some seconds for the nodes to come online"
                " after reboot")
+    reboot_results = {}
     while counter < timeout:
         ret, reboot_results = are_nodes_online(nodes)
         if not ret:
@@ -474,12 +492,12 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
     if not _rc:
         for node in reboot_results:
             if reboot_results[node]:
-                g.log.info("Node %s is online" % node)
+                g.log.info("Node %s is online", node)
             else:
                 g.log.error("Node %s is offline even after "
-                            "%d minutes" % (node, timeout/60.0))
+                            "%d minutes", node, timeout/60.0)
     else:
-        g.log.info("All nodes %s are up and running" % nodes)
+        g.log.info("All nodes %s are up and running", nodes)
 
     return _rc, reboot_results
 
