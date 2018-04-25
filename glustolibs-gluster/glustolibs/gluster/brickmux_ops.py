@@ -20,7 +20,7 @@
 """
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.brick_libs import get_all_bricks
+import glustolibs.gluster.brick_libs
 from glustolibs.gluster.volume_ops import get_volume_status
 
 
@@ -35,11 +35,10 @@ def is_brick_mux_enabled(mnode):
     """
     cmd = ("gluster v get all all | grep cluster.brick-multiplex |"
            "awk '{print $2}'")
-    ret, out, err = g.run(mnode, cmd)
+    _, out, _ = g.run(mnode, cmd)
     if "enable" in out:
         return True
-    else:
-        return False
+    return False
 
 
 def enable_brick_mux(mnode):
@@ -72,7 +71,8 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
         bool : True if pid's matches. False otherwise.
     """
     _rc = True
-    bricks_list = get_all_bricks(mnode, volname)
+    bricks_list = glustolibs.gluster.brick_libs.get_all_bricks(mnode,
+                                                               volname)
     for brick in bricks_list:
         brick_node, brick_path = brick.split(":")
         ret = get_volume_status(mnode, volname)

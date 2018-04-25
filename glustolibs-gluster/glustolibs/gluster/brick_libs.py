@@ -69,13 +69,11 @@ def get_all_bricks(mnode, volname):
                                 "for the volume: %s", brick, volname)
                     return None
             return all_bricks
-        else:
-            g.log.error("Bricks not found in Bricks section of volume "
-                        "info for the volume %s", volname)
-            return None
-    else:
-        g.log.error("Bricks not found for the volume %s", volname)
+        g.log.error("Bricks not found in Bricks section of volume "
+                    "info for the volume %s", volname)
         return None
+    g.log.error("Bricks not found for the volume %s", volname)
+    return None
 
 
 def get_hot_tier_bricks(mnode, volname):
@@ -199,7 +197,7 @@ def bring_bricks_offline(volname, bricks_list,
             brick_node, brick_path = brick.split(":")
             cmd = ("pgrep glusterfsd")
             _, out, _ = g.run(brick_node, cmd)
-            if(len(out.split()) > 1):
+            if len(out.split()) > 1:
                 cmd = ("ps -eaf | grep glusterfsd | "
                        " grep %s.%s | grep -o '/var/run/gluster/.*' | "
                        " awk '{ print $3 }' | grep -v 'awk' "
@@ -634,9 +632,7 @@ def select_tier_volume_bricks_to_bring_offline(mnode, volname):
                             (mnode, volname))
         bricks_to_bring_offline['hot_tier_bricks'] = hot_tier_bricks
         bricks_to_bring_offline['cold_tier_bricks'] = cold_tier_bricks
-        return bricks_to_bring_offline
-    else:
-        return bricks_to_bring_offline
+    return bricks_to_bring_offline
 
 
 def select_hot_tier_bricks_to_bring_offline(mnode, volname):
@@ -793,10 +789,8 @@ def get_bricks_to_bring_offline_from_replicated_volume(subvols_list,
                     "%s", quorum_info)
         return list_of_bricks_to_bring_offline
 
-    """
-    offline_bricks_limit: Maximum Number of bricks that can be offline without
-        affecting the cluster
-    """
+    # offline_bricks_limit: Maximum Number of bricks that can be offline
+    # without affecting the cluster
     if is_quorum_applicable:
         if 'fixed' in quorum_type:
             if quorum_count is None:
