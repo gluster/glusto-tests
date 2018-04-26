@@ -736,14 +736,6 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Successful in bringing bricks: %s offline",
                    bricks_to_bring_offline)
 
-        # Wait for volume processes to be online
-        g.log.info("Wait for volume processes to be online")
-        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
-        self.assertTrue(ret, ("Volume %s processes not online despite waiting"
-                              "for 5 mins", self.volname))
-        g.log.info("Successful in waiting for volume %s processes to be "
-                   "online", self.volname)
-
         # Log Volume Info and Status
         g.log.info("Logging volume info and Status after bringing bricks "
                    "offline from the volume %s", self.volname)
