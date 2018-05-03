@@ -39,13 +39,13 @@ def start_glusterd(servers):
     cmd = "pgrep glusterd || service glusterd start"
     results = g.run_parallel(servers, cmd)
 
-    rc = True
+    _rc = True
     for server, ret_values in results.iteritems():
-        retcode, out, err = ret_values
+        retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to start glusterd on server %s", server)
-            rc = False
-    if not rc:
+            _rc = False
+    if not _rc:
         return False
 
     return True
@@ -68,13 +68,13 @@ def stop_glusterd(servers):
     cmd = "service glusterd stop"
     results = g.run_parallel(servers, cmd)
 
-    rc = True
+    _rc = True
     for server, ret_values in results.iteritems():
-        retcode, out, err = ret_values
+        retcode, _, _ = ret_values
         if retcode != 0:
-            g.log.error("Unable to start glusterd on server %s", server)
-            rc = False
-    if not rc:
+            g.log.error("Unable to stop glusterd on server %s", server)
+            _rc = False
+    if not _rc:
         return False
 
     return True
@@ -97,13 +97,13 @@ def restart_glusterd(servers):
     cmd = "service glusterd restart"
     results = g.run_parallel(servers, cmd)
 
-    rc = True
+    _rc = True
     for server, ret_values in results.iteritems():
-        retcode, out, err = ret_values
+        retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to restart glusterd on server %s", server)
-            rc = False
-    if not rc:
+            _rc = False
+    if not _rc:
         return False
 
     return True
@@ -130,17 +130,17 @@ def is_glusterd_running(servers):
     cmd1_results = g.run_parallel(servers, cmd1)
     cmd2_results = g.run_parallel(servers, cmd2)
 
-    rc = 0
+    _rc = 0
     for server, ret_values in cmd1_results.iteritems():
-        retcode, out, err = ret_values
+        retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("glusterd is not running on the server %s", server)
-            rc = 1
+            _rc = 1
             if cmd2_results[server][0] == 0:
                 g.log.error("PID of glusterd is alive and status is not "
                             "running")
-                rc = -1
-    return rc
+                _rc = -1
+    return _rc
 
 
 # TODO: THIS IS NOT IMPLEMENTED YET. PLEASE DO THIS MANUALLY
@@ -194,15 +194,15 @@ def get_glusterd_pids(nodes):
         nodes = [nodes]
 
     cmd = "pidof glusterd"
-    g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
+    g.log.info("Executing cmd: %s on node %s", cmd, nodes)
     results = g.run_parallel(nodes, cmd)
     for node in results:
-        ret, out, err = results[node]
+        ret, out, _ = results[node]
         if ret == 0:
             if len(out.strip().split("\n")) == 1:
                 if not out.strip():
                     g.log.error("NO glusterd process found "
-                                "on node %s" % node)
+                                "on node %s", node)
                     _rc = False
                     glusterd_pids[node] = ['-1']
                 else:
@@ -211,13 +211,13 @@ def get_glusterd_pids(nodes):
                                out.strip().split("\n"), node)
                     glusterd_pids[node] = (out.strip().split("\n"))
             else:
-                g.log.error("More than One glusterd process "
-                            "found on node %s" % node)
+                g.log.error("More than one glusterd process "
+                            "found on node %s", node)
                 _rc = False
                 glusterd_pids[node] = out
         else:
             g.log.error("Not able to get glusterd process "
-                        "from node %s" % node)
+                        "from node %s", node)
             _rc = False
             glusterd_pids[node] = ['-1']
 
