@@ -18,7 +18,8 @@ import socket
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
-                                         peer_probe_servers)
+                                         peer_probe_servers,
+                                         nodes_from_pool_list)
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            get_volume_list, volume_stop,
@@ -28,10 +29,6 @@ from glustolibs.gluster.exceptions import ExecutionError
 
 
 class TestPeerProbe(GlusterBaseClass):
-    @classmethod
-    def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
-        g.log.info("Starting %s ", cls.__name__)
 
     def setUp(self):
         # Performing peer detach
@@ -41,20 +38,21 @@ class TestPeerProbe(GlusterBaseClass):
             if ret:
                 raise ExecutionError("Peer detach failed")
             g.log.info("Peer detach SUCCESSFUL.")
-            self.peer_probe = False
 
         GlusterBaseClass.setUp.im_func(self)
 
     def tearDown(self):
 
         # Peer probe detached servers
-        if not self.peer_probe:
-            ret = peer_probe_servers(self.mnode, self.servers)
-            if not ret:
-                raise ExecutionError("Failed to probe detached "
-                                     "servers %s" % self.servers)
-            g.log.info("Peer probe success for detached "
-                       "servers %s", self.servers)
+        pool = nodes_from_pool_list(self.mnode)
+        for node in pool:
+            peer_detach(self.mnode, node)
+        ret = peer_probe_servers(self.mnode, self.servers)
+        if not ret:
+            raise ExecutionError("Failed to probe detached "
+                                 "servers %s" % self.servers)
+        g.log.info("Peer probe success for detached "
+                   "servers %s", self.servers)
 
         # clean up all volumes and detaches peers from cluster
 
@@ -94,7 +92,6 @@ class TestPeerProbe(GlusterBaseClass):
             self.assertEqual(ret, 0, "Unable to peer"
                              "probe to the server % s" % hostname)
             g.log.info("Peer probe succeeded for server %s", hostname)
-        self.peer_probe = True
 
         # Create a volume
         self.volname = "test-vol"

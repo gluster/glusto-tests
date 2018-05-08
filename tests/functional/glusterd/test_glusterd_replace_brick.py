@@ -30,7 +30,7 @@ from glustolibs.gluster.brick_libs import are_bricks_online
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
            'distributed-dispersed'], ['glusterfs']])
 class TestReplaceBrick(GlusterBaseClass):
-    def setup(self):
+    def setUp(self):
         GlusterBaseClass.setUp.im_func(self)
         self.test_method_complete = False
         # Creating a volume and starting it
