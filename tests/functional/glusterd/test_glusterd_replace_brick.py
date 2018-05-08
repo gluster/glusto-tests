@@ -59,8 +59,7 @@ class TestReplaceBrick(GlusterBaseClass):
         # pylint: disable=too-many-function-args
         # Getting all the bricks which are online
         bricks_online = get_online_bricks_list(self.mnode, self.volname)
-        self.assertIsNotNone(bricks_online, None, (
-            "Unable to get the online bricks"))
+        self.assertIsNotNone(bricks_online, "Unable to get the online bricks")
         g.log.info("got the brick list from the volume")
 
         # Getting one random brick from the online bricks to be replaced
