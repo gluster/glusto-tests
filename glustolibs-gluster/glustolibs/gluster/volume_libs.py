@@ -1139,8 +1139,7 @@ def enable_and_validate_volume_options(mnode, volname, volume_options_list,
 
 def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
                                   add_to_hot_tier=False,
-                                  distribute_count=None,
-                                  replica_count=None):
+                                  **kwargs):
     """Forms list of bricks to add-bricks to the volume.
 
     Args:
@@ -1177,10 +1176,21 @@ def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
         nonetype: None if there are not enough bricks to add on the servers or
             volume doesn't exists or any other failure.
     """
+
     # Check if volume exists
     if not volume_exists(mnode, volname):
         g.log.error("Volume %s doesn't exists.", volname)
         return None
+
+    # Check if the volume has to be expanded by n distribute count.
+    distribute_count = None
+    if 'distribute_count' in kwargs:
+        distribute_count = int(kwargs['distribute_count'])
+
+    # Check whether we need to increase the replica count of the volume
+    replica_count = None
+    if 'replica_count' in kwargs:
+        replica_count = int(kwargs['replica_count'])
 
     if replica_count is None and distribute_count is None:
         distribute_count = 1
