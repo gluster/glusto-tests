@@ -100,8 +100,7 @@ def remove_brick(mnode, volname, bricks_list, option, xml=False, **kwargs):
             The third element 'err' is of type 'str' and is the stderr value
             of the command execution.
     """
-    if option == "commit" or option == "force":
-        option = option + " --mode=script"
+    option = option + " --mode=script"
 
     replica_count = None
     replica = ''
