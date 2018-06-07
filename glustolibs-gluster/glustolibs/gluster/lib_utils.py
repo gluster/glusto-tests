@@ -834,8 +834,8 @@ def is_core_file_created(nodes, testrun_timestamp,
         return True
 
 
-def open_firewall(nodes, firewall_service, permanent=False):
-    """Opening firewall services on nodes
+def remove_service_from_firewall(nodes, firewall_service, permanent=False):
+    """Removing services from firewall on nodes
     This library only for RHEL7, for RHEL6 not required
         Args:
             nodes(list|str): List of server on which firewalls services to be
@@ -874,6 +874,50 @@ def open_firewall(nodes, firewall_service, permanent=False):
                     ret, _, _ = results[host]
                     if ret != 0:
                         g.log.error("Failed to remove firewall pemanently")
+                        _rc = False
+
+    return _rc
+
+
+def add_services_to_firewall(nodes, firewall_service, permanent=False):
+    """Adding services to firewall on nodes
+    This lib only for RHEL7, RHEL6 Not Required
+    Args:
+        nodes(list|str): List of server on which firewalls to be enabled
+        firewall_service(list|str): List of firewall services to be enabled
+        permanent(boolean): True|False
+    Return:
+        bool: True|False(Firewall Enabled or Failed)
+    """
+
+    if isinstance(nodes, str):
+        nodes = [nodes]
+
+    if isinstance(firewall_service, str):
+        firewall_service = [firewall_service]
+
+    _rc = True
+    if is_rhel7(nodes):
+        for service in firewall_service:
+            cmd = ("firewall-cmd --zone=public " + "--add-service=" + service)
+            results = g.run_parallel(nodes, cmd)
+            # Check for return status
+            for host in results:
+                ret, _, _ = results[host]
+                if ret != 0:
+                    g.log.error("Failed to execute firewall command on %s"
+                                % host)
+                    _rc = False
+        if permanent and _rc:
+            for service in firewall_service:
+                cmd = ("firewall-cmd --zone=public " + "--add-service=" +
+                       service + " --permanent")
+                results = g.run_parallel(nodes, cmd)
+                # Check for return status
+                for host in results:
+                    ret, _, _ = results[host]
+                    if ret != 0:
+                        g.log.error("Failed to add firewall permanently")
                         _rc = False
 
     return _rc
