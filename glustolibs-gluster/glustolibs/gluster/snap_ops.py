@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -858,4 +858,30 @@ def snap_deactivate(mnode, snapname):
     """
 
     cmd = "gluster snapshot deactivate %s --mode=script" % snapname
+    return g.run(mnode, cmd)
+
+
+def terminate_snapd_on_node(mnode):
+    """Terminate snapd on the specified node
+
+    Args:
+        mnode(str):node on which commands has to be executed
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+    """
+    cmd = "ps aux| grep -m1 snapd | awk '{print $2}'"
+    _, out, _ = g.run(mnode, cmd)
+    if out is None:
+        g.log.error("Failed to get the snapd PID using command %s", cmd)
+        return None
+    cmd = "kill -9 %s" % out
     return g.run(mnode, cmd)
