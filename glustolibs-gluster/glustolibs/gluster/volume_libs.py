@@ -33,7 +33,7 @@ from glustolibs.gluster.volume_ops import (volume_create, volume_start,
 from glustolibs.gluster.tiering_ops import (add_extra_servers_to_cluster,
                                             tier_attach,
                                             is_tier_process_running)
-from glustolibs.gluster.quota_ops import (enable_quota, set_quota_limit_usage,
+from glustolibs.gluster.quota_ops import (quota_enable, quota_limit_usage,
                                           is_quota_enabled)
 from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
 from glustolibs.gluster.snap_ops import snap_delete_by_volumename
@@ -315,7 +315,7 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
     # Enable Quota
     if ('quota' in volume_config and 'enable' in volume_config['quota'] and
             volume_config['quota']['enable']):
-        ret, _, _ = enable_quota(mnode=mnode, volname=volname)
+        ret, _, _ = quota_enable(mnode=mnode, volname=volname)
         if ret != 0:
             g.log.error("Unable to set quota on the volume %s", volname)
             return False
@@ -336,8 +336,8 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
             size = "100GB"
 
         # Set quota_limit_usage
-        ret, _, _ = set_quota_limit_usage(mnode=mnode, volname=volname,
-                                          path=path, limit=size)
+        ret, _, _ = quota_limit_usage(mnode=mnode, volname=volname,
+                                      path=path, limit=size)
         if ret != 0:
             g.log.error("Unable to set quota limit on the volume %s", volname)
             return False

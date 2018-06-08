@@ -18,18 +18,16 @@
 """
     Description: Library for gluster quota operations.
 """
-
-from glusto.core import Glusto as g
-from glustolibs.gluster.exceptions import ExecutionError, ExecutionParseError
-from glustolibs.gluster.volume_ops import get_volume_options
-
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
     import xml.etree.ElementTree as etree
 
+from glusto.core import Glusto as g
+from glustolibs.gluster.volume_ops import get_volume_options
 
-def enable_quota(mnode, volname):
+
+def quota_enable(mnode, volname):
     """Enables quota on given volume
 
     Args:
@@ -48,14 +46,14 @@ def enable_quota(mnode, volname):
             of the command execution.
 
     Example:
-        enable_quota("abc.xyz.com", testvol)
+        quota_enable("abc.xyz.com", testvol)
     """
 
     cmd = "gluster volume quota %s enable" % volname
     return g.run(mnode, cmd)
 
 
-def disable_quota(mnode, volname):
+def quota_disable(mnode, volname):
     """Disables quota on given volume
 
     Args:
@@ -74,7 +72,7 @@ def disable_quota(mnode, volname):
             of the command execution.
 
     Example:
-        disable_quota("abc.xyz.com", testvol)
+        quota_disable("abc.xyz.com", testvol)
     """
 
     cmd = "gluster volume quota %s disable --mode=script" % volname
@@ -100,15 +98,15 @@ def is_quota_enabled(mnode, volname):
     if output is None:
         return False
 
-    g.log.info("Quota Status in volume %s %s"
-               % (volname, output["features.quota"]))
+    g.log.info("Quota Status in volume %s %s",
+               volname, output["features.quota"])
     if output["features.quota"] != 'on':
         return False
 
     return True
 
 
-def check_quota_deem_statfs(mnode, volname):
+def quota_check_deem_statfs(mnode, volname):
     """Checks if quota-deem-statfs is enabled
     on given volume
 
@@ -121,7 +119,7 @@ def check_quota_deem_statfs(mnode, volname):
             False, if quota-deem-statfs is disabled
 
     Example:
-        check_quota_deem_statfs(mnode, testvol)
+        quota_check_deem_statfs(mnode, testvol)
     """
 
     output = get_volume_options(mnode, volname,
@@ -148,41 +146,8 @@ def check_quota_deem_statfs(mnode, volname):
     return False
 
 
-def quota_list(mnode, volname, path=None):
-    """Executes quota list command for given volume
-
-    Args:
-        mnode (str): Node on which cmd has to be executed.
-        volname (str): volume name
-
-    Kwargs:
-        path (str): Quota path
-
-    Returns:
-        tuple: Tuple containing three elements (ret, out, err).
-            The first element 'ret' is of type 'int' and is the return value
-            of command execution.
-
-            The second element 'out' is of type 'str' and is the stdout value
-            of the command execution.
-
-            The third element 'err' is of type 'str' and is the stderr value
-            of the command execution.
-
-    Example:
-        quota_list(mnode, testvol)
-    """
-
-    if not path:
-        path = ''
-
-    cmd = "gluster volume quota %s list %s" % (volname, path)
-    ret = g.run(mnode, cmd)
-    return ret
-
-
-def set_quota_limit_usage(mnode, volname, path='/', limit='100GB',
-                          soft_limit=''):
+def quota_limit_usage(mnode, volname, path='/', limit='100GB',
+                      soft_limit=''):
     """Sets limit-usage on the path of the specified volume to
         specified limit
 
@@ -208,7 +173,7 @@ def set_quota_limit_usage(mnode, volname, path='/', limit='100GB',
             of the command execution.
 
     Examples:
-        >>> set_quota_limit_usage("abc.com", "testvol")
+        >>> quota_limit_usage("abc.com", "testvol")
 
     """
 
@@ -217,7 +182,7 @@ def set_quota_limit_usage(mnode, volname, path='/', limit='100GB',
     return g.run(mnode, cmd)
 
 
-def get_quota_list(mnode, volname, path=None):
+def quota_fetch_list(mnode, volname, path=None):
     """Parse the output of 'gluster quota list' command.
 
     Args:
@@ -232,7 +197,7 @@ def get_quota_list(mnode, volname, path=None):
         dict: dict on success.
 
     Examples:
-        >>> get_quota_list('abc.lab.eng.xyz.com', "testvol")
+        >>> quota_fetch_list('abc.lab.eng.xyz.com', "testvol")
         {'/': {'used_space': '0', 'hl_exceeded': 'No', 'soft_limit_percent':
         '60%', 'avail_space': '2147483648', 'soft_limit_value': '1288490188',
         'sl_exceeded': 'No', 'hard_limit': '2147483648'}}
@@ -259,100 +224,22 @@ def get_quota_list(mnode, volname, path=None):
             if elem.tag == "path":
                 path = elem.text
                 quotalist[path] = {}
+            elif elem.tag in ("hard_limit", "soft_limit_value",
+                              "used_space", "avail_space"):
+                quotalist[path][elem.tag] = int(elem.text)
+            elif elem.tag == "soft_limit_percent":
+                quotalist[path][elem.tag] = int(elem.text[:-1])
+            elif elem.tag in ("sl_exceeded", "hl_exceeded"):
+                quotalist[path][elem.tag] = bool(elem.text == 'Yes')
             else:
-                quotalist[path][elem.tag] = elem.text
+                g.log.error("Failed to parse the gluster quota"
+                            "list xml output.")
+                return None
     return quotalist
 
 
-def is_hard_limit_exceeded(mnode, volname, path=None):
-    """Parse the output of 'gluster quota list' command.
-
-    Args:
-        mnode (str): Node on which command has to be executed.
-        volname (str): volume name
-
-    Kwargs:
-        path (str): Quota path
-
-    Returns:
-        boolean: True if exceeded, False if not.
-
-    Examples:
-        >>> get_quota_list('abc.lab.eng.xyz.com', "testvol")
-        {'/': {'used_space': '0', 'hl_exceeded': 'No', 'soft_limit_percent':
-        '60%', 'avail_space': '2147483648', 'soft_limit_value': '1288490188',
-        'sl_exceeded': 'No', 'hard_limit': '2147483648'}}
-    """
-    if not path:
-        path = ''
-
-    cmd = "gluster volume quota %s list %s --xml" % (volname, path)
-    ret, out, _ = g.run(mnode, cmd)
-    if ret != 0:
-        g.log.error("Failed to execute 'quota list' on node %s. "
-                    "Hence failed to get the quota list." %
-                    mnode)
-        raise ExecutionError("Quota list --xml command failed")
-    else:
-        try:
-            root = etree.XML(out)
-        except etree.ParseError:
-            raise ExecutionParseError("Failed to parse the gluster quota "
-                                      "list xml output.")
-        else:
-            for path in root.findall("volQuota/limit"):
-                for elem in path.getchildren():
-                    if elem.tag == 'hl_exceeded':
-                        if elem.text == 'Yes':
-                            return True
-            return False
-
-
-def is_soft_limit_exceeded(mnode, volname, path=None):
-    """Parse the output of 'gluster quota list' command.
-
-    Args:
-        mnode (str): Node on which command has to be executed.
-        volname (str): volume name
-
-    Kwargs:
-        path (str): Quota path
-
-    Returns:
-        boolean: True if exceeded, False if not.
-    Examples:
-        >>> get_quota_list('abc.lab.eng.xyz.com', "testvol")
-        {'/': {'used_space': '0', 'hl_exceeded': 'No', 'soft_limit_percent':
-        '60%', 'avail_space': '2147483648', 'soft_limit_value': '1288490188',
-        'sl_exceeded': 'No', 'hard_limit': '2147483648'}}
-    """
-    if not path:
-        path = ''
-
-    cmd = "gluster volume quota %s list %s --xml" % (volname, path)
-    ret, out, _ = g.run(mnode, cmd)
-    if ret != 0:
-        g.log.error("Failed to execute 'quota list' on node %s. "
-                    "Hence failed to get the quota list." %
-                    mnode)
-        raise ExecutionError("Quota list --xml command failed")
-    if ret == 0:
-        try:
-            root = etree.XML(out)
-        except etree.ParseError:
-            raise ExecutionParseError("Failed to parse the gluster quota "
-                                      "list xml output.")
-        else:
-            for path in root.findall("volQuota/limit"):
-                for elem in path.getchildren():
-                    if elem.tag == 'sl_exceeded':
-                        if elem.text == 'Yes':
-                            return True
-            return False
-
-
-def set_quota_limit_objects(mnode, volname, path='/', limit='10',
-                            soft_limit=''):
+def quota_limit_objects(mnode, volname, path='/', limit='10',
+                        soft_limit=''):
     """Sets limit-objects on the path of the specified volume to
         specified limit
 
@@ -378,7 +265,7 @@ def set_quota_limit_objects(mnode, volname, path='/', limit='10',
             of the command execution.
 
     Examples:
-        >>> set_quota_limit_objects("abc.com", "testvol")
+        >>> quota_limit_objects("abc.com", "testvol")
 
     """
 
@@ -387,41 +274,7 @@ def set_quota_limit_objects(mnode, volname, path='/', limit='10',
     return g.run(mnode, cmd)
 
 
-def quota_list_objects(mnode, volname, path=None):
-    """Executes quota list command for given volume
-
-    Args:
-        mnode (str): Node on which cmd has to be executed.
-        volname (str): volume name
-
-    Kwargs:
-        path (str): Quota path
-
-    Returns:
-        tuple: Tuple containing three elements (ret, out, err).
-            The first element 'ret' is of type 'int' and is the return value
-            of command execution.
-
-            The second element 'out' is of type 'str' and is the stdout value
-            of the command execution.
-
-            The third element 'err' is of type 'str' and is the stderr value
-            of the command execution.
-
-    Example:
-        quota_list_objects("abc.com", testvol)
-
-    """
-
-    if not path:
-        path = ''
-
-    cmd = "gluster volume quota %s list-objects %s" % (volname, path)
-    ret = g.run(mnode, cmd)
-    return ret
-
-
-def get_quota_list_objects(mnode, volname, path=None):
+def quota_fetch_list_objects(mnode, volname, path=None):
     """Parse the output of 'gluster quota list-objects' command.
 
     Args:
@@ -436,7 +289,7 @@ def get_quota_list_objects(mnode, volname, path=None):
         dict: dict of dict on success.
 
     Examples:
-        >>> get_quota_list_objects('abc.lab.eng.xyz.com', "testvol")
+        >>> quota_fetch_list_objects('abc.lab.eng.xyz.com', "testvol")
         {'/': {'available': '7', 'hl_exceeded': 'No', 'soft_limit_percent':
         '80%', 'soft_limit_value': '8', 'dir_count': '3', 'sl_exceeded':
         'No', 'file_count': '0', 'hard_limit': '10'}}
@@ -469,7 +322,7 @@ def get_quota_list_objects(mnode, volname, path=None):
     return quotalist
 
 
-def set_quota_alert_time(mnode, volname, time):
+def quota_set_alert_time(mnode, volname, time):
     """Sets quota alert time
 
     Args:
@@ -489,7 +342,7 @@ def set_quota_alert_time(mnode, volname, time):
             of the command execution.
 
     Examples:
-        >>> set_quota_alert_time("abc.com", "testvol", <alert time>)
+        >>> quota_set_alert_time("abc.com", "testvol", <alert time>)
 
     """
 
@@ -498,7 +351,7 @@ def set_quota_alert_time(mnode, volname, time):
     return g.run(mnode, cmd)
 
 
-def set_quota_soft_timeout(mnode, volname, timeout):
+def quota_set_soft_timeout(mnode, volname, timeout):
     """Sets quota soft timeout
 
     Args:
@@ -518,7 +371,7 @@ def set_quota_soft_timeout(mnode, volname, timeout):
             of the command execution.
 
     Examples:
-        >>> set_quota_soft_timeout("abc.com", "testvol", <timeout-value>)
+        >>> quota_set_soft_timeout("abc.com", "testvol", <timeout-value>)
 
     """
 
@@ -527,7 +380,7 @@ def set_quota_soft_timeout(mnode, volname, timeout):
     return g.run(mnode, cmd)
 
 
-def set_quota_hard_timeout(mnode, volname, timeout):
+def quota_set_hard_timeout(mnode, volname, timeout):
     """Sets quota hard timeout
 
     Args:
@@ -547,7 +400,7 @@ def set_quota_hard_timeout(mnode, volname, timeout):
             of the command execution.
 
     Examples:
-        >>> set_quota_hard_timeout("abc.com", "testvol", <timeout-value>)
+        >>> quota_set_hard_timeout("abc.com", "testvol", <timeout-value>)
 
     """
 
@@ -556,7 +409,7 @@ def set_quota_hard_timeout(mnode, volname, timeout):
     return g.run(mnode, cmd)
 
 
-def set_quota_default_soft_limit(mnode, volname, timeout):
+def quota_set_default_soft_limit(mnode, volname, timeout):
     """Sets quota default soft limit
 
     Args:
@@ -576,7 +429,7 @@ def set_quota_default_soft_limit(mnode, volname, timeout):
             of the command execution.
 
     Examples:
-        >>> set_quota_default_soft_limit("abc.com", "testvol",
+        >>> quota_set_default_soft_limit("abc.com", "testvol",
                                          <timeout-value>)
 
     """
@@ -586,7 +439,7 @@ def set_quota_default_soft_limit(mnode, volname, timeout):
     return g.run(mnode, cmd)
 
 
-def remove_quota(mnode, volname, path):
+def quota_remove(mnode, volname, path):
     """Removes quota for the given path
 
     Args:
@@ -607,7 +460,7 @@ def remove_quota(mnode, volname, path):
             of the command execution.
 
     Examples:
-        >>> remove_quota("abc.com", "testvol", <path>)
+        >>> quota_remove("abc.com", "testvol", <path>)
 
     """
 
@@ -615,7 +468,7 @@ def remove_quota(mnode, volname, path):
     return g.run(mnode, cmd)
 
 
-def remove_quota_objects(mnode, volname, path):
+def quota_remove_objects(mnode, volname, path):
     """Removes quota objects for the given path
 
     Args:
@@ -636,7 +489,7 @@ def remove_quota_objects(mnode, volname, path):
             of the command execution.
 
     Examples:
-        >>> remove_quota_objects("abc.com", "testvol", <path>)
+        >>> quota_remove_objects("abc.com", "testvol", <path>)
 
     """
 

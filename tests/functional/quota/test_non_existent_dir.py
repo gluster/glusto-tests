@@ -17,8 +17,8 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import log_volume_info_and_status
-from glustolibs.gluster.quota_ops import (enable_quota,
-                                          set_quota_limit_usage)
+from glustolibs.gluster.quota_ops import (quota_enable,
+                                          quota_limit_usage)
 from glustolibs.gluster.exceptions import ExecutionError
 
 
@@ -53,7 +53,7 @@ class QuotaNonExistentDir(GlusterBaseClass):
 
         # Enable Quota
         g.log.info("Enabling quota on the volume %s", self.volname)
-        ret, _, _ = enable_quota(self.mnode, self.volname)
+        ret, _, _ = quota_enable(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to enable quota on the volume %s",
                                   self.volname))
         g.log.info("Successfully enabled quota on the volume %s", self.volname)
@@ -64,8 +64,8 @@ class QuotaNonExistentDir(GlusterBaseClass):
         # Set Quota limit on the root of the volume
         g.log.info("Set Quota Limit on the path %s of the volume %s",
                    path, self.volname)
-        ret, _, err = set_quota_limit_usage(self.mnode, self.volname,
-                                            path=path, limit="1GB")
+        ret, _, err = quota_limit_usage(self.mnode, self.volname,
+                                        path=path, limit="1GB")
         self.assertIn("No such file or directory", err, "Quota limit set "
                       "on path /foo which does not exist")
 

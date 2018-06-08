@@ -49,10 +49,10 @@ from glustolibs.gluster.brick_libs import (select_bricks_to_bring_offline,
                                            bring_bricks_online,
                                            are_bricks_offline)
 from glustolibs.gluster.heal_libs import monitor_heal_completion
-from glustolibs.gluster.quota_ops import (enable_quota, disable_quota,
-                                          set_quota_limit_usage,
+from glustolibs.gluster.quota_ops import (quota_enable, quota_disable,
+                                          quota_limit_usage,
                                           is_quota_enabled,
-                                          get_quota_list)
+                                          quota_fetch_list)
 from glustolibs.gluster.snap_ops import (snap_create, get_snap_list,
                                          snap_activate, snap_deactivate)
 from glustolibs.misc.misc_libs import upload_scripts
@@ -397,7 +397,7 @@ class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
         """
         # Enable Quota
         g.log.info("Enabling quota on the volume %s", self.volname)
-        ret, _, _ = enable_quota(self.mnode, self.volname)
+        ret, _, _ = quota_enable(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to enable quota on the volume %s",
                                   self.volname))
         g.log.info("Successfully enabled quota on the volume %s", self.volname)
@@ -416,17 +416,17 @@ class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
         # Set Quota limit on the root of the volume
         g.log.info("Set Quota Limit on the path %s of the volume %s",
                    path, self.volname)
-        ret, _, _ = set_quota_limit_usage(self.mnode, self.volname,
-                                          path=path, limit="1GB")
+        ret, _, _ = quota_limit_usage(self.mnode, self.volname,
+                                      path=path, limit="1GB")
         self.assertEqual(ret, 0, ("Failed to set quota limit on path %s of "
                                   " the volume %s", path, self.volname))
         g.log.info("Successfully set the Quota limit on %s of the volume %s",
                    path, self.volname)
 
-        # get_quota_list
+        # quota_fetch_list
         g.log.info("Get Quota list for path %s of the volume %s",
                    path, self.volname)
-        quota_list = get_quota_list(self.mnode, self.volname, path=path)
+        quota_list = quota_fetch_list(self.mnode, self.volname, path=path)
         self.assertIsNotNone(quota_list, ("Failed to get the quota list for "
                                           "path %s of the volume %s",
                                           path, self.volname))
@@ -439,7 +439,7 @@ class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
 
         # Disable quota
         g.log.info("Disable quota on the volume %s", self.volname)
-        ret, _, _ = disable_quota(self.mnode, self.volname)
+        ret, _, _ = quota_disable(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to disable quota on the volume %s",
                                   self.volname))
         g.log.info("Successfully disabled quota on the volume %s",
@@ -455,7 +455,7 @@ class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
 
         # Enable Quota
         g.log.info("Enabling quota on the volume %s", self.volname)
-        ret, _, _ = enable_quota(self.mnode, self.volname)
+        ret, _, _ = quota_enable(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to enable quota on the volume %s",
                                   self.volname))
         g.log.info("Successfully enabled quota on the volume %s", self.volname)
@@ -468,10 +468,10 @@ class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Successfully Validated quota is enabled on volume %s",
                    self.volname)
 
-        # get_quota_list
+        # quota_fetch_list
         g.log.info("Get Quota list for path %s of the volume %s",
                    path, self.volname)
-        quota_list = get_quota_list(self.mnode, self.volname, path=path)
+        quota_list = quota_fetch_list(self.mnode, self.volname, path=path)
         self.assertIsNotNone(quota_list, ("Failed to get the quota list for "
                                           "path %s of the volume %s",
                                           path, self.volname))

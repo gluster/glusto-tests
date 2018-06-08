@@ -17,9 +17,9 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
-from glustolibs.gluster.quota_ops import (enable_quota,
-                                          set_quota_limit_usage,
-                                          get_quota_list)
+from glustolibs.gluster.quota_ops import (quota_enable,
+                                          quota_limit_usage,
+                                          quota_fetch_list)
 from glustolibs.gluster.exceptions import ExecutionError
 
 
@@ -85,7 +85,7 @@ class QuotaListPathValues(GlusterBaseClass):
 
         # Enable Quota
         g.log.info("Enabling quota on the volume %s", self.volname)
-        ret, _, _ = enable_quota(self.mnode, self.volname)
+        ret, _, _ = quota_enable(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to enable quota on the volume "
                                   "%s", self.volname))
         g.log.info("Successfully enabled quota on the volume %s", self.volname)
@@ -96,8 +96,8 @@ class QuotaListPathValues(GlusterBaseClass):
         # Set Quota limit on the root of the volume
         g.log.info("Set Quota Limit on the path %s of the volume %s",
                    path, self.volname)
-        ret, _, _ = set_quota_limit_usage(self.mnode, self.volname,
-                                          path=path, limit="2GB")
+        ret, _, _ = quota_limit_usage(self.mnode, self.volname,
+                                      path=path, limit="2GB")
         self.assertEqual(ret, 0, ("Failed to set quota limit on path %s of "
                                   " the volume %s", path, self.volname))
         g.log.info("Successfully set the Quota limit on %s of the volume "
@@ -116,7 +116,7 @@ class QuotaListPathValues(GlusterBaseClass):
 
         # Get Quota list without specifying the path
         g.log.info("Get Quota list for the volume %s", self.volname)
-        quota_list1 = get_quota_list(self.mnode, self.volname, path=None)
+        quota_list1 = quota_fetch_list(self.mnode, self.volname, path=None)
         self.assertIsNotNone(quota_list1, ("Failed to get the quota list for "
                                            "the volume %s", self.volname))
         self.assertIn(path, quota_list1.keys(),
@@ -129,7 +129,7 @@ class QuotaListPathValues(GlusterBaseClass):
         # Get Quota List with path mentioned in the command
         g.log.info("Get Quota list for path %s of the volume %s",
                    path, self.volname)
-        quota_list2 = get_quota_list(self.mnode, self.volname, path=path)
+        quota_list2 = quota_fetch_list(self.mnode, self.volname, path=path)
         self.assertIsNotNone(quota_list2, ("Failed to get the quota list for "
                                            "path %s of the volume %s",
                                            path, self.volname))
