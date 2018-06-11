@@ -27,7 +27,7 @@ def set_auth_allow(volname, server, auth_dict):
     Set authentication for volumes or sub directories as required
 
     Args:
-        volname(str): The name of volume in which auth
+        volname(str): The name of volume in which auth.allow
             has to be set
         server(str): IP or hostname of one node
         auth_dict(dict): key-value pair of dirs and clients list
@@ -35,9 +35,10 @@ def set_auth_allow(volname, server, auth_dict):
                 '/d3/subd1':['10.70.37.172','dhcp37-999.xyz.cdf.pqr.abc.com']}
             If authentication has to set on entire volume, use 'all' as key.
                 auth_dict = {'all': ['10.70.37.172','10.70.37,173']}
+                auth_dict = {'all': ['*']}
                 'all' refers to entire volume
     Returns (bool):
-        True if all the auth set operation is success.
+        True if all the auth.allow set operation is success, else False
     """
     auth_cmds = []
     if not auth_dict:
@@ -56,7 +57,7 @@ def set_auth_allow(volname, server, auth_dict):
     # When authentication has to be set on entire volume, convert the
     # key-value pair to gluster authentication set command format
     else:
-        auth_cmd = ("gluster volume set %s auth.allow %s"
+        auth_cmd = ("gluster volume set %s auth.allow \"%s\""
                     % (volname, ",".join(auth_dict["all"])))
 
     # Execute auth.allow setting on server.
@@ -72,17 +73,19 @@ def verify_auth_allow(volname, server, auth_dict):
     Verify authentication for volumes or sub directories as required
 
     Args:
-        volname(str): The name of volume in which auth
-            has to be set
+        volname(str): The name of volume in which auth.allow
+            has to be verified
         server(str): IP or hostname of one node
         auth_dict(dict): key-value pair of dirs and clients list
             Example: auth_dict = {'/d1':['10.70.37.172','10.70.37,173'],
                 '/d3/subd1':['10.70.37.172','10.70.37.197']}
-            If authentication has to set on entire volume, use 'all' as key.
+            If authentication is set on entire volume, use 'all' as key to
+            verify.
                 auth_dict = {'all': ['10.70.37.172','10.70.37,173']}
+                auth_dict = {'all': ['*']}
                 'all' refers to entire volume
     Returns (bool):
-        True if the verification is success.
+        True if the verification is success, else False
     """
     auth_details = []
     if not auth_dict:
@@ -127,17 +130,19 @@ def verify_auth_reject(volname, server, auth_dict):
     Verify auth reject for volumes or sub directories as required
 
     Args:
-        volname(str): The name of volume in which auth reject
-            has to be set
+        volname(str): The name of volume in which auth.reject
+            has to be verified.
         server(str): IP or hostname of one node
         auth_dict(dict): key-value pair of dirs and clients list
             Example: auth_dict = {'/d1':['10.70.37.172','10.70.37,173'],
                 '/d3/subd1':['10.70.37.172','dhcp37-999.xyz.cdf.pqr.abc.com']}
-            If authentication has to set on entire volume, use 'all' as key.
+            If authentication is set on entire volume, use 'all' as key to
+            verify.
                 auth_dict = {'all': ['10.70.37.172','10.70.37,173']}
-                            'all' refer to entire volume
+                auth_dict = {'all': ['*']}
+                'all' refer to entire volume
     Returns (bool):
-        True if all the authentication is success.
+        True if all the verification is success, else False
     """
     auth_details = []
     if not auth_dict:
@@ -182,7 +187,7 @@ def set_auth_reject(volname, server, auth_dict):
     Set auth reject for volumes or sub directories as required
 
     Args:
-        volname(str): The name of volume in which auth reject
+        volname(str): The name of volume in which auth.reject
                     has to be set
         server(str): IP or hostname of one node
         auth_dict(dict): key-value pair of dirs and clients list
@@ -190,9 +195,10 @@ def set_auth_reject(volname, server, auth_dict):
                 '/d3/subd1':['10.70.37.172',''dh37-999.xyz.cdf.pqr.abc.com'']}
             If authentication has to set on entire volume, use 'all' as key.
                 auth_dict = {'all': ['10.70.37.172','10.70.37,173']}
-                            'all' refer to entire volume
+                auth_dict = {'all': ['*']}
+                'all' refer to entire volume
     Returns (bool):
-        True if the auth reject operation is success.
+        True if the auth.reject set operation is success, else False
     """
     auth_cmds = []
     if not auth_dict:
@@ -211,7 +217,7 @@ def set_auth_reject(volname, server, auth_dict):
     # When authentication has to be set on entire volume, convert the
     # key-value pair to gluster authentication set command format.
     else:
-        auth_cmd = ("gluster volume set %s auth.reject %s"
+        auth_cmd = ("gluster volume set %s auth.reject \"%s\""
                     % (volname, ",".join(auth_dict["all"])))
 
     # Execute auth.allow setting on server.
