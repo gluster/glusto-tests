@@ -24,60 +24,72 @@ from glusto.core import Glusto as g
 """
 
 
-def scheduler_enable(servers):
-    """Initialises snapshot scheduler on given node
-    Args:
-        servers (str): list of servers on which cmd has to be executed.
+def scheduler_init(servers):
+    """Initialises snapshot scheduler
+     Args:
+         servers(str): List of servers on which cmd has to be executed.
 
-    Example:
-        scheduler_enable("abc.com")
+     Returns:
+         True - Success
+         False - Failure
+     Example:
+          scheduler_init("abc.com")
+    """
 
-    Returns:
-        True on success.
-        False on failure.
-        """
     if isinstance(servers, str):
         servers = [servers]
 
-    cmd1 = "snap_scheduler.py init"
-    cmd2 = "snap_scheduler.py enable"
-    _rc = True
+    cmd = "snap_scheduler.py init"
     for server in servers:
-        ret1, _, _ = g.run(server, cmd1)
-        if ret1 != 0:
-            g.log.error("snap scheduler is not running on"
-                        "the server %s", server)
+        ret, _, _ = g.run(server, cmd)
+        if ret != 0:
+            g.log.error("Unable to initialize scheduler on %s", server)
             return False
-
-    ret2, _, _ = g.run(servers[0], cmd2)
-    if ret2 != 0:
-        g.log.error("Failed to enable snap scheduler")
-        _rc = False
-    return _rc
+    return True
 
 
-def scheduler_disable(servers):
-    """Initialises snapshot scheduler on given node
+def scheduler_enable(mnode):
+    """Enables snapshot scheduler on given node
+     Args:
+           mnode (str): Node on which cmd has to be executed.
+
+     Returns:
+           tuple: Tuple containing three elements (ret, out, err).
+           The first element 'ret' is of type 'int' and is the return value
+           of command execution.
+           The second element 'out' is of type 'str' and is the stdout value
+           of the command execution.
+           The third element 'err' is of type 'str' and is the stderr value
+           of the command execution.
+
+     Example:
+        scheduler_enable("abc.com")
+    """
+
+    cmd = "snap_scheduler.py enable"
+    return g.run(mnode, cmd)
+
+
+def scheduler_disable(mnode):
+    """Disables snapshot scheduler on given node
     Args:
         servers (str): servers on which cmd has to be executed.
 
+    Returns:
+            tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
     Example:
         scheduler_disable("abc.com")
-
-    Returns:
-        True on success.
-        False on failure.
-        """
-    if isinstance(servers, str):
-        servers = [servers]
+    """
 
     cmd = "snap_scheduler.py disable"
-    _rc = True
-    ret, _, _ = g.run(servers[0], cmd)
-    if ret != 0:
-        g.log.error("Failed to disable snap scheduler")
-        _rc = False
-    return _rc
+    return g.run(mnode, cmd)
 
 
 def scheduler_add_jobs(mnode, jobname, scheduler, volname):
