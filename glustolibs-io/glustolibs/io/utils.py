@@ -212,7 +212,7 @@ def view_snaps_from_mount(mounts, snaps):
                 _rc = False
                 continue
 
-            for snap_name in snap_list:
+            for snap_name in snaps:
                 if snap_name not in snap_list:
                     g.log.error("Failed to list snap %s in '.snaps' dir on "
                                 "%s:%s - %s", snap_name,
