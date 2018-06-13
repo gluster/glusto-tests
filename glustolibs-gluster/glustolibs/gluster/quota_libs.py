@@ -61,3 +61,70 @@ def quota_validate(mnode, volname, path, **kwargs):
             ret = False
 
     return ret
+
+
+def quota_fetch_daemon_pid(nodes):
+    """
+    Checks if quota daemon process is running and
+    return the process id's in dictionary format
+
+    Args:
+        nodes ( str|list ) : Node/Nodes of the cluster
+
+    Returns:
+        tuple : Tuple containing two elements (ret, quotad_pids).
+        The first element 'ret' is of type 'bool', True if and only if
+        quotad is running on all the nodes in the list and each
+        node contains only one instance of quotad running.
+        False otherwise.
+
+        The second element 'quotad_pids' is of type dictonary and it
+        contains the 'nodes' as the key and 'quotad PID' as the value.
+
+        If there is NO quota daemon running on few nodes, the first element
+        will be 'False' and the nodes which do not have a quota daemon running
+        will have a value as '-1'.
+
+        If there are MORE THAN ONE quota daemon for a node, the first element
+        will be 'False' and the value for that node will be '-1'.
+
+        Example:
+            quota_fetch_daemon_pid(["node1", "node2"])
+            (False, {'node2': ['8012'], 'node1': [-1]})
+
+            Here 'node1' doesn't have quota daemon running. Hence, value
+            of 'node1' is '-1'.
+    """
+    quotad_pids = {}
+    _rc = True
+    if isinstance(nodes, str):
+        nodes = [nodes]
+    cmd = "pgrep -f quotad | grep -v ^$$\$"
+    g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
+    results = g.run_parallel(nodes, cmd)
+    for node in results:
+        ret, out, err = results[node]
+        if ret == 0:
+            if len(out.strip().split("\n")) == 1:
+                if not out.strip():
+                    g.log.info("NO Quota daemon process found "
+                               "on node %s" % node)
+                    _rc = False
+                    quotad_pids[node] = [-1]
+                else:
+                    g.log.info("Single Quota Daemon process with "
+                               "pid %s found on %s",
+                               out.strip().split("\n"), node)
+                    quotad_pids[node] = (out.strip().split("\n"))
+            else:
+                g.log.info("More than One Quota daemon process "
+                           "found on node %s" % node)
+                _rc = False
+                quotad_pids[node] = [-1]
+        else:
+            g.log.info("Not able to get Quota daemon process "
+                       "from node %s" % node)
+            _rc = False
+            quotad_pids[node] = [-1]
+
+    return _rc, quotad_pids
