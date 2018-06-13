@@ -17,9 +17,9 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
-from glustolibs.gluster.quota_ops import (enable_quota,
-                                          get_quota_list,
-                                          set_quota_limit_usage)
+from glustolibs.gluster.quota_ops import (quota_enable,
+                                          quota_fetch_list,
+                                          quota_limit_usage)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
@@ -90,7 +90,7 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         """
         # Enable Quota
         g.log.info("Enabling quota on the volume %s", self.volname)
-        ret, _, _ = enable_quota(self.mnode, self.volname)
+        ret, _, _ = quota_enable(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to enable quota on the volume %s",
                                   self.volname))
         g.log.info("Successfully enabled quota on the volume %s", self.volname)
@@ -125,8 +125,8 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Set Quota Limit on each directory of the volume %s",
                    self.volname)
         for dir_name in dir_list:
-            ret, _, _ = set_quota_limit_usage(self.mnode, self.volname,
-                                              dir_name, '1GB')
+            ret, _, _ = quota_limit_usage(self.mnode, self.volname,
+                                          dir_name, '1GB')
             self.assertFalse(ret, "Failed to set Quota for dir %s" % dir_name)
             g.log.info("Set quota for dir %s successfully", dir_name)
         g.log.info("Successfully set the Quota limit on each path of the "
@@ -136,8 +136,8 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Get Quota list for every directory on the volume %s",
                    self.volname)
         for dir_name in dir_list:
-            quota_list = get_quota_list(self.mnode, self.volname,
-                                        path=dir_name)
+            quota_list = quota_fetch_list(self.mnode, self.volname,
+                                          path=dir_name)
             self.assertIsNotNone(quota_list, ("Failed to get the quota list "
                                               "for the volume %s",
                                               self.volname))
@@ -171,8 +171,8 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Get Quota list for every directory on the volume %s",
                    self.volname)
         for dir_name in dir_list:
-            quota_list = get_quota_list(self.mnode, self.volname,
-                                        path=dir_name)
+            quota_list = quota_fetch_list(self.mnode, self.volname,
+                                          path=dir_name)
             self.assertIsNotNone(quota_list, ("Failed to get the quota list "
                                               "for the volume %s",
                                               self.volname))
