@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """ Description: Module for gluster brick operations """
+
 
 from glusto.core import Glusto as g
 
@@ -146,4 +147,54 @@ def replace_brick(mnode, volname, src_brick, dst_brick):
     """
     cmd = ("gluster volume replace-brick %s %s %s commit force" %
            (volname, src_brick, dst_brick))
+    return g.run(mnode, cmd)
+
+
+def reset_brick(mnode, volname, src_brick, option, dst_brick=None,
+                force=False):
+    """Reset brick in a volume
+
+    Args:
+        mnode (str): Node on which the commands are executed.
+        volname (str): Name of the volume
+        src_brick (str): Source brick name
+        dst_brick (str): Destination brick name
+        option (str): Reset brick options: <start|commit|force>
+
+    Kwargs:
+        force (bool): If this option is set to True, then reset brick
+            will get executed with force option. If it is set to False,
+            then reset brick will get executed without force option
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+    """
+    # pylint: disable=too-many-arguments
+    if option == "start":
+        cmd = ("gluster volume reset-brick %s %s start" % (volname, src_brick))
+
+    elif option == "commit":
+        if dst_brick is None:
+            dst_brick = src_brick
+            if force:
+                cmd = ("gluster volume reset-brick %s %s %s %s "
+                       "force" % (volname, src_brick, dst_brick, option))
+            else:
+                cmd = ("gluster volume reset-brick %s %s %s %s"
+                       % (volname, src_brick, dst_brick, option))
+        else:
+            if force:
+                cmd = ("gluster volume reset-brick %s %s %s %s force"
+                       % (volname, src_brick, dst_brick, option))
+            else:
+                cmd = ("gluster volume reset-brick %s %s %s %s"
+                       % (volname, src_brick, dst_brick, option))
     return g.run(mnode, cmd)
