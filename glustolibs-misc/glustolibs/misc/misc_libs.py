@@ -474,11 +474,15 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
         successfull on node, then result contains True else False.
     """
     _rc = reboot_nodes(nodes)
-    counter = 0
+    reboot_results = {}
+    if not _rc:
+        return _rc, reboot_results
 
+    counter = 0
     g.log.info("Wait for some seconds for the nodes to come online"
                " after reboot")
-    reboot_results = {}
+
+    _rc = False
     while counter < timeout:
         ret, reboot_results = are_nodes_online(nodes)
         if not ret:
@@ -495,7 +499,7 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
                 g.log.info("Node %s is online", node)
             else:
                 g.log.error("Node %s is offline even after "
-                            "%d minutes", node, timeout/60.0)
+                            "%d minutes", node, timeout / 60.0)
     else:
         g.log.info("All nodes %s are up and running", nodes)
 
