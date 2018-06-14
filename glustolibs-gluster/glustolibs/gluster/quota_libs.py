@@ -48,7 +48,7 @@ def quota_validate(mnode, volname, path, **kwargs):
     quotalist = quota_fetch_list(mnode, volname, path)
 
     if path not in quotalist:
-        g.log.error("Path not found (script issue)")
+        g.log.error("Path not found (script issue) path: %s", path)
         return False
     else:
         listinfo = quotalist[path]
