@@ -110,6 +110,98 @@ def georep_create(mnode, mastervol, slaveip, slavevol, user=None, force=False):
     return g.run(mnode, cmd)
 
 
+def georep_start(mnode, mastervol, slaveip, slavevol, user=None, force=False):
+    """Starts the Geo-replication session
+    Args:
+        mnode (str): Node on which cmd is to be executed
+        mastervol (str):The name of the master volume
+        slaveip (str): SlaveIP
+        slavevol (str): The name of the slave volume
+
+    kwargs:
+        force (bool): If this option is set to True, then the geo-rep
+            session will be started with the force option.
+            If it is set to False, then the session will be started
+            without the force option -- which is the default option
+        user (str): If not set, the default is a root-user
+            If specified, non-root user participates in the geo-rep
+            session
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    if user:
+        if force:
+            cmd = ("gluster volume geo-replication %s %s@%s::%s start force" %
+                   (mastervol, user, slaveip, slavevol))
+        else:
+            cmd = ("gluster volume geo-replication %s %s@%s::%s start" %
+                   (mastervol, user, slaveip, slavevol))
+    else:
+        if force:
+            cmd = ("gluster volume geo-replication %s %s::%s start force" %
+                   (mastervol, slaveip, slavevol))
+        else:
+            cmd = ("gluster volume geo-replication %s %s::%s start" %
+                   (mastervol, slaveip, slavevol))
+    return g.run(mnode, cmd)
+
+
+def georep_stop(mnode, mastervol, slaveip, slavevol, user=None, force=False):
+    """Stops a geo-repication session
+
+    Args:
+        mnode (str): Node on which cmd is to be executed
+        mastervol (str):The name of the master volume
+        slaveip (str): SlaveIP
+        slavevol (str): The name of the slave volume
+    kwargs:
+        force (bool): If this option is set to True, then the geo-rep
+            session will be stopped with the force option.
+            If it is set to False, then the session will be stopped
+            without the force option --which is the default option
+        user (str): If not set, the default is a root-user
+            If specified, non-root user participates in the geo-rep
+            session
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    if user:
+        if force:
+            cmd = ("gluster volume geo-replication %s %s@%s::%s stop force" %
+                   (mastervol, user, slaveip, slavevol))
+        else:
+            cmd = ("gluster volume geo-replication %s %s@%s::%s stop" %
+                   (mastervol, user, slaveip, slavevol))
+    else:
+        if force:
+            cmd = ("gluster volume geo-replication %s %s::%s stop force" %
+                   (mastervol, slaveip, slavevol))
+        else:
+            cmd = ("gluster volume geo-replication %s %s::%s stop" %
+                   (mastervol, slaveip, slavevol))
+    return g.run(mnode, cmd)
+
+
 def georep_pause(mnode, mastervol, slaveip, slavevol, user=None):
     """Pauses the geo-replication session
     Args:
