@@ -65,6 +65,64 @@ def georep_createpem(mnode):
     return g.run(mnode, cmd)
 
 
+def georep_groupadd(servers, groupname):
+    """ Creates a group in all the slave nodes where a user will be added
+        to set up a non-root session
+
+    Args:
+        servers (list): list of nodes on which cmd is to be executed
+        groupname (str): Specifies a groupname
+
+    Returns:
+        bool : True if add group is successful on all servers.
+            False otherwise.
+
+    """
+    cmd = "groupadd %s" % groupname
+    results = g.run_parallel(servers, cmd)
+
+    _rc = True
+    for server, ret_value in results.iteritems():
+        retcode, _, err = ret_value
+        if retcode != 0 and "already exists" not in err:
+            g.log.error("Unable to add group %s on server %s",
+                        groupname, server)
+            _rc = False
+    if not _rc:
+        return False
+
+    return True
+
+
+def georep_geoaccount(servers, groupname, groupaccount):
+    """ Creates a user account with which the geo-rep session can be securely
+        set up
+
+    Args:
+        servers (list): list of nodes on which cmd is to be executed
+        groupname (str): Specifies a groupname
+        groupaccount (str): Specifies the user account to set up geo-rep
+
+    Returns:
+        bool : True if user add is successful on all servers.
+            False otherwise.
+
+    """
+    cmd = "useradd -G %s %s" % (groupname, groupaccount)
+    results = g.run_parallel(servers, cmd)
+
+    _rc = True
+    for server, ret_value in results.iteritems():
+        retcode, _, err = ret_value
+        if retcode != 0 and "already exists" not in err:
+            g.log.error("Unable to add user on %s", server)
+            _rc = False
+    if not _rc:
+        return False
+
+    return True
+
+
 def georep_status(mnode, mastervol, slaveip, slavevol, user=None):
     """Shows the status of the geo-replication session
     Args:
