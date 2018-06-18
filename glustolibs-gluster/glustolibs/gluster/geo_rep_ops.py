@@ -123,6 +123,103 @@ def georep_geoaccount(servers, groupname, groupaccount):
     return True
 
 
+def georep_mountbroker_setup(mnode, groupname, directory):
+    """ Sets up mountbroker root directory and group
+
+    Args:
+        mnode (str): Node on which command is to be executed
+        groupname (str) : Specifies the groupname used
+        directory (str) : Specifies mountbroker root directory
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    cmd = "gluster-mountbroker setup %s %s" % (directory, groupname)
+    return g.run(mnode, cmd)
+
+
+def georep_mountbroker_adduser(mnode, slavevol, useraccount):
+    """ Adds the volume and user to the mountbroker
+
+    Args:
+        mnode (str): Node on which command is to be executed
+        slavevol (str) : The slave volume name
+        useraccount (str): The user with which geo-rep is to be set up
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    cmd = "gluster-mountbroker add %s %s" % (slavevol, useraccount)
+    return g.run(mnode, cmd)
+
+
+def georep_mountbroker_status(mnode):
+    """ Displays the status of every peer node in the slave cluster
+
+    Args:
+        mnode (str): Node on which command is to be executed
+
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    cmd = "gluster-mountbroker status"
+    return g.run(mnode, cmd)
+
+
+def georep_set_pemkeys(mnode, useraccount, mastervol, slavevol):
+    """ Sets geo-rep pem keys
+
+    Args:
+        mnode (str): Node on which command is to be executed
+        useraccount (str) : User with which geo-rep is to be set up
+        mastervol (str) : The master volume
+        slavevol (str): The slave volume
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    cmd = ("/usr/libexec/glusterfs/set_geo_rep_pem_keys.sh %s %s %s" %
+           (useraccount, mastervol, slavevol))
+    return g.run(mnode, cmd)
+
+
 def georep_status(mnode, mastervol, slaveip, slavevol, user=None):
     """Shows the status of the geo-replication session
     Args:
