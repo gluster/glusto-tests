@@ -125,18 +125,75 @@ def georep_create(mnode, mastervol, slaveip, slavevol, user=None, force=False):
     """
     if user:
         if force:
-            cmd = "gluster volume geo-replication %s %s@%s::%s create push-pem \
-                   force" % (mastervol, user, slaveip, slavevol)
+            cmd = "gluster volume geo-replication %s %s@%s::%s create \
+                   push-pem force" % (mastervol, user, slaveip, slavevol)
         else:
             cmd = "gluster volume geo-replication %s %s@%s::%s create \
-                   push-pem" % (mastervol, user, slaveip, slavevol)
+                   create push-pem" % (mastervol, user, slaveip, slavevol)
     else:
         if force:
-            cmd = "gluster volume geo-replication %s %s::%s create push-pem \
-                   force" % (mastervol, slaveip, slavevol)
-        else:
             cmd = "gluster volume geo-replication %s %s::%s create \
-                   push-pem" % (mastervol, slaveip, slavevol)
+                   push-pem force" % (mastervol, slaveip, slavevol)
+        else:
+            cmd = "gluster volume geo-replication %s %s::%s \
+                   create push-pem" % (mastervol, slaveip, slavevol)
+    return g.run(mnode, cmd)
+
+
+def georep_config_get(mnode, mastervol, slaveip, slavevol, config_key):
+    """ All the available configurable geo-rep options can be got
+        using the config_key and seeing what it has been set to
+
+    Args:
+        mnode (str) : Node on which cmd is to be executed
+        mastervol (str) : The name of the mastervol
+        slaveip (str): SlaveIP
+        slavevol (str) The name of the slave volume
+        config_key (str): The configurable options available in geo-replication
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution. In this case, it contains value of
+            config.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    cmd = ("gluster volume geo-replication %s %s::%s config %s" %
+           (mastervol, slaveip, slavevol, config_key))
+    return g.run(mnode, cmd)
+
+
+def georep_config_set(mnode, mastervol, slaveip, slavevol, config, value):
+    """ All the available configurable geo-rep options can be set with a
+        specific command if required or
+        just with the config parameter
+    Args:
+        mnode (str) : Node on which cmd is to be executed
+        mastervol (str) : The name of the mastervol
+        slaveip (str): SlaveIP
+        slavevol (str) The name of the slave volume
+        config (str): The configurable options available in geo-replication
+    Kwargs:
+        value (str): The value for the geo-rep config
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    """
+    cmd = ("gluster volume geo-replication %s %s::%s config %s %s" %
+           (mastervol, slaveip, slavevol, config, value))
     return g.run(mnode, cmd)
 
 
