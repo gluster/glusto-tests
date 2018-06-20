@@ -123,6 +123,37 @@ def georep_geoaccount(servers, groupname, groupaccount):
     return True
 
 
+def georep_geoaccount_setpasswd(servers, groupname, groupaccount, passwd):
+    """ Creates a user account with which the geo-rep session can be securely
+        set up
+
+    Args:
+        servers (list): list of nodes on which cmd is to be executed
+        groupname (str): Specifies a groupname
+        groupaccount (str): Specifies the user account to set up geo-rep
+        passwd (str): Specifies password for they groupaccount
+
+    Returns:
+        bool : True if password set is successful on all servers.
+            False otherwise.
+
+    """
+    cmd = "echo %s:%s | chpasswd" % (groupaccount, passwd)
+    results = g.run_parallel(servers, cmd)
+
+    _rc = True
+    for server, ret_value in results.iteritems():
+        retcode, _, err = ret_value
+        if retcode != 0:
+            g.log.error("Unable to set passwd for user %s on %s",
+                        groupaccount, server)
+            _rc = False
+    if not _rc:
+        return False
+
+    return True
+
+
 def georep_mountbroker_setup(mnode, groupname, directory):
     """ Sets up mountbroker root directory and group
 
