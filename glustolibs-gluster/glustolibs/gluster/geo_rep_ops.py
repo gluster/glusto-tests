@@ -311,18 +311,18 @@ def georep_create(mnode, mastervol, slaveip, slavevol, user=None, force=False):
     """
     if user:
         if force:
-            cmd = "gluster volume geo-replication %s %s@%s::%s create \
-                   push-pem force" % (mastervol, user, slaveip, slavevol)
+            cmd = ("gluster volume geo-replication %s %s@%s::%s create "
+                   "push-pem force" % (mastervol, user, slaveip, slavevol))
         else:
-            cmd = "gluster volume geo-replication %s %s@%s::%s create \
-                   create push-pem" % (mastervol, user, slaveip, slavevol)
+            cmd = ("gluster volume geo-replication %s %s@%s::%s create "
+                   "push-pem" % (mastervol, user, slaveip, slavevol))
     else:
         if force:
-            cmd = "gluster volume geo-replication %s %s::%s create \
-                   push-pem force" % (mastervol, slaveip, slavevol)
+            cmd = ("gluster volume geo-replication %s %s::%s create "
+                   "push-pem force" % (mastervol, slaveip, slavevol))
         else:
-            cmd = "gluster volume geo-replication %s %s::%s \
-                   create push-pem" % (mastervol, slaveip, slavevol)
+            cmd = ("gluster volume geo-replication %s %s::%s create push-pem" %
+                   (mastervol, slaveip, slavevol))
     return g.run(mnode, cmd)
 
 
@@ -498,11 +498,11 @@ def georep_pause(mnode, mastervol, slaveip, slavevol, user=None):
             of the command execution.
     """
     if user:
-        cmd = "gluster volume geo-replication %s %s@%s::%s \
-               pause" % (mastervol, user, slaveip, slavevol)
+        cmd = ("gluster volume geo-replication %s %s@%s::%s pause" %
+               (mastervol, user, slaveip, slavevol))
     else:
-        cmd = "gluster volume geo-replication %s %s::%s \
-               pause" % (mastervol, slaveip, slavevol)
+        cmd = ("gluster volume geo-replication %s %s::%s pause" %
+               (mastervol, slaveip, slavevol))
     return g.run(mnode, cmd)
 
 
@@ -530,11 +530,11 @@ def georep_resume(mnode, mastervol, slaveip, slavevol, user=None):
 
     """
     if user:
-        cmd = "gluster volume geo-replication %s %s@%s::%s \
-               resume" % (mastervol, user, slaveip, slavevol)
+        cmd = ("gluster volume geo-replication %s %s@%s::%s resume" %
+               (mastervol, user, slaveip, slavevol))
     else:
-        cmd = "gluster volume geo-replication %s %s::%s \
-               resume" % (mastervol, slaveip, slavevol)
+        cmd = ("gluster volume geo-replication %s %s::%s resume" %
+               (mastervol, slaveip, slavevol))
     return g.run(mnode, cmd)
 
 
