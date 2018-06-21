@@ -65,6 +65,47 @@ def georep_createpem(mnode):
     return g.run(mnode, cmd)
 
 
+def georep_ssh_keygen(mnode):
+    """ Creates a pair of ssh private and public key if not present
+
+    Args:
+        mnode (str): Node on which cmd is to be executed
+    Returns:
+        bool : True if ssh-keygen is successful on all servers.
+            False otherwise. It also returns True if ssh key
+            is already present
+
+    """
+    cmd = 'echo -e "n" | ssh-keygen -f ~/.ssh/id_rsa -q -N ""'
+    ret, out, _ = g.run(mnode, cmd)
+    if ret and "already exists" not in out:
+        return False
+    return True
+
+
+def georep_ssh_copyid(mnode, tonode, user, passwd):
+    """ Copies the default ssh public key onto tonode's
+        authorized_keys file
+
+    Args:
+        mnode (str): Node on which cmd is to be executed
+        tonode (str): Node to which ssh key is to be copied
+        user (str): user of tonode
+        passwd (str): passwd of the user of tonode
+    Returns:
+        bool : True if ssh-copy-id is successful to tonode.
+            False otherwise. It also returns True if ssh key
+            is already present
+
+    """
+    cmd = ('sshpass -p "%s" ssh-copy-id -o StrictHostKeyChecking=no %s@%s' %
+           (passwd, user, tonode))
+    ret, _, _ = g.run(mnode, cmd)
+    if ret:
+        return False
+    return True
+
+
 def georep_groupadd(servers, groupname):
     """ Creates a group in all the slave nodes where a user will be added
         to set up a non-root session
