@@ -25,11 +25,17 @@ from glustolibs.gluster.geo_rep_ops import (create_shared_storage,
                                             georep_geoaccount,
                                             georep_mountbroker_setup,
                                             georep_mountbroker_adduser,
-                                            georep_mountbroker_status)
+                                            georep_mountbroker_status,
+                                            georep_geoaccount_setpasswd,
+                                            georep_ssh_keygen,
+                                            georep_ssh_copyid,
+                                            georep_createpem, georep_create,
+                                            georep_set_pemkeys,
+                                            georep_config_set)
 
 
-def setup_mountbroker_prerequisites(mnode, snodes, group, user, mntbroker_dir,
-                                    slavevol):
+def georep_nonroot_prerequisites(mnode, snodes, group, user, mntbroker_dir,
+                                 slavevol):
     """ Setup pre-requisites for mountbroker setup
 
     Args:
@@ -92,7 +98,67 @@ def setup_mountbroker_prerequisites(mnode, snodes, group, user, mntbroker_dir,
         g.log.error("Restarting glusterd failed")
         return False
 
+    g.log.debug("Set passwd for user account on slave")
+    if not georep_geoaccount_setpasswd(snodes, group, user, "geopasswd"):
+        g.log.error("Setting password failed on slaves")
+        return False
+
+    g.log.debug("Setup passwordless SSH between %s and %s", mnode, snodes[0])
+    if not georep_ssh_keygen(mnode):
+        g.log.error("ssh keygen is failed on %s", mnode)
+        return False
+
+    if not georep_ssh_copyid(mnode, snodes[0], user, "geopasswd"):
+        g.log.error("ssh copy-id is failed from %s to %s", mnode, snodes[0])
+        return False
+
     return True
 
-    # TODO setup passwdless SSH between one of master nodes to one of slave
-    # nodes
+
+def georep_create_nonroot_session(mnode, mastervol, snode, slavevol, user,
+                                  force=False):
+    """ Create mountbroker/non-root geo-rep session
+
+    Args:
+        mnode (str) : Master node for session creation
+        mastervol (str) The name of the master volume
+        snode (str): Slave node  for session creation
+        slavevol (str) The name of the slave volume
+        user (str): Specifies a user name
+    Returns:
+        bool: True if geo-rep session is created successfully
+              Else False
+
+    """
+
+    g.log.debug("Create geo-rep pem keys")
+    ret, out, err = georep_createpem(mnode)
+    if ret:
+        g.log.error("Failed to create pem keys")
+        g.log.error("Error: out: %s \nerr: %s", out, err)
+        return False
+
+    g.log.debug("Create geo-rep session")
+    ret, out, err = georep_create(mnode, mastervol, snode, slavevol,
+                                  user, force)
+    if ret:
+        g.log.error("Failed to create geo-rep session")
+        g.log.error("Error: out: %s \nerr: %s", out, err)
+        return False
+
+    g.log.debug("Copy geo-rep pem keys onto all slave nodes")
+    ret, out, err = georep_set_pemkeys(snode, user, mastervol, slavevol)
+    if ret:
+        g.log.error("Failed to copy geo-rep pem keys onto all slave nodes")
+        g.log.error("Error: out:%s \nerr:%s", out, err)
+        return False
+
+    g.log.debug("Enable meta-volume")
+    ret, out, err = georep_config_set(mnode, mastervol, snode, slavevol,
+                                      "use_meta_volume", "true")
+    if ret:
+        g.log.error("Failed to set meta-volume")
+        g.log.error("Error: out: %s \nerr: %s", out, err)
+        return False
+
+    return True
