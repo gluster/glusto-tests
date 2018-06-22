@@ -34,6 +34,99 @@ from glustolibs.gluster.geo_rep_ops import (create_shared_storage,
                                             georep_config_set)
 
 
+def georep_root_prerequisites(mnode, snode, user, passwd):
+    """Takes care of the pre-requisites required for
+       setting up a successful geo-rep
+       session which includes:
+       1. Check if shared_storage has been successfully created
+       2. Check if shared_storage has been mounted
+       3. Generating the common pem pub file on all the nodes
+          on the master
+       4. Establishing passwordless ssh connection to the slave
+    Args:
+        mnode (str) : The primary master node where the commands are executed
+        snode (str) : The primary slave node where the commande are executed
+        mastervol (str) : The name of the master volume
+        slavevol (str): The name of the slave volume
+    Returns:
+        bool : True if all the steps are successful, false if there are
+              any failures in the middle
+
+    """
+    g.log.debug("Enable shared-storage")
+    ret, _, _ = create_shared_storage(mnode)
+    if not ret:
+        g.log.error("Failed to create gluster shared storage on "
+                    "the master cluster")
+        return False
+
+    g.log.debug("Creating a common pem pub file on all the nodes in "
+                "the master to establish passwordless ssh connection "
+                "to the slave ")
+    ret = georep_ssh_keygen(mnode)
+    if not ret:
+        g.log.error("Failed to create a common pem pub file")
+        return False
+
+    g.log.debug("Establishing passwordless ssh between master and slave")
+    ret = georep_ssh_copyid(mnode, snode, user, passwd)
+    if not ret:
+        g.log.error("Failed to establish ssh connection")
+        return False
+
+    g.log.info("Shared storage has been created. "
+               "Passwordless ssh between the master and the "
+               "slave has been successful!")
+    return True
+
+
+def georep_create_root_session(mnode, snode, mastervol, slavevol,
+                               user=None, force=False):
+    """ Create a geo-replication session between the master and
+        the slave
+    Args:
+        mnode (str) : The primary master node where the commands are executed
+        snode (str) : The primary slave node where the commande are executed
+        mastervol (str) : The name of the master volume
+        slavevol (str): The name of the slave volume
+        user (str): Since it's a root session, user is root or None
+        force (bool) : Set to true if session needs to be created with force
+            else it remains false as the default option
+
+    Returns:
+        bool : True if all the steps are successful, false if there are
+              any failures in the middle
+    """
+    g.log.debug("Creating a common pem file on %s", mnode)
+    ret, out, err = georep_createpem(mnode)
+    if not ret:
+        g.log.error("Failed to create a common pem file on all the nodes "
+                    "belonging to the cluster %s ", mnode)
+        g.log.error("Error: out: %s \nerr: %s", out, err)
+        return False
+
+    g.log.debug("Create geo-rep session from %s to %s", mnode, snode)
+    ret, out, err = georep_create(mnode, mastervol, snode,
+                                  slavevol, user, force)
+    if not ret:
+        g.log.error("Failed to create geo-rep session")
+        g.log.error("Error: out: %s \nerr: %s", out, err)
+        return False
+
+    g.log.debug("Setting up meta-volume on %s", mnode)
+    ret, out, err = georep_config_set(mnode, mastervol, snode, slavevol,
+                                      "use_meta_volume", "True")
+    if not ret:
+        g.log.error("Failed to set up meta-volume")
+        g.log.error("Error: out: %s \nerr: %s", out, err)
+        return False
+
+    g.log.info("Pem file has been created and the keys have "
+               "been pushed to all the slave nodes. The meta-volume "
+               "has been successfully configured as well ")
+    return True
+
+
 def georep_nonroot_prerequisites(mnode, snodes, group, user, mntbroker_dir,
                                  slavevol):
     """ Setup pre-requisites for mountbroker setup
