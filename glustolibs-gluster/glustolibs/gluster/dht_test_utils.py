@@ -21,11 +21,12 @@ import os
 
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.glusterfile import GlusterFile
+from glustolibs.gluster.glusterfile import GlusterFile, calculate_hash
 from glustolibs.gluster.glusterdir import GlusterDir
 from glustolibs.gluster.layout import Layout
 import glustolibs.gluster.constants as k
 import glustolibs.gluster.exceptions as gex
+from glustolibs.gluster.brickdir import BrickDir
 
 
 def run_layout_tests(fqpath, layout, test_type):
@@ -146,3 +147,166 @@ def validate_files_in_dir(host, rootdir,
                     run_hashed_bricks_test(gfile)
 
     return True
+
+
+def create_brickobjectlist(subvols, path):
+    '''
+        Args:
+            subvols : list of subvols (output of get_subvols)
+
+        Return Value:
+            List of Brickdir Object representing path from each brick.
+            Note: Only one brick is accounted from one subvol.
+    '''
+    secondary_bricks = []
+    for subvol in subvols:
+        secondary_bricks.append(subvol[0])
+
+    for subvol in secondary_bricks:
+        g.log.debug("secondary bricks %s", subvol)
+
+    brickobject = []
+    for item in secondary_bricks:
+        temp = BrickDir(item + "/" + path)
+        brickobject.append(temp)
+
+    return brickobject
+
+
+def find_hashed_subvol(subvols, parent_path, name):
+    '''
+        Args:
+            subvols:  subvol list
+            parent_path: Immediate parent path of "name" relative from
+                         mount point
+                         e.g. if your mount is "/mnt" and the path from mount
+                         is "/mnt/directory" then just pass "directory" as
+                         parent_path
+
+            name: file or directory name
+
+        Retrun Values:
+            hashed_subvol object: An object of type BrickDir type representing
+                                  the hashed subvolume
+
+            subvol_count: The subvol index in the subvol list
+    '''
+    # pylint: disable=protected-access
+    if subvols is None or parent_path is None or name is None:
+        g.log.error("empty arguments")
+        return None, -1
+
+    brickobject = create_brickobjectlist(subvols, parent_path)
+    hash_num = calculate_hash(brickobject[0]._host, name)
+
+    count = -1
+    for brickdir in brickobject:
+        count += 1
+        ret = brickdir.hashrange_contains_hash(hash_num)
+        if ret == 1:
+            g.log.debug('hash subvolume is %s', brickdir._host)
+            hashed_subvol = brickdir
+            break
+
+    return hashed_subvol, count
+
+
+def find_nonhashed_subvol(subvols, parent_path, name):
+    '''
+        Args:
+            subvols: subvol list
+            parent_path: Immediate parent path of "name" relative from
+                         mount point
+                         e.g. if your mount is "/mnt" and the path from mount
+                         is "/mnt/directory" then just pass "directory" as
+                         parent_path
+
+            name: file or directory name
+
+        Retrun Values:
+            nonhashed_subvol object: An object of type BrickDir type
+                                     representing the nonhashed subvolume
+
+            subvol_count: The subvol index in the subvol list
+    '''
+    # pylint: disable=protected-access
+    if subvols is None or parent_path is None or name is None:
+        g.log.error("empty arguments")
+        return None, -1
+
+    brickobject = create_brickobjectlist(subvols, parent_path)
+    hash_num = calculate_hash(brickobject[0]._host, name)
+
+    count = -1
+    for brickdir in brickobject:
+        count += 1
+        ret = brickdir.hashrange_contains_hash(hash_num)
+        if ret == 1:
+            g.log.debug('hash subvolume is %s', brickdir.path)
+            continue
+
+        nonhashed_subvol = brickdir
+        g.log.info('nonhashed subvol %s', brickdir._host)
+        break
+
+    return nonhashed_subvol, count
+
+
+def find_new_hashed(subvols, parent_path, oldname):
+    '''
+        This is written for rename case so that the new name will hash to a
+        different subvol than that of the the old name.
+        Note: The new hash will be searched under the same parent
+
+        Args:
+            subvols = list of subvols
+            parent_path = parent path (relative to mount) of "oldname"
+            oldname = name of the source file for rename operation
+
+        Return Values:
+            For success returns an object of type NewHashed holding
+            information pertaining to new name.
+
+            For Failure returns None
+    '''
+    # pylint: disable=protected-access
+    # pylint: disable=pointless-string-statement
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-return-statements
+    brickobject = create_brickobjectlist(subvols, parent_path)
+    if brickobject is None:
+        g.log.error("could not form brickobject list")
+        return None
+
+    oldhashed, _ = find_hashed_subvol(subvols, parent_path, oldname)
+    if oldhashed is None:
+        g.log.error("could not find old hashed subvol")
+        return None
+
+    count = -1
+    for item in range(1, 5000, 1):
+        newhash = calculate_hash(brickobject[0]._host, str(item))
+        for brickdir in brickobject:
+            count += 1
+            ret = brickdir.hashrange_contains_hash(newhash)
+            if ret == 1:
+                if oldhashed._host != brickdir._host:
+                    g.log.debug("oldhashed %s new %s count %s",
+                                oldhashed, brickdir._host, str(count))
+                    return NewHashed(item, brickdir, count)
+
+        count = -1
+    return None
+
+
+class NewHashed(object):
+    '''
+        Helper Class to hold new hashed info
+    '''
+    # pylint: disable=too-few-public-methods
+    def __init__(self, newname, hashedbrickobject, count):
+        self.newname = newname
+        self.hashedbrickobject = hashedbrickobject
+        self.subvol_count = count
