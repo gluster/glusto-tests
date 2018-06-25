@@ -27,6 +27,7 @@ from glustolibs.gluster.layout import Layout
 import glustolibs.gluster.constants as k
 import glustolibs.gluster.exceptions as gex
 from glustolibs.gluster.brickdir import BrickDir
+from glustolibs.gluster.volume_libs import get_subvols
 
 
 def run_layout_tests(fqpath, layout, test_type):
@@ -310,3 +311,72 @@ class NewHashed(object):
         self.newname = newname
         self.hashedbrickobject = hashedbrickobject
         self.subvol_count = count
+
+
+def is_layout_complete(mnode, volname, dirpath):
+    """This function reads the subvols in the given volume and checks whether
+       layout is complete or not.
+       Layout starts at zero,
+       ends at 32-bits high,
+        and has no holes or overlaps
+
+    Args:
+        volname (str): volume name
+        mnode (str): Node on which cmd has to be executed.
+        dirpath (str): directory path; starting from root of mount point.
+
+    Returns (bool): True if layout is complete
+                    False if layout has any holes or overlaps
+
+    Example:
+        is_layout_complete("abc.xyz.com", "testvol", "/")
+        is_layout_complete("abc.xyz.com", "testvol", "/dir1/dir2/dir3")
+    """
+
+    subvols_list = get_subvols(mnode, volname)['volume_subvols']
+    trim_subvols_list = [y for x in subvols_list for y in x]
+
+    # append the dirpath to the elements in the list
+    final_subvols_list = [x + dirpath for x in trim_subvols_list]
+
+    complete_hash_list = []
+    for fqpath in final_subvols_list:
+        hash_list = BrickDir(fqpath).hashrange
+        complete_hash_list.append(hash_list)
+    joined_hashranges = [y for x in complete_hash_list for y in x]
+    g.log.debug("joined range list: %s" % joined_hashranges)
+
+    # remove duplicate hashes
+    collapsed_ranges = list(set(joined_hashranges))
+
+    # sort the range list for good measure
+    collapsed_ranges.sort()
+
+    # first hash in the list is 0?
+    if collapsed_ranges[0] != 0:
+        g.log.error('First hash in range (%d) is not zero' %
+                    collapsed_ranges[0])
+        return False
+
+    # last hash in the list is 32-bits high?
+    if collapsed_ranges[-1] != int(0xffffffff):
+        g.log.error('Last hash in ranges (%s) is not 0xffffffff' %
+                    hex(collapsed_ranges[-1]))
+        return False
+
+    # remove the first and last hashes
+    clipped_ranges = collapsed_ranges[1:-1]
+    g.log.debug('clipped: %s' % clipped_ranges)
+
+    # walk through the list in pairs and look for diff == 1
+    iter_ranges = iter(clipped_ranges)
+    for first in iter_ranges:
+        second = next(iter_ranges)
+        hash_difference = second - first
+        g.log.debug('%d - %d = %d' % (second, first, hash_difference))
+        if hash_difference > 1:
+            g.log.error("Layout has holes")
+
+            return False
+        elif hash_difference < 1:
+            g.log.error("Layout has overlaps")
