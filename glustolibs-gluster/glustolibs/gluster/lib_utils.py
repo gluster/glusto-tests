@@ -940,3 +940,38 @@ def get_size_of_mountpoint(node, mount_point):
     _, out, _ = g.run(node, cmd)
 
     return out
+
+
+def add_user(host, uname):
+    """
+        Add user with default home directory
+    Args:
+        host (str): hostname/ip of the system
+        uname (str): username
+    Returns always True
+    """
+
+    command = "useradd -m %s -d /home/%s" % (uname, uname)
+    ret, _, err = g.run(host, command)
+    if 'already exists' in err:
+        g.log.warn("User %s is already exists", uname)
+    else:
+        g.log.info("User %s is created successfully", uname)
+    return True
+
+
+def del_user(host, uname):
+    """
+        Delete user with home directory
+    Args:
+        host (str): hostname/ip of the system
+        uname (str): username
+    Return always True
+    """
+    command = "userdel -r %s" % (uname)
+    ret, _, err = g.run(host, command)
+    if 'does not exist' in err:
+        g.log.warn("User %s is already deleted", uname)
+    else:
+        g.log.info("User %s successfully deleted", uname)
+    return True

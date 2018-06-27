@@ -629,3 +629,45 @@ def is_io_procs_fail_with_rofs(self, all_mounts_procs, mounts):
     ret = all(io_results.values())
 
     return ret, io_results
+
+
+def compare_dir_structure_mount_with_brick(mnthost, mntloc, brick_list, type):
+    """ Compare directory structure from mount point with  brick path along
+        with stat parameter
+
+    Args:
+        mnthost (str): hostname or ip of mnt system
+        mntloc (str) : mount location of gluster file system
+        brick_list (list) : list of all brick ip's with brick path
+        type  (int) : 0 represent user permission
+                    : 1 represent group permission
+                    : 2 represent access permission
+    Returns:
+        True if directory structure are same
+        False if structure is not same
+    """
+
+    statformat = ''
+    if type == 0:
+        statformat = '%U'
+    if type == 1:
+        statformat = '%G'
+    if type == 2:
+        statformat = '%A'
+
+    command = ("find %s -mindepth 1 -type d | xargs -r stat -c '%s'"
+               % (mntloc, statformat))
+    rcode, rout, _ = g.run(mnthost, command)
+    all_dir_mnt_perm = rout.strip().split('\n')
+
+    for brick in brick_list:
+        brick_node, brick_path = brick.split(":")
+        command = ("find %s -mindepth 1 -type d | grep -ve \".glusterfs\" | "
+                   "xargs -r stat -c '%s'" % (brick_path, statformat))
+        rcode, rout, _ = g.run(brick_node, command)
+        all_brick_dir_perm = rout.strip().split('\n')
+        retval = cmp(all_dir_mnt_perm, all_brick_dir_perm)
+        if retval != 0:
+            return False
+
+    return True
