@@ -1,0 +1,282 @@
+#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# pylint: disable=too-many-statements, too-many-locals
+
+""" Description:
+        Test cases in this module tests whether heal command for resolving
+        split-brains will resolve all the files in metadata split-brains by
+        using one of the method (bigger-file/latest-mtime/source-brick).
+"""
+
+from glusto.core import Glusto as g
+from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.misc.misc_libs import upload_scripts
+from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.gluster.heal_libs import (monitor_heal_completion,
+                                          is_volume_in_split_brain)
+from glustolibs.gluster.brick_libs import (get_all_bricks,
+                                           bring_bricks_offline,
+                                           bring_bricks_online,
+                                           are_bricks_offline,
+                                           are_bricks_online)
+
+
+@runs_on([['replicated'],
+          ['glusterfs']])
+class HealMetadataSplitBrain(GlusterBaseClass):
+
+    @classmethod
+    def setUpClass(cls):
+
+        # Calling GlusterBaseClass setUpClass
+        GlusterBaseClass.setUpClass.im_func(cls)
+
+        # Override Volume
+        if cls.volume_type == "replicated":
+            cls.volume['voltype'] = {
+                'type': 'replicated',
+                'replica_count': 2,
+                'transport': 'tcp'}
+
+        # Upload io scripts for running IO on mounts
+        g.log.info("Upload io scripts to clients %s for running IO on "
+                   "mounts", cls.clients)
+        script_local_path = ("/usr/share/glustolibs/io/scripts/"
+                             "file_dir_ops.py")
+        cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
+                                  "file_dir_ops.py")
+        ret = upload_scripts(cls.clients, script_local_path)
+        if not ret:
+            raise ExecutionError("Failed to upload IO scripts "
+                                 "to clients %s" % cls.clients)
+        g.log.info("Successfully uploaded IO scripts to clients %s",
+                   cls.clients)
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = cls.setup_volume_and_mount_volume(cls.mounts)
+        if not ret:
+            raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
+        g.log.info("Successful in Setup Volume and Mount Volume")
+
+    @classmethod
+    def tearDownClass(cls):
+
+        # Cleanup Volume
+        g.log.info("Starting to clean up Volume %s", cls.volname)
+        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        if not ret:
+            raise ExecutionError("Failed to create volume")
+        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+
+        GlusterBaseClass.tearDownClass.im_func(cls)
+
+    def verify_brick_arequals(self):
+        g.log.info("Fetching bricks for the volume: %s", self.volname)
+        bricks_list = get_all_bricks(self.mnode, self.volname)
+        g.log.info('Getting arequal on bricks...')
+        arequal_0 = 0
+        for brick in bricks_list:
+            g.log.info('Getting arequal on bricks %s...', brick)
+            node, brick_path = brick.split(':')
+            command = ('arequal-checksum -p %s '
+                       '-i .glusterfs -i .landfill -i .trashcan'
+                       % brick_path)
+            ret, arequal, _ = g.run(node, command)
+            self.assertFalse(ret, 'Failed to get arequal on brick %s'
+                             % brick)
+            g.log.info('Getting arequal for %s is successful', brick)
+            brick_total = arequal.splitlines()[-1].split(':')[-1]
+            if arequal_0 == 0:
+                arequal_0 = brick_total
+            else:
+                self.assertEqual(brick_total, arequal_0, 'Arequal for %s and '
+                                 '%s are not equal' % (bricks_list[0], brick))
+        g.log.info('All arequals are equal on all the bricks')
+
+    def test_metadata_split_brain_resolution(self):
+        # Setting options
+        g.log.info('Setting options...')
+        options = {"metadata-self-heal": "off",
+                   "entry-self-heal": "off",
+                   "data-self-heal": "off"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
+        # Creating files and directories on client side
+        g.log.info('Creating files and directories...')
+        cmd = ("mkdir %s/test_metadata_sb && cd %s/test_metadata_sb &&"
+               "for i in `seq 1 3`; do mkdir dir.$i; for j in `seq 1 5`;"
+               "do dd if=/dev/urandom of=dir.$i/file.$j bs=1K count=1;"
+               "done; dd if=/dev/urandom of=file.$i bs=1K count=1; done"
+               % (self.mounts[0].mountpoint, self.mounts[0].mountpoint))
+
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Creating files and directories failed")
+        g.log.info("Files & directories created successfully")
+
+        # Check arequals for all the bricks
+        g.log.info('Getting arequal before getting bricks offline...')
+        self.verify_brick_arequals()
+        g.log.info('Getting arequal before getting bricks offline '
+                   'is successful')
+
+        # Set option self-heal-daemon to OFF
+        g.log.info('Setting option self-heal-daemon to off...')
+        options = {"self-heal-daemon": "off"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Option 'self-heal-daemon' is set to 'off' successfully")
+
+        bricks_list = get_all_bricks(self.mnode, self.volname)
+
+        # Bring brick1 offline
+        g.log.info('Bringing brick %s offline', bricks_list[0])
+        ret = bring_bricks_offline(self.volname, bricks_list[0])
+        self.assertTrue(ret, 'Failed to bring bricks %s offline'
+                        % bricks_list[0])
+
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 [bricks_list[0]])
+        self.assertTrue(ret, 'Brick %s is not offline'
+                        % bricks_list[0])
+        g.log.info('Bringing brick %s offline is successful',
+                   bricks_list[0])
+
+        # Change metadata of some files & directories
+        cmd = ("cd %s/test_metadata_sb &&"
+               "for i in `seq 1 2`; do chmod -R 0555 dir.$i file.$i ; done"
+               % self.mounts[0].mountpoint)
+
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Updating file permissions failed")
+        g.log.info("File permissions updated successfully")
+
+        # Bricng brick1 online and check the status
+        # Bring brick3 online and check status
+        g.log.info('Bringing brick %s online', bricks_list[0])
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  [bricks_list[0]])
+        self.assertTrue(ret, 'Failed to bring brick %s online' %
+                        bricks_list[0])
+        g.log.info('Bringing brick %s online is successful', bricks_list[0])
+
+        g.log.info("Verifying if brick %s is online", bricks_list[0])
+        ret = are_bricks_online(self.mnode, self.volname, bricks_list)
+        self.assertTrue(ret, ("Brick %s did not come up", bricks_list[0]))
+        g.log.info("Brick %s has come online.", bricks_list[0])
+
+        # Bring brick2 offline
+        g.log.info('Bringing brick %s offline', bricks_list[1])
+        ret = bring_bricks_offline(self.volname, bricks_list[1])
+        self.assertTrue(ret, 'Failed to bring bricks %s offline'
+                        % bricks_list[1])
+
+        ret = are_bricks_offline(self.mnode, self.volname,
+                                 [bricks_list[1]])
+        self.assertTrue(ret, 'Brick %s is not offline'
+                        % bricks_list[1])
+        g.log.info('Bringing brick %s offline is successful',
+                   bricks_list[1])
+
+        # Change metadata of same files & directories as before
+        cmd = ("cd %s/test_metadata_sb &&"
+               "for i in `seq 1 2` ; do chmod -R 0777 dir.$i file.$i ; done"
+               % self.mounts[0].mountpoint)
+
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Updating file permissions failed")
+        g.log.info("File permissions updated successfully")
+
+        # Bricng brick2 online and check the status
+        g.log.info('Bringing brick %s online', bricks_list[1])
+        ret = bring_bricks_online(self.mnode, self.volname,
+                                  [bricks_list[1]])
+        self.assertTrue(ret, 'Failed to bring brick %s online' %
+                        bricks_list[1])
+        g.log.info('Bringing brick %s online is successful', bricks_list[1])
+
+        g.log.info("Verifying if brick %s is online", bricks_list[1])
+        ret = are_bricks_online(self.mnode, self.volname, bricks_list)
+        self.assertTrue(ret, ("Brick %s did not come up", bricks_list[1]))
+        g.log.info("Brick %s has come online.", bricks_list[1])
+
+        # Set option self-heal-daemon to ON
+        g.log.info('Setting option self-heal-daemon to on...')
+        options = {"self-heal-daemon": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Option 'self-heal-daemon' is set to 'on' successfully")
+
+        g.log.info("Checking if files are in split-brain")
+        ret = is_volume_in_split_brain(self.mnode, self.volname)
+        self.assertTrue(ret, "Unable to create split-brain scenario")
+        g.log.info("Successfully created split brain scenario")
+
+        g.log.info("Resolving split-brain by using the source-brick option "
+                   "by choosing second brick as source for all the files")
+        node, _ = bricks_list[1].split(':')
+        command = ("gluster v heal " + self.volname + " split-brain "
+                   "source-brick " + bricks_list[1])
+        ret, _, _ = g.run(node, command)
+        self.assertEqual(ret, 0, "Command execution not successful")
+
+        # waiting for heal to complete
+        ret = monitor_heal_completion(self.mnode, self.volname)
+        self.assertTrue(ret, "Heal not completed")
+
+        # Do lookup on the files from mount
+        cmd = ("ls -lR %s/test_metadata_sb"
+               % self.mounts[0].mountpoint)
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Failed to lookup")
+        g.log.info("Lookup successful")
+
+        # Checking if files are still in split-brain
+        ret = is_volume_in_split_brain(self.mnode, self.volname)
+        self.assertFalse(ret, "File still in split-brain")
+        g.log.info("Successfully resolved split brain situation using "
+                   "CLI based resolution")
+
+        # Check arequals for all the bricks
+        g.log.info('Getting arequal for all the bricks after heal...')
+        self.verify_brick_arequals()
+        g.log.info('Getting arequal after heal is successful')
+
+        # Change metadata of same files & directories as before
+        cmd = ("cd %s/test_metadata_sb &&"
+               "for i in `seq 1 2` ; do chmod -R 0555 dir.$i file.$i ; done"
+               % self.mounts[0].mountpoint)
+
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Updating file permissions failed")
+        g.log.info("File permissions updated successfully")
+
+        # Do lookup on the mount
+        cmd = ("find %s | xargs stat" % self.mounts[0].mountpoint)
+
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Lookup on the mount failed")
+        g.log.info("Lookup on the mount is successful")
+
+        # Check arequals for all the bricks
+        g.log.info('Getting arequal for all the bricks...')
+        self.verify_brick_arequals()
+        g.log.info('Getting arequal is successful')
