@@ -152,11 +152,9 @@ class TestRebalanceHang(GlusterBaseClass):
         self.all_mounts_procs.append(proc)
         self.io_validation_complete = False
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         g.log.info("Starting rebalance with force on the volume")
         ret, _, _ = rebalance_start(self.mnode, self.volname, False, True)

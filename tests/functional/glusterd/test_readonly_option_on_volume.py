@@ -114,10 +114,11 @@ class TestReadOnlyOptionOnVolume(GlusterBaseClass):
             self.counter = self.counter + 10
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertFalse(ret, "IO should fail on mount points of readonly "
-                              "volumes but IO success")
+        self.assertFalse(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO should fail on mount points of readonly "
+            "volumes but IO succeeded"
+        )
         g.log.info("IO failed on mount points of read only volumes "
                    "as expected")
 
@@ -150,7 +151,7 @@ class TestReadOnlyOptionOnVolume(GlusterBaseClass):
             self.counter = self.counter + 10
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )

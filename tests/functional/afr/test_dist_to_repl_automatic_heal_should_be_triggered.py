@@ -131,11 +131,11 @@ class TestSelfHeal(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # Get arequal for mount before adding bricks
         g.log.info('Getting arequal before adding bricks...')
@@ -240,11 +240,11 @@ class TestSelfHeal(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # Bring brick 0 online
         g.log.info('Bringing bricks %s online...', bricks_list[0])

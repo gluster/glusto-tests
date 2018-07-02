@@ -97,11 +97,10 @@ class SnapshotUssSnap(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        g.log.info("%s", all_mounts_procs)
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # starting I/O
         g.log.info("Starting IO on all mounts...")

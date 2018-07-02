@@ -160,11 +160,11 @@ class ClientSideQuorumRestored(GlusterBaseClass):
 
         # Validate IO
         self.io_validation_complete = False
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # Do IO and check on subvols with nodes to reboot
         subvols_dict = get_subvols(self.mnode, self.volname)
@@ -284,11 +284,11 @@ class ClientSideQuorumRestored(GlusterBaseClass):
 
             # Validate IO
             self.io_validation_complete = False
-            g.log.info("Wait for IO to complete and validate IO ...")
-            ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-            self.assertTrue(ret, "IO failed on some of the clients")
+            self.assertTrue(
+                validate_io_procs(self.all_mounts_procs, self.mounts),
+                "IO failed on some of the clients"
+            )
             self.io_validation_complete = True
-            g.log.info("IO is successful on all mounts")
 
         # Do IO and check on subvols without nodes to reboot
         subvols_dict = get_subvols(self.mnode, self.volname)
@@ -347,11 +347,11 @@ class ClientSideQuorumRestored(GlusterBaseClass):
 
                 # Validate IO
                 self.io_validation_complete = False
-                g.log.info("Wait for IO to complete and validate IO ...")
-                ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-                self.assertTrue(ret, "IO failed on some of the clients")
+                self.assertTrue(
+                    validate_io_procs(self.all_mounts_procs, self.mounts),
+                    "IO failed on some of the clients"
+                )
                 self.io_validation_complete = True
-                g.log.info("IO is successful on all mounts")
 
             # check if nodes are online
             counter = 0
@@ -554,8 +554,8 @@ class ClientSideQuorumRestored(GlusterBaseClass):
         for mounts_procs in all_mounts_procs:
             # Validate IO
             self.io_validation_complete = False
-            g.log.info("Wait for IO to complete and validate IO ...")
-            ret = validate_io_procs(mounts_procs, self.mounts)
-            self.assertTrue(ret, "IO failed on some of the clients")
+            self.assertTrue(
+                validate_io_procs(self.all_mounts_procs, self.mounts),
+                "IO failed on some of the clients"
+            )
             self.io_validation_complete = True
-            g.log.info("IO is successful on all mounts")

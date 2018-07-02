@@ -223,10 +223,10 @@ class SnapshotDeleteExistingScheduler(GlusterBaseClass):
                    self.job_name)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # scheduler list (no active jobs should be there)
         g.log.info("Starting to list all scheduler jobs")

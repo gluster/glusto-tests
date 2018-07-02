@@ -651,11 +651,11 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
                    self.volname)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
 
 @runs_on([['replicated', 'distributed-replicated'],
@@ -943,10 +943,10 @@ class SelfHealDaemonProcessTestsWithHealing(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # check the heal info
         g.log.info("Get the pending heal info for the volume %s",

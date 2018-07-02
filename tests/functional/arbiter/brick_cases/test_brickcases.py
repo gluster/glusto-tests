@@ -167,11 +167,9 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # Adding bricks to make an Arbiter Volume
         g.log.info("Adding bricks to convert to Arbiter Volume")
@@ -387,8 +385,8 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                    self.volname)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")

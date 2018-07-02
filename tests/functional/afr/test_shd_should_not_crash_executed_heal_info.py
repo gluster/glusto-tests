@@ -140,11 +140,11 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # Bring brick0 offline
         g.log.info('Bringing bricks %s offline', bricks_list[0])
@@ -182,11 +182,11 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # Get heal info
         g.log.info("Getting heal info...")
@@ -252,11 +252,11 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # Get heal info
         g.log.info("Getting heal info...")

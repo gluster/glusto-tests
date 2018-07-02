@@ -160,11 +160,11 @@ class TestSelfHeal(GlusterBaseClass):
             self.all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # Get entries before accessing file
         g.log.info("Getting entries_before_accessing file...")
@@ -221,8 +221,8 @@ class TestSelfHeal(GlusterBaseClass):
                    'finished successfully.')
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")

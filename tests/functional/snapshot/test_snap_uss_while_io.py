@@ -164,11 +164,11 @@ class SnapshotUssWhileIo(GlusterBaseClass):
             g.log.info("snapshot %s activated successfully", self.snap)
 
         # Validate IO is completed
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # validate snapshots are listed under .snaps directory
         g.log.info("Validating snaps under .snaps")

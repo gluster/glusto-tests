@@ -129,10 +129,10 @@ class ClientSideQuorumTests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # get the subvolumes
         g.log.info("Starting to get sub-volumes for volume %s", self.volname)
@@ -268,10 +268,10 @@ class ClientSideQuorumTests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating IO on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # stat on file
         g.log.info("stat on file1.txt on all mounts")
@@ -426,10 +426,10 @@ class ClientSideQuorumTests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # get the subvolumes
         g.log.info("starting to get subvolumes for volume %s", self.volname)
@@ -465,10 +465,10 @@ class ClientSideQuorumTests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # set cluster.quorum-type to auto
         options = {"cluster.quorum-type": "auto"}
@@ -622,10 +622,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # get the subvolumes
         g.log.info("Starting to get sub-volumes for volume %s", self.volname)
@@ -658,10 +658,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # create directory user1
         g.log.info("Start creating directory on all mounts...")
@@ -674,10 +674,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # create h/w link to file
         g.log.info("Start creating hard link for file0.txt on all mounts")
@@ -746,10 +746,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating IO on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # stat on file
         g.log.info("stat on file1.txt on all mounts")
@@ -843,10 +843,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -859,10 +859,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # get the subvolumes
         g.log.info("Starting to get sub-volumes for volume %s", self.volname)
@@ -900,10 +900,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -916,10 +916,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 1
         options = {"cluster.quorum-count": "1"}
@@ -943,10 +943,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -959,10 +959,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 2
         options = {"cluster.quorum-count": "2"}
@@ -1002,10 +1002,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # bring back the brick1 online for all subvolumes
         g.log.info("bringing up the bricks : %s online",
@@ -1030,10 +1030,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1046,10 +1046,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # Bring down brick2 for all the subvolumes
         g.log.info("Going to bring down the brick process "
@@ -1089,10 +1089,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 1
         options = {"cluster.quorum-count": "1"}
@@ -1116,10 +1116,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1132,10 +1132,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set cluster.quorum-type to auto and cluster.quorum-count back to 2
         options = {"cluster.quorum-type": "auto",
@@ -1160,10 +1160,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1176,10 +1176,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # Bring back brick2 online for all the subvolumes
         g.log.info("bringing up the bricks : %s online",
@@ -1229,10 +1229,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the quorum-type to none
         options = {"cluster.quorum-type": "none"}
@@ -1256,10 +1256,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1272,10 +1272,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
 
 @runs_on([['distributed-replicated'],
@@ -1485,11 +1485,11 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
             self.io_validation_complete = False
 
             # Validate IO
-            g.log.info("Wait for IO to complete and validate IO ...")
-            ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-            self.assertTrue(ret, "IO failed on some of the clients")
+            self.assertTrue(
+                validate_io_procs(self.all_mounts_procs, self.mounts),
+                "IO failed on some of the clients"
+            )
             self.io_validation_complete = True
-            g.log.info("IO is successful on all mounts")
 
         volumes_to_change_options = ['1', '3']
         # set cluster.quorum-type to auto
@@ -1622,10 +1622,10 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
                 all_mounts_procs.append(proc)
 
                 # Validate IO
-                g.log.info("Validating IO on mounts")
-                ret = validate_io_procs(all_mounts_procs, self.mounts)
-                self.assertTrue(ret, "IO failed on some of the clients")
-                g.log.info("IO is successful on all mounts")
+                self.assertTrue(
+                    validate_io_procs(all_mounts_procs, self.mounts),
+                    "IO failed on some of the clients"
+                )
 
 
 @runs_on([['replicated', 'distributed-replicated'], ['glusterfs']])
@@ -1757,10 +1757,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1773,10 +1773,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # get the subvolumes
         g.log.info("Starting to get sub-volumes for volume %s", self.volname)
@@ -1813,10 +1813,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1829,10 +1829,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # bring down brick2 for all the subvolumes
         offline_brick2_from_replicasets = []
@@ -1863,10 +1863,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1879,10 +1879,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 1
         options = {"cluster.quorum-count": "1"}
@@ -1906,10 +1906,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -1922,10 +1922,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 2
         options = {"cluster.quorum-count": "2"}
@@ -1965,10 +1965,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # bring back the brick1 online for all subvolumes
         g.log.info("bringing up the brick : %s online",
@@ -1993,10 +1993,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -2009,10 +2009,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # Bring back brick2 online
         g.log.info("bringing up the brick : %s online",
@@ -2037,10 +2037,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -2053,10 +2053,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set cluster.quorum-type to auto
         options = {"cluster.quorum-type": "auto"}
@@ -2080,10 +2080,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -2096,10 +2096,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # bring down brick1 and brick2 for all the subvolumes
         for i in range(0, num_subvols):
@@ -2144,10 +2144,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 1
         options = {"cluster.quorum-count": "1"}
@@ -2187,10 +2187,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the cluster.quorum-count to 3
         options = {"cluster.quorum-count": "3"}
@@ -2230,10 +2230,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )
 
         # set the quorum-type to none
         options = {"cluster.quorum-type": "none"}
@@ -2257,10 +2257,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # read the file
         g.log.info("Start reading files on all mounts")
@@ -2273,7 +2273,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("validating reads on all mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "Reads failed on some of the clients")
-        g.log.info("Reads successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Reads failed on some of the clients"
+        )

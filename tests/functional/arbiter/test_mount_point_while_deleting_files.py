@@ -208,10 +208,10 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # select bricks to bring offline
         volume_list = get_volume_list(self.mnode)
@@ -247,7 +247,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )

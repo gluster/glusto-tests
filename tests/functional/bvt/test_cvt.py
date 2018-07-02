@@ -260,11 +260,9 @@ class TestGlusterExpandVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
                    self.volname)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -328,11 +326,9 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
                    self.volname)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -371,11 +367,9 @@ class TestGlusterVolumeSetSanity(GlusterBasicFeaturesSanityBaseClass):
                    volume_options_list)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -483,11 +477,9 @@ class TestQuotaSanity(GlusterBasicFeaturesSanityBaseClass):
                    "volume %s", path, quota_list, self.volname)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -585,11 +577,9 @@ class TestSnapshotSanity(GlusterBasicFeaturesSanityBaseClass):
                    "deactivating ", snap_name)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -661,11 +651,9 @@ class TestGlusterReplaceBrickSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("self-heal is successful after replace-brick operation")
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -800,11 +788,9 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("self-heal is successful after replace-brick operation")
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")

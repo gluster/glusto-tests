@@ -118,9 +118,10 @@ class TestAddBrickFunctionality(GlusterBaseClass):
             self.counter = self.counter + 10
 
         # Validate IO
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # Getting timestamp
         _, timestamp, _ = g.run_local('date +%s')

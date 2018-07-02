@@ -258,7 +258,10 @@ def validate_io_procs(all_mounts_procs, mounts):
         else:
             g.log.info("IO Successful on %s:%s", mounts[i].client_system,
                        mounts[i].mountpoint)
-    return _rc
+    if _rc:
+        g.log.info("IO is successful on all mounts")
+        return True
+    return False
 
 
 def wait_for_io_to_complete(all_mounts_procs, mounts):

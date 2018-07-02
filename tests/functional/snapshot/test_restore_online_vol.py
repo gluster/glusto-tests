@@ -118,11 +118,11 @@ class SnapRSOnline(GlusterBaseClass):
             self.io_validation_complete = False
 
             # Validate IO
-            g.log.info("Wait for IO to complete and validate IO ...")
-            ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-            self.assertTrue(ret, "IO failed on some of the clients")
+            self.assertTrue(
+                validate_io_procs(self.all_mounts_procs, self.mounts),
+                "IO failed on some of the clients"
+            )
             self.io_validation_complete = True
-            g.log.info("I/O successful on clients")
 
             # Get stat of all the files/dirs created.
             g.log.info("Get stat of all the files/dirs created.")

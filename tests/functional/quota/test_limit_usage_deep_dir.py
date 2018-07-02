@@ -118,10 +118,10 @@ class LimitUsageDeepDir(GlusterBaseClass):
                        mount_object.client_system, mount_object.mountpoint)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # Set soft timeout to 1 second
         g.log.info("Set quota soft timeout:")

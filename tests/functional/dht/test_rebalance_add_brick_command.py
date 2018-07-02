@@ -159,8 +159,6 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
             self.assertTrue(validate_io_procs([proc], [mount_obj]),
                             'IO Failed on client %s:%s' %
                             (mount_obj.client_system, mount_obj.mountpoint))
-            g.log.info("IO is successful on mount point %s:%s",
-                       mount_obj.client_system, mount_obj.mountpoint)
 
         g.log.debug("Unmounting mount points")
         self.assertTrue(self.unmount_volume(self.mounts),

@@ -193,17 +193,17 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                    bricks_list[1])
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # Validate reading
-        g.log.info("Wait for reading to complete ...")
-        ret = validate_io_procs(all_mounts_procs_read, self.mounts)
-        self.assertTrue(ret, "Reading failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs_read, self.mounts),
+            "Reading failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("Reading is successful on all mounts")
 
         # Bring brick1 online
         g.log.info('Bringing bricks %s online...', bricks_list[1])

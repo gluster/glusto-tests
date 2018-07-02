@@ -93,10 +93,10 @@ class TestSnapMountSnapshot(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate I/O
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # Creating snapshot
         g.log.info("Starting to create snapshots")
@@ -157,10 +157,10 @@ class TestSnapMountSnapshot(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # Validate I/O
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # start I/O
         g.log.info("Starting IO on all mounts...")
@@ -175,9 +175,10 @@ class TestSnapMountSnapshot(GlusterBaseClass):
             all_mounts_procs.append(proc)
 
         # validate io should fail
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertFalse(ret, "Unexpected: IO Successfull on all clients")
+        self.assertFalse(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "Unexpected: IO Successfull on all clients"
+        )
         g.log.info("Expected: IO failed on clients")
 
     def tearDown(self):

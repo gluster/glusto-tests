@@ -119,10 +119,10 @@ class TestSelfHeal(GlusterBaseClass):
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
         # Validate I/O
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         g.log.info("Successfully created a file from mount point")
 
         g.log.info("bringing brick 1 back online")
@@ -147,10 +147,10 @@ class TestSelfHeal(GlusterBaseClass):
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
         # Validate I/O
-        g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         g.log.info("Successfully created a new file of same name "
                    "from mount point")
 

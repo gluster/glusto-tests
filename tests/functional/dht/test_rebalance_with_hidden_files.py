@@ -106,10 +106,10 @@ class RebalanceValidation(GlusterBaseClass):
             self.all_mounts_procs.append(proc)
 
         # validate IO
-        g.log.info("Validating IO on mounts")
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
 
         # List all files and dirs created
         g.log.info("List all files and directories:")

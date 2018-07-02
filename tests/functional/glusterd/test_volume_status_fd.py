@@ -140,10 +140,11 @@ class VolumeStatusFdWhenIOInProgress(GlusterBaseClass):
             count += 1
 
         # Validate IO
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.assertTrue(ret, "IO failed on some of the clients")
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")

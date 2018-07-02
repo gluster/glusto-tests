@@ -187,11 +187,9 @@ class TestNfsGaneshaVolumeExportsWithIO(NfsGaneshaIOBaseClass):
             time.sleep(2)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -276,11 +274,9 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaIOBaseClass):
                             % self.volume['name'])
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -369,13 +365,11 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaIOBaseClass):
         time.sleep(15)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         if not ret:
             g.log.error("IO failed on some of the clients")
             return False
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
@@ -394,12 +388,10 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaIOBaseClass):
         NfsGaneshaIOBaseClass.setUp.im_func(self)
 
         # Validate IO
-        g.log.info("Wait for IO to complete and validate IO ...")
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
         if not ret:
             raise ExecutionError("IO failed on some of the clients")
-        g.log.info("IO is successful on all mounts")
 
         # List all files and dirs created
         g.log.info("List all files and directories:")
