@@ -224,6 +224,8 @@ def quota_fetch_list(mnode, volname, path=None):
             if elem.tag == "path":
                 path = elem.text
                 quotalist[path] = {}
+            elif elem.text == 'N/A':
+                quotalist[path][elem.tag] = elem.text
             elif elem.tag in ("hard_limit", "soft_limit_value",
                               "used_space", "avail_space"):
                 quotalist[path][elem.tag] = int(elem.text)
