@@ -200,7 +200,7 @@ def volume_stop(mnode, volname, force=False):
     return g.run(mnode, cmd)
 
 
-def volume_delete(mnode, volname):
+def volume_delete(mnode, volname, xfail=False):
     """Deletes the gluster volume if given volume exists in
        gluster and deletes the directories in the bricks
        associated with the given volume
@@ -208,6 +208,7 @@ def volume_delete(mnode, volname):
     Args:
         mnode (str): Node on which cmd has to be executed.
         volname (str): volume name
+        xfail (bool): expect to fail (non existent volume, etc.)
 
     Returns:
         bool: True, if volume is deleted
@@ -217,10 +218,20 @@ def volume_delete(mnode, volname):
         volume_delete("abc.xyz.com", "testvol")
     """
 
-    volinfo = get_volume_info(mnode, volname)
+    volinfo = get_volume_info(mnode, volname, xfail)
     if volinfo is None or volname not in volinfo:
-        g.log.info("Volume %s does not exist in %s" % (volname, mnode))
-        return True
+        if xfail:
+            g.log.info(
+                "Volume {} does not exist in {}"
+                .format(volname, mnode)
+            )
+            return True
+        else:
+            g.log.error(
+                "Unexpected: volume {} does not exist in {}"
+                .format(volname, mnode)
+            )
+            return False
 
     if volinfo[volname]['typeStr'] == 'Tier':
         tmp_hot_brick = volinfo[volname]["bricks"]["hotBricks"]["brick"]
@@ -231,14 +242,32 @@ def volume_delete(mnode, volname):
     else:
         bricks = [x["name"] for x in volinfo[volname]["bricks"]["brick"]
                   if "name" in x]
-    ret, _, _ = g.run(mnode, "gluster volume delete %s --mode=script"
-                      % volname)
+    ret, out, err = g.run(mnode, "gluster volume delete {} --mode=script"
+                          .format(volname))
     if ret != 0:
-        return False
+        if xfail:
+            g.log.info(
+                "Volume {} deletion failed - as expected"
+                .format(volname)
+            )
+            return True
+        else:
+            g.log.error(
+                "Unexpected: volume {} deletion failed: {} ({} : {})"
+                .format(volname, ret, out, err)
+            )
+            return False
 
     for brick in bricks:
         node, vol_dir = brick.split(":")
-        ret = g.run(node, "rm -rf %s" % vol_dir)
+        ret, out, err = g.run(node, "rm -rf %s" % vol_dir)
+        if ret != 0:
+            if not xfail:
+                g.log.err(
+                    "Unexpected: rm -rf {} failed ({}: {})"
+                    .format(vol_dir, out, err)
+                )
+                return False
 
     return True
 
@@ -281,12 +310,11 @@ def volume_status(mnode, volname='all', service='', options=''):
 
     Args:
         mnode (str): Node on which cmd has to be executed.
-        volname (str): volume name
 
     Kwargs:
         volname (str): volume name. Defaults to 'all'
         service (str): name of the service to get status.
-            serivce can be, [nfs|shd|<BRICK>|quotad]], If not given,
+            service can be, [nfs|shd|<BRICK>|quotad]], If not given,
             the function returns all the services
         options (str): options can be,
             [detail|clients|mem|inode|fd|callpool|tasks]. If not given,
@@ -594,12 +622,13 @@ def volume_info(mnode, volname='all'):
     return g.run(mnode, cmd)
 
 
-def get_volume_info(mnode, volname='all'):
+def get_volume_info(mnode, volname='all', xfail=False):
     """Fetches the volume information as displayed in the volume info.
         Uses xml output of volume info and parses the into to a dict
 
     Args:
         mnode (str): Node on which cmd has to be executed.
+        xfail (bool): Expect failure to get volume info
 
     Kwargs:
         volname (str): volume name. Defaults to 'all'
@@ -635,9 +664,13 @@ def get_volume_info(mnode, volname='all'):
     """
 
     cmd = "gluster volume info %s --xml" % volname
-    ret, out, _ = g.run(mnode, cmd, log_level='DEBUG')
+    ret, out, err = g.run(mnode, cmd, log_level='DEBUG')
     if ret != 0:
-        g.log.error("volume info returned error")
+        if not xfail:
+            g.log.error(
+                "Unexpected: volume info {} returned error ({} : {})"
+                .format(volname, out, err)
+            )
         return None
     root = etree.XML(out)
     volinfo = {}

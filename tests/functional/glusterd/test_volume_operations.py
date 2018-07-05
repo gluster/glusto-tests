@@ -179,11 +179,12 @@ class TestVolumeCreate(GlusterBaseClass):
         g.log.info("Stopping a non existing volume is failed")
 
         # Deleting a non existing volume should fail
-        ret = volume_delete(self.mnode, "no_vol")
-        self.assertTrue(ret, "Expected: It should fail to delete a "
-                        "non existing volume. Actual:Successfully deleted "
-                        "a non existing volume")
-        g.log.info("Deleting a non existing volume is failed")
+        self.assertTrue(
+            volume_delete(self.mnode, "no_vol", xfail=True),
+            "Expected: It should fail to delete a "
+            "non existing volume. Actual:Successfully deleted "
+            "a non existing volume"
+        )
 
         # Detach a server and try to create volume with node
         # which is not in cluster
@@ -220,11 +221,14 @@ class TestVolumeCreate(GlusterBaseClass):
         g.log.info("Starting a already started volume is Failed.")
 
         # Deleting a volume without stopping should fail
-        ret = volume_delete(self.mnode, self.volname)
-        self.assertFalse(ret, ("Expected: It should fail to delete a volume"
-                               " without stopping. Actual: Successfully "
-                               "deleted a volume without stopping it"))
-        g.log.error("Failed to delete a volume without stopping it")
+        self.assertTrue(
+            volume_delete(self.mnode, self.volname, xfail=True),
+            "Expected: It should fail to delete a volume"
+            " without stopping. Actual: Successfully "
+            "deleted a volume without stopping it"
+        )
+        g.log.info("Expected: volume delete should fail without "
+                   "stopping volume: %s", self.volname)
 
         # Stopping a volume should succeed
         ret, _, _ = volume_stop(self.mnode, self.volname)
@@ -239,16 +243,18 @@ class TestVolumeCreate(GlusterBaseClass):
         g.log.info("Volume stop is failed on already stopped volume")
 
         # Deleting a volume should succeed
-        ret = volume_delete(self.mnode, self.volname)
-        self.assertTrue(ret, ("Volume delete is failed"))
-        g.log.info("Volume delete is success")
+        self.assertTrue(
+            volume_delete(self.mnode, self.volname),
+            "Volume delete is failed"
+        )
 
-        # Deleting a non existing volume should fail
-        ret = volume_delete(self.mnode, self.volname)
-        self.assertTrue(ret, "Expected: It should fail to delete a non "
-                        "existing volume. Actual:Successfully deleted a "
-                        "non existing volume")
-        g.log.info("Volume delete is failed for non existing volume")
+        # Deleting an already deleted volume should fail
+        self.assertTrue(
+            volume_delete(self.mnode, self.volname, xfail=True),
+            "Expected: It should fail to delete an "
+            "already deleted volume. Actual:Successfully "
+            "deleted an already deleted volume"
+        )
 
         # Volume info command should succeed
         ret = get_volume_info(self.mnode)

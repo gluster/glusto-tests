@@ -226,10 +226,11 @@ class TestPeerProbe(GlusterBaseClass):
         g.log.info("Volume %s start with force is success", self.volname)
 
         # Volume delete should fail without stopping volume
-        ret = volume_delete(self.servers[2], self.volname)
-        self.assertFalse(ret, ("Unexpected Error: Volume deleted "
-                               "successfully without stopping"
-                               "volume %s", self.volname))
+        self.assertTrue(
+            volume_delete(self.servers[2], self.volname, xfail=True),
+            "Unexpected Error: Volume deleted "
+            "successfully without stopping volume"
+        )
         g.log.info("Expected: volume delete should fail without "
                    "stopping volume: %s", self.volname)
 
