@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,8 +16,7 @@
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.snap_ops import (snap_create,
                                          snap_list,
                                          snap_delete_all,
@@ -46,6 +45,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
                    "successfully", self.volname)
 
     def test_snap_delete(self):
+        # pylint: disable=too-many-statements
         """
         Delete a snapshot of a volume
 
@@ -107,6 +107,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
         # Validating max-hard-limit
         g.log.info("Validating max-hard-limit")
         hardlimit = get_snap_config(self.mnode)
+        self.assertIsNotNone(hardlimit, "Failed to get snap config")
         get_hardlimit = hardlimit['volumeConfig'][0]['hardLimit']
         self.assertEqual(get_hardlimit, '10', ("Failed to Validate"
                                                "max-hard-limit"))
@@ -123,6 +124,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
         # Validating max-soft-limit
         g.log.info("Validating max-soft-limit")
         softlimit = get_snap_config(self.mnode)
+        self.assertIsNotNone(softlimit, "Failed to get snap config")
         get_softlimit = softlimit['volumeConfig'][0]['softLimit']
         self.assertEqual(get_softlimit, '8', ("Failed to Validate"
                                               "max-soft-limit"))
@@ -153,9 +155,9 @@ class DeleteSnapshotTests(GlusterBaseClass):
         self.assertEqual(ret, 0, ("Failed to list snapshot of volume %s"
                                   % self.volname))
         g.log.info("Total number of snapshots created after auto-delete"
-                   "enabled is %s", tot)
-        self.assertEqual(tot, '8', ("Failed to validate snapshots with"
-                                    "expected number of snapshots "))
+                   "enabled is %s", tot[0])
+        self.assertEqual(tot[0], '8', ("Failed to validate snapshots with"
+                                       "expected number of snapshots "))
         g.log.info("Successfully validated snapshots with expected"
                    "number of snapshots")
 
@@ -165,7 +167,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
         g.log.info("Disabling auto-delete")
         cmd = "gluster snapshot config auto-delete disable"
         ret, _, _ = g.run(self.mnode, cmd)
-        if not ret:
+        if ret != 0:
             raise ExecutionError("Failed to disable auto-delete snapshot"
                                  "config option")
         g.log.info("Snapshot auto-delete Successfully disabled")
@@ -173,7 +175,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
         # deleting created snapshots
         g.log.info("Deleting all created snapshots")
         ret, _, _ = snap_delete_all(self.mnode)
-        if not ret:
+        if ret != 0:
             raise ExecutionError("Failed to delete snapshot of volume"
                                  "%s" % self.volname)
         g.log.info("Successfully deleted snapshots of"
@@ -183,7 +185,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
         g.log.info("Setting max-soft-limit to default")
         cmd = {'snap-max-soft-limit': '90'}
         ret, _, _ = set_snap_config(self.mnode, cmd)
-        if not ret:
+        if ret != 0:
             raise ExecutionError("Failed to set snap-max-soft-limit"
                                  "config option")
         g.log.info("snap-max-soft-limit config option Successfully set")
