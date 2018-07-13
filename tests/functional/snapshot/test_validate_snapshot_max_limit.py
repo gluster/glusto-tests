@@ -51,8 +51,9 @@ from glustolibs.io.utils import validate_io_procs, get_mounts_stat
 from glustolibs.gluster.snap_ops import get_snap_list, snap_delete_all
 
 
-@runs_on([['distributed'],
-          ['glusterfs']])
+@runs_on([['replicated', 'distributed-replicated', 'dispersed',
+           'distributed-dispersed', 'distributed'],
+          ['glusterfs', 'nfs', 'cifs']])
 class SnapCreateMax(GlusterBaseClass):
     """
     Test for snapshot create max limits
@@ -115,7 +116,7 @@ class SnapCreateMax(GlusterBaseClass):
         tearDown
         """
         ret, _, _ = snap_delete_all(self.mnode)
-        if not ret:
+        if ret != 0:
             raise ExecutionError("Failed to delete all snapshots.")
         GlusterBaseClass.tearDown.im_func(self)
 
