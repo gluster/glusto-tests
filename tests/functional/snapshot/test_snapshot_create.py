@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ from glustolibs.gluster.snap_ops import (get_snap_list, snap_delete_all)
 
 
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
-           'distributed-dispersed'],
+           'distributed-dispersed', 'distributed'],
           ['glusterfs', 'nfs', 'cifs']])
 class SnapCreate(GlusterBaseClass):
     """
@@ -77,9 +77,8 @@ class SnapCreate(GlusterBaseClass):
         setUp method
         """
         # Setup_Volume
-        GlusterBaseClass.setUpClass.im_func(self)
-        ret = self.setup_volume_and_mount_volume(mounts=self.mounts,
-                                                 volume_create_force=True)
+        GlusterBaseClass.setUp.im_func(self)
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to setup and mount volume")
         g.log.info("Volume %s has been setup successfully", self.volname)
@@ -89,7 +88,7 @@ class SnapCreate(GlusterBaseClass):
         tearDown
         """
         ret, _, _ = snap_delete_all(self.mnode)
-        if not ret:
+        if ret != 0:
             raise ExecutionError("Failed to delete all snaps")
         GlusterBaseClass.tearDown.im_func(self)
 
@@ -111,43 +110,44 @@ class SnapCreate(GlusterBaseClass):
         Creating snapshot using gluster snapshot create <snap1> <vol-name>
         """
         cmd_str = "gluster snapshot create %s %s" % ("snap1", self.volname)
-        ret = g.run(self.mnode, cmd_str)
-        self.assertTrue(ret, ("Failed to create snapshot for %s"
-                              % self.volname))
+        ret, _, _ = g.run(self.mnode, cmd_str)
+        self.assertEqual(ret, 0, ("Failed to create snapshot for %s"
+                                  % self.volname))
         g.log.info("Snapshot snap1 created successfully for volume  %s",
                    self.volname)
 
         # Create snapshot of volume using
         # -- gluster snapshot create <snap2> <vol-name(s)> [description
         # <description with words and quotes>]
-        desc = 'description this is a snap with "snap2" name and description'
+        desc = 'description "this is a snap with snap2 name and description"'
         cmd_str = ("gluster snapshot create %s %s %s"
                    % ("snap2", self.volname, desc))
-        ret = g.run(self.mnode, cmd_str)
-        self.assertTrue(ret, ("Failed to create snapshot for %s"
-                              % self.volname))
+        ret, _, _ = g.run(self.mnode, cmd_str)
+        self.assertEqual(ret, 0, ("Failed to create snapshot for %s"
+                                  % self.volname))
         g.log.info("Snapshot snap2 created successfully for volume  %s",
-                   (self.volname))
+                   self.volname)
 
         # Create one more snapshot of volume using force
         cmd_str = ("gluster snapshot create %s %s %s"
                    % ("snap3", self.volname, "force"))
-        ret = g.run(self.mnode, cmd_str)
-        self.assertTrue(ret, ("Failed to create snapshot for %s"
-                              % self.volname))
+        ret, _, _ = g.run(self.mnode, cmd_str)
+        self.assertEqual(ret, 0, ("Failed to create snapshot for %s"
+                                  % self.volname))
         g.log.info("Snapshot snap3 created successfully for volume  %s",
-                   (self.volname))
+                   self.volname)
 
         # Create one more snapshot of volume using no-timestamp option
         cmd_str = ("gluster snapshot create %s %s %s"
                    % ("snap4", self.volname, "no-timestamp"))
-        ret = g.run(self.mnode, cmd_str)
-        self.assertTrue(ret, ("Failed to create snapshot for %s"
-                              % self.volname))
+        ret, _, _ = g.run(self.mnode, cmd_str)
+        self.assertEqual(ret, 0, ("Failed to create snapshot for %s"
+                                  % self.volname))
         g.log.info("Snapshot snap4 created successfully for volume  %s",
-                   (self.volname))
+                   self.volname)
 
         # Delete all snaps
+        g.log.info("delete all snapshots present")
         ret, _, _ = snap_delete_all(self.mnode)
         self.assertEqual(ret, 0, "Snapshot delete failed.")
         g.log.info("Successfully deleted all snaps")
@@ -174,9 +174,9 @@ class SnapCreate(GlusterBaseClass):
         for i in range(0, 5):
             cmd_str = "gluster snapshot create %s %s %s" % (
                 "snapy%s" % i, self.volname, "no-timestamp")
-            ret = g.run(self.mnode, cmd_str)
-            self.assertTrue(ret, ("Failed to create snapshot for %s"
-                                  % self.volname))
+            ret, _, _ = g.run(self.mnode, cmd_str)
+            self.assertEqual(ret, 0, ("Failed to create snapshot for %s"
+                                      % self.volname))
             g.log.info("Snapshot %s created successfully for volume  %s",
                        "snapy%s" % i, self.volname)
 
