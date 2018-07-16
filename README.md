@@ -17,6 +17,7 @@ To automate/run glusto-tests we need to install the following packages:
 -   glusto
 -   glustolibs-gluster
 -   glustolibs-io
+-   glustolibs-misc
 -   gdeploy
 
 How to install glusto:
@@ -34,12 +35,14 @@ One can use either of the two methods.
 
 For more info refer the [docs](http://glusto.readthedocs.io/en/latest/userguide/install.html).
 
-How to install the glustolibs-gluster and glustolibs-io libraries:
+How to install the glustolibs-gluster, glustolibs-io and glustolibs-misc libraries:
 -----------------------------------------------------------------
     # git clone http://review.gluster.org/glusto-tests
     # cd glusto-tests/glustolibs-gluster
     # python setup.py install
-    # cd glusto-tests/glustolibs-io
+    # cd ../../glusto-tests/glustolibs-io
+    # python setup.py install
+    # cd ../../glusto-tests/glustolibs-misc
     # python setup.py install
 
 How to install gdeploy:
