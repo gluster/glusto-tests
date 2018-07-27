@@ -55,7 +55,7 @@ class SnapCreateRebal(GlusterBaseClass):
            during rebalance
         9. After rebalance is completed, create snapshots with the same name as
            in Step 7
-           -- this operation should be sucessfull
+           -- this operation should be successful
         10. Cleanup
 
     """
@@ -103,7 +103,7 @@ class SnapCreateRebal(GlusterBaseClass):
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successfull for the volume and mount")
+        g.log.info("Cleanup successful for the volume and mount")
 
     def test_snapshot_while_rebalance(self):
         # pylint: disable=too-many-statements, missing-docstring

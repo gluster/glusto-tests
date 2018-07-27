@@ -98,7 +98,7 @@ class SnapUssBrickDown(GlusterBaseClass):
         * Mount volume
         * Perform I/O on mounts
         * Bring down one brick
-        * Enbale USS
+        * Enable USS
         * Validate USS is enabled
         * Bring the brick online using gluster v start force
         * Create 2 snapshots snapy1 & snapy2
@@ -164,7 +164,7 @@ class SnapUssBrickDown(GlusterBaseClass):
         g.log.info("Bring the brick online using gluster v start force")
         ret, _, _ = volume_start(self.mnode, self.volname, force=True)
         self.assertEqual(ret, 0, "Volume start with force failed")
-        g.log.info("Volume start with force successfull")
+        g.log.info("Volume start with force successful")
 
         # Create 2 snapshot
         g.log.info("Creating 2 snapshots for volume %s", self.volname)

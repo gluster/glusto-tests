@@ -176,7 +176,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
                             self.all_servers_info)
         self.assertTrue(ret, ("Failed to add bricks to "
                               "volume %s " % self.volname))
-        g.log.info("Add brick successfull")
+        g.log.info("Add brick successful")
 
         # Log Volume Info and Status after expanding the volume
         g.log.info("Logging volume info and Status after expanding volume")
@@ -231,11 +231,11 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
-        g.log.info("Successfull in getting self-heal daemon process "
+        g.log.info("Successful in getting self-heal daemon process "
                    "on nodes %s", nodes)
 
         glustershd_pids_after_expanding = pids
-        g.log.info("Self Heal Daemon Process ID's afetr expanding "
+        g.log.info("Self Heal Daemon Process ID's after expanding "
                    "volume: %s", glustershd_pids_after_expanding)
 
         self.assertNotEqual(glustershd_pids,
@@ -389,7 +389,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         ret, pids = get_self_heal_daemon_pid(nodes)
         self.assertTrue(ret, ("Either No self heal daemon process found or "
                               "more than One self heal daemon process found"))
-        g.log.info("Succesfull in getting self heal daemon pids")
+        g.log.info("Successful in getting self heal daemon pids")
         glustershd_pids = pids
 
         # get the bricks for the volume
@@ -461,7 +461,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully", bricks_to_bring_offline)
+                   "for %s successfully", bricks_to_bring_offline)
 
         # restart glusterd after brought down the brick
         g.log.info("Restart glusterd on all servers %s", nodes)
@@ -922,7 +922,7 @@ class SelfHealDaemonProcessTestsWithHealing(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully", bricks_to_bring_offline)
+                   "for %s successfully", bricks_to_bring_offline)
 
         # get the bricks which are running
         g.log.info("getting the brick list which are online")
@@ -996,9 +996,9 @@ class SelfHealDaemonProcessTestsWithHealing(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully", bricks_to_bring_offline)
+                   "for %s successfully", bricks_to_bring_offline)
 
-        # wait for 60 sec and brought up the brick agian
+        # wait for 60 sec and brought up the brick again
         time.sleep(60)
         g.log.info("Bring bricks: %s online", bricks_to_bring_offline)
         ret = bring_bricks_online(self.mnode, self.volname,
@@ -1182,7 +1182,7 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
                                     self.all_servers_info)
                 self.assertTrue(ret, ("Failed to add bricks to "
                                       "volume %s " % volume))
-                g.log.info("Add brick successfull")
+                g.log.info("Add brick successful")
 
                 # Log Volume Info and Status after expanding the volume
                 g.log.info("Logging volume info and Status after "

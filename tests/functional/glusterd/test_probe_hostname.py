@@ -103,14 +103,14 @@ class TestPeerProbe(GlusterBaseClass):
                                   self.brick_list, force=False)
         self.assertEqual(ret, 0, "Unable"
                          "to create volume % s" % self.volname)
-        g.log.info("Volume created successfuly % s", self.volname)
+        g.log.info("Volume created successfully % s", self.volname)
 
         # Start a volume
         g.log.info("Start a volume")
         ret, _, _ = volume_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, "Unable"
                          "to start volume % s" % self.volname)
-        g.log.info("Volume started successfuly % s", self.volname)
+        g.log.info("Volume started successfully % s", self.volname)
 
         # Get volume info
         g.log.info("get volume info")
@@ -127,7 +127,7 @@ class TestPeerProbe(GlusterBaseClass):
         ret, _, _ = volume_stop(self.mnode, self.volname)
         self.assertEqual(ret, 0, "Unable"
                          "to stop volume % s" % self.volname)
-        g.log.info("Volume stopped successfuly % s", self.volname)
+        g.log.info("Volume stopped successfully % s", self.volname)
 
         # Create a volume
         self.volname = "test-vol-fqdn"
@@ -154,14 +154,14 @@ class TestPeerProbe(GlusterBaseClass):
                                   my_brick_list, force=False)
         self.assertEqual(ret, 0, "Unable"
                          "to create volume % s" % self.volname)
-        g.log.info("Volume created successfuly % s", self.volname)
+        g.log.info("Volume created successfully % s", self.volname)
 
         # Start a volume
         g.log.info("Start a volume")
         ret, _, _ = volume_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, "Unable"
                          "to start volume % s" % self.volname)
-        g.log.info("Volume started successfuly % s", self.volname)
+        g.log.info("Volume started successfully % s", self.volname)
 
         # Get volume info
         g.log.info("get volume info")
@@ -178,4 +178,4 @@ class TestPeerProbe(GlusterBaseClass):
         ret, _, _ = volume_stop(self.mnode, self.volname)
         self.assertEqual(ret, 0, "Unable"
                          "to stop volume % s" % self.volname)
-        g.log.info("Volume stopped successfuly % s", self.volname)
+        g.log.info("Volume stopped successfully % s", self.volname)

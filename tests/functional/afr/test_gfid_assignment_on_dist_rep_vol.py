@@ -112,7 +112,7 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
         # Verify gfids are same on all the bricks
         self.verify_gfid("dir1")
 
-        # Creat a new directory on all the bricks directly
+        # Create a new directory on all the bricks directly
         bricks_list = get_all_bricks(self.mnode, self.volname)
         for brick in bricks_list:
             brick_node, brick_path = brick.split(":")

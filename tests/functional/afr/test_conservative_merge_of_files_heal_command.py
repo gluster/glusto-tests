@@ -139,7 +139,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, ("Unable to set volume option %s for"
                               "volume %s" % (options, self.volname)))
-        g.log.info("Sucessfully set %s for volume %s", options, self.volname)
+        g.log.info("Successfully set %s for volume %s", options, self.volname)
 
         # Bring brick 0 offline
         g.log.info('Bringing bricks %s offline', bricks_list[0])

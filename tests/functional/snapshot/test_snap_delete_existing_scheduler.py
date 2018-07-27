@@ -186,7 +186,7 @@ class SnapshotDeleteExistingScheduler(GlusterBaseClass):
                 count += 2
         self.assertEqual(status.strip().split(":")[2], ' Enabled',
                          "Failed to check status of scheduler")
-        g.log.info("Successfuly checked scheduler status")
+        g.log.info("Successfully checked scheduler status")
 
         # write files on all mounts
         g.log.info("Starting IO on all mounts...")

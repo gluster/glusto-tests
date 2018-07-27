@@ -132,7 +132,7 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
 
         # Verfiying node count in volume status after glusterd
         # started on servers, Its not possible to check the brick status
-        # immediately after glusterd start, thats why verifying that all
+        # immediately after glusterd start, that's why verifying that all
         # glusterd started nodes available in gluster volume status or not
         count = 0
         while count < 50:

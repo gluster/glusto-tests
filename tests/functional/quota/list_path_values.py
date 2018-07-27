@@ -112,7 +112,7 @@ class QuotaListPathValues(GlusterBaseClass):
                    "count=1;done" % (mount_object.mountpoint))
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertEqual(ret, 0, "Failed to create files on mountpoint")
-            g.log.info("Files created succesfully on mountpoint")
+            g.log.info("Files created successfully on mountpoint")
 
         # Get Quota list without specifying the path
         g.log.info("Get Quota list for the volume %s", self.volname)

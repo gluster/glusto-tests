@@ -192,7 +192,7 @@ def fd_writes(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Program to perfrom fd based writes on files for time t",
+        description="Program to perform fd based writes on files for time t",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-f', '--file-sizes-list',

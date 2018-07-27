@@ -177,7 +177,7 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                             self.all_servers_info, replica_count=1,
                             arbiter_count=1)
         self.assertTrue(ret, ("Failed to expand the volume  %s", self.volname))
-        g.log.info("Changing volume to arbiter volume is successfull %s",
+        g.log.info("Changing volume to arbiter volume is successful %s",
                    self.volname)
 
         # Log Volume Info and Status after changing the volume type from

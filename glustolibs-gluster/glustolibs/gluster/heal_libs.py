@@ -60,7 +60,7 @@ def is_heal_disabled(mnode, volname):
         volname : Name of the volume
 
     Returns:
-        bool : True if heal is diabled on volume. False otherwise.
+        bool : True if heal is disabled on volume. False otherwise.
         NoneType: None if unable to get the volume status shd or parse error.
     """
     cmd = "gluster volume status %s shd --xml" % volname

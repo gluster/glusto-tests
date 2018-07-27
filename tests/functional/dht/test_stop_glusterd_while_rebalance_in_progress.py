@@ -134,7 +134,7 @@ class RebalanceValidation(GlusterBaseClass):
                                   self.volname))
         g.log.info("Volume %s: Started rebalance", self.volname)
 
-        # Wait for atleast one file to be lookedup/scanned on the nodes
+        # Wait for at least one file to be lookedup/scanned on the nodes
         status_info = get_rebalance_status(self.mnode, self.volname)
         count = 0
         while count < 100:
@@ -146,7 +146,7 @@ class RebalanceValidation(GlusterBaseClass):
                     lookups_start_count += 1
                     sleep(5)
             if lookups_start_count == len(self.servers):
-                g.log.info("Volume %s: Atleast one file is lookedup/scanned "
+                g.log.info("Volume %s: At least one file is lookedup/scanned "
                            "on all nodes", self.volname)
                 break
             count += 1

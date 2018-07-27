@@ -120,7 +120,7 @@ class QuotaAddBrick(GlusterBaseClass):
                % (mount_dir))
         ret, _, _ = g.run(client, cmd)
         self.assertEqual(ret, 0, ("Failed to create files"))
-        g.log.info("Files created succesfully")
+        g.log.info("Files created successfully")
 
         # Quota validate
         ret = quota_validate(self.mnode, self.volname,

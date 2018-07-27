@@ -124,14 +124,14 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
                               self.volname))
         g.log.info("Volume %s : All process are online", self.volname)
 
-        # Adding the bricks to amke arbiter brick
+        # Adding the bricks to make arbiter brick
         g.log.info("Adding bricks to convert to Arbiter Volume")
         replica_arbiter = {'replica_count': 3, 'arbiter_count': 1}
         ret = expand_volume(self.mnode, self.volname, self.servers[2:],
                             self.all_servers_info, add_to_hot_tier=False,
                             **replica_arbiter)
         self.assertTrue(ret, ("Failed to expand the volume  %s", self.volname))
-        g.log.info("Changing volume to arbiter volume is successfull %s",
+        g.log.info("Changing volume to arbiter volume is successful %s",
                    self.volname)
 
         # Log Volume Info and Status after expanding the volume

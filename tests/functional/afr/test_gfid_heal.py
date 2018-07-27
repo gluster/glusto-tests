@@ -129,7 +129,7 @@ class HealGfidTest(GlusterBaseClass):
         - Create a 1x3 volume and fuse mount it.
         - Create 1 directory with 1 file inside it directly on each brick.
         - Access the directories from the mount.
-        - Launch heals ans verify that the heals are over.
+        - Launch heals and verify that the heals are over.
         - Verify that the files and directories have gfid assigned.
         """
         # pylint: disable=too-many-statements

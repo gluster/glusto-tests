@@ -122,7 +122,7 @@ class SnapshotGlusterddown(GlusterBaseClass):
         g.log.info("Starting to list all snapshots")
         for server in self.servers[0:]:
             out = get_snap_list(server)
-            self.assertIsNotNone(out, "Falied to list snap in node"
+            self.assertIsNotNone(out, "Failed to list snap in node"
                                  "%s" % server)
             self.assertEqual(len(out), 2, "Failed to validate snap list"
                              "on node %s" % server)

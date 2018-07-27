@@ -82,7 +82,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         # Mounting a NFS volume
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, "NFS volume mount failed for %s" % self.volname)
-        g.log.info("Volume mounted sucessfully : %s", self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
 
         # unmounting NFS Volume
         ret = self.unmount_volume(self.mounts)

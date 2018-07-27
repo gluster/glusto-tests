@@ -94,9 +94,9 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
         glusterfsd_pid = pid.split()[1]
 
         if glusterfsd_pid != brick_pid:
-            g.log.eror("Brick pid %s doesn't macth glusterfsd "
-                       "pid %s of the node %s", brick_pid,
-                       glusterfsd_pid, brick_node)
+            g.log.error("Brick pid %s doesn't match glusterfsd "
+                        "pid %s of the node %s", brick_pid,
+                        glusterfsd_pid, brick_node)
             _rc = False
 
     return _rc

@@ -94,7 +94,7 @@ class VolumeStatusFdWhenIOInProgress(GlusterBaseClass):
         -> Mount the volume on 2 clients
         -> Run I/O's on mountpoint
         -> While I/O's are in progress
-        -> Perfrom gluster volume status fd repeatedly
+        -> Perform gluster volume status fd repeatedly
         -> List all files and dirs listed
         '''
 

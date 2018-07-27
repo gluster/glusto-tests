@@ -29,7 +29,7 @@ from glustolibs.gluster.volume_libs import (get_subvols, is_tiered_volume,
 
 def get_all_bricks(mnode, volname):
     """Get list of all the bricks of the specified volume.
-        If the volume is 'Tier' volume, the list will contian both
+        If the volume is 'Tier' volume, the list will contain both
         'hot tier' and 'cold tier' bricks.
 
     Args:

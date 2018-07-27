@@ -96,7 +96,7 @@ class EcValidateVolumeCreate(GlusterBaseClass):
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
-        self.assertFalse(ret, ("Volume Setup and Mount succeded"
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded"
                                " for volume %s", self.volname))
         g.log.info("Successfully verified invalid input parameters")
 
@@ -108,8 +108,8 @@ class EcValidateVolumeCreate(GlusterBaseClass):
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
-        self.assertFalse(ret, ("Volume Setup and Mount succeded for volume %s",
-                               self.volname))
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
         g.log.info("Successfully verified invalid input parameters")
 
     def test_invalid_usecase_three(self):
@@ -120,8 +120,8 @@ class EcValidateVolumeCreate(GlusterBaseClass):
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
-        self.assertFalse(ret, ("Volume Setup and Mount succeded for volume %s",
-                               self.volname))
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
         g.log.info("Successfully verified invalid input parameters")
 
     def test_invalid_usecase_four(self):
@@ -132,6 +132,6 @@ class EcValidateVolumeCreate(GlusterBaseClass):
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
-        self.assertFalse(ret, ("Volume Setup and Mount succeded for volume %s",
-                               self.volname))
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
         g.log.info("Successfully verified invalid input parameters")

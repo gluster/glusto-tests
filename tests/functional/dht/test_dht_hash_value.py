@@ -187,12 +187,12 @@ class TestDHTHashValue(GlusterBaseClass):
                         mountpoint)
             attributes = get_fattr_list(client_host, mountpoint)
             self.assertFalse('trusted.gfid' in attributes,
-                             "Expected: Mount point should't display xattr:"
+                             "Expected: Mount point shouldn't display xattr:"
                              "{xattr}. Actual: xattrs {xattr} is "
                              "presented on mount point".
                              format(xattr='trusted.gfid'))
             self.assertFalse('trusted.glusterfs.dht' in attributes,
-                             "Expected: Mount point should't display xattr:"
+                             "Expected: Mount point shouldn't display xattr:"
                              "{xattr}. Actual: xattrs {xattr} is "
                              "presented on mount point".
                              format(xattr='trusted.glusterfs.dht'))

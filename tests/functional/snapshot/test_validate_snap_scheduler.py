@@ -127,7 +127,7 @@ class SnapshotSchedulerBehaviour(GlusterBaseClass):
                 count += 2
         self.assertEqual(status.strip().split(":")[2], ' Enabled',
                          "Failed to check status of scheduler")
-        g.log.info("Successfuly checked scheduler status")
+        g.log.info("Successfully checked scheduler status")
 
         # Disable snap scheduler
         g.log.info("Starting to disable snapshot scheduler on all nodes")
@@ -148,4 +148,4 @@ class SnapshotSchedulerBehaviour(GlusterBaseClass):
                 count += 2
         self.assertEqual(status.strip().split(":")[2], ' Disabled',
                          "Failed to check status of scheduler")
-        g.log.info("Successfuly checked scheduler status")
+        g.log.info("Successfully checked scheduler status")

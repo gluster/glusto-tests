@@ -98,7 +98,7 @@ def upload_scripts(list_of_nodes, list_of_scripts_abs_path,
         user (optional[str]): The user to use for the remote connection.
 
     Returns:
-        bool: True if uploading scripts is sucessful on all nodes.
+        bool: True if uploading scripts is successful on all nodes.
             False otherwise.
     """
     if not isinstance(list_of_nodes, list):
@@ -160,7 +160,7 @@ def yum_add_repos(list_of_nodes, list_of_yum_repos):
         list_of_yum_repos (list): List of yum repos
 
     Returns:
-        bool: True if adding yum repo files is sucessful on all nodes.
+        bool: True if adding yum repo files is successful on all nodes.
             False otherwise.
     """
     if not isinstance(list_of_nodes, list):
@@ -193,7 +193,7 @@ def yum_install_packages(list_of_nodes, yum_packages):
         yum_packages (list): List of yum packages.
 
     Returns:
-        bool: True if installation of packages is sucessful on all nodes.
+        bool: True if installation of packages is successful on all nodes.
             False otherwise.
     """
     if not isinstance(list_of_nodes, list):
@@ -224,7 +224,7 @@ def yum_remove_packages(list_of_nodes, yum_packages):
         yum_packages (list): List of yum packages.
 
     Returns:
-        bool: True if removing packages is sucessful on all nodes.
+        bool: True if removing packages is successful on all nodes.
             False otherwise.
     """
     if not isinstance(list_of_nodes, list):
@@ -256,7 +256,7 @@ def pip_install_packages(list_of_nodes, python_packages):
         python_packages (list): List of python packages.
 
     Returns:
-        bool: True if installation of packages is sucessful on all nodes.
+        bool: True if installation of packages is successful on all nodes.
             False otherwise.
     """
     if not isinstance(list_of_nodes, list):
@@ -290,7 +290,7 @@ def install_testing_tools(list_of_nodes, testing_tools):
                 - arequal
 
     Returns:
-        bool: True if installation of all testing tools is sucessful on
+        bool: True if installation of all testing tools is successful on
             all nodes. False otherwise.
     """
     if not isinstance(list_of_nodes, list):
@@ -471,7 +471,7 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
 
         The second element 'reboot_results' is of type dictonary and it
         contains the node and corresponding result for reboot. If reboot is
-        successfull on node, then result contains True else False.
+        successful on node, then result contains True else False.
     """
     _rc = reboot_nodes(nodes)
     reboot_results = {}
@@ -551,7 +551,7 @@ def drop_caches(hosts):
                       dropped (Servers/ Clients)
 
     Returns:
-        bool : True , post succesful completion.Else,False.
+        bool : True , post successful completion.Else,False.
     """
     cmd = "echo 3 > /proc/sys/vm/drop_caches"
     results = g.run_parallel(hosts, cmd)

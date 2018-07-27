@@ -142,7 +142,7 @@ class ClientSideQuorumRestored(GlusterBaseClass):
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, ("Unable to set volume option %s for"
                               "volume %s" % (options, self.volname)))
-        g.log.info("Sucessfully set %s for volume %s",
+        g.log.info("Successfully set %s for volume %s",
                    options, self.volname)
 
         # Creating files on client side

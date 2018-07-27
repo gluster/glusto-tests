@@ -65,7 +65,7 @@ def append_string_to_file(mnode, filename, str_to_add_in_file,
 
         return True
     except IOError:
-        g.log.error("Exception occured while adding string to "
+        g.log.error("Exception occurred while adding string to "
                     "file %s in append_string_to_file()", filename)
         return False
     finally:
@@ -90,7 +90,7 @@ def search_pattern_in_file(mnode, search_pattern, filename, start_str_to_parse,
             file from which this method will check
             if the given search string is present.
         end_str_to_parse (str): this will be as end string in the
-            file whithin which this method will check
+            file within which this method will check
             if the given search string is present.
 
     Returns:
@@ -288,7 +288,7 @@ def list_files(mnode, dir_path, parse_str="", user="root"):
                     filepaths.append(filepath)
         return filepaths
     except StopIteration:
-        g.log.error("Exception occured in list_files()")
+        g.log.error("Exception occurred in list_files()")
         return None
 
     finally:
@@ -788,7 +788,7 @@ def is_core_file_created(nodes, testrun_timestamp,
         List of nodes need to pass from test method
     testrun_timestamp:
         This time stamp need to pass from test method
-        test case runing started time, time format is EPOCH
+        test case running started time, time format is EPOCH
         time format, use below command for getting timestamp
         of test case 'date +%s'
     paths(list):

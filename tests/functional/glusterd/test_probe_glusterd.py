@@ -62,7 +62,7 @@ class PeerProbeInvalidIpNonExistingHost(GlusterBaseClass):
         # Assigning non existing ip to variable
         self.non_exist_ip = '256.256.256.256'
 
-        # Assigning invalid ip to vaiable
+        # Assigning invalid ip to variable
         self.invalid_ip = '10.11.a'
 
         # Assigning non existing host to variable

@@ -69,7 +69,7 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaVolumeBaseClass):
             g.log.info("Testing nfs ganesha export after volume stop/start."
                        "Count : %s", str(i))
 
-            # Stoping volume
+            # Stopping volume
             ret = volume_stop(self.mnode, self.volname)
             self.assertTrue(ret, ("Failed to stop volume %s" % self.volname))
 
@@ -485,7 +485,7 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaIOBaseClass):
                                                 export_file)))
 
         # Stop and start volume to take the modified export file to effect.
-        # Stoping volume
+        # Stopping volume
         ret = volume_stop(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to stop volume %s" % self.volname))
 

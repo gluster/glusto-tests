@@ -154,7 +154,7 @@ class QuotaMultiValueLimits(GlusterBaseClass):
                "count=1 ; "
                "done" % mount_dir)
         ret, _, _ = g.run(client, cmd)
-        self.assertEqual(ret, 1, "Failed: Files created successfully inspite "
+        self.assertEqual(ret, 1, "Failed: Files created successfully in spite "
                                  "of crossing hard-limit")
         g.log.info("Files creation stopped on mountpoint once exceeded "
                    "hard limit")
@@ -202,7 +202,7 @@ class QuotaMultiValueLimits(GlusterBaseClass):
                "count=1 ; "
                "done" % mount_dir)
         ret, _, _ = g.run(client, cmd)
-        self.assertEqual(ret, 1, "Failed: Files created successfully inspite "
+        self.assertEqual(ret, 1, "Failed: Files created successfully in spite "
                                  "of crossing hard-limit")
         g.log.info("Files creation stopped on mountpoint once exceeded "
                    "hard limit")
@@ -250,7 +250,7 @@ class QuotaMultiValueLimits(GlusterBaseClass):
                "count=1 ; "
                "done" % mount_dir)
         ret, _, _ = g.run(client, cmd)
-        self.assertEqual(ret, 1, "Failed: Files created successfully inspite "
+        self.assertEqual(ret, 1, "Failed: Files created successfully in spite "
                                  "of crossing hard-limit")
         g.log.info("Files creation stopped on mountpoint once exceeded "
                    "hard limit")

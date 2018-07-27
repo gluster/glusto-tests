@@ -106,7 +106,7 @@ class SnapRestore(GlusterBaseClass):
         ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
         if not ret:
             raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successfull for the volume and mount")
+        g.log.info("Cleanup successful for the volume and mount")
 
         GlusterBaseClass.tearDownClass.im_func(cls)
 
@@ -157,7 +157,7 @@ class SnapRestore(GlusterBaseClass):
                               % self.volname))
         g.log.info("Volume options for%s is set successfully", self.volname)
 
-        # Get brick list befor taking snap_restore
+        # Get brick list before taking snap_restore
         bricks_before_snap_restore = get_all_bricks(self.mnode, self.volname)
         g.log.info("Brick List before snap restore "
                    "volume: %s", bricks_before_snap_restore)

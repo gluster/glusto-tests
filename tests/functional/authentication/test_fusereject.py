@@ -129,7 +129,7 @@ class AuthRejectVol(GlusterBaseClass):
         if (ret == 0) & (not out):
             g.log.error("Mount executed successfully due to bug 1586036")
         elif (ret == 1) & (not out):
-            g.log.info("Expected:Mounting has failed sucessfully")
+            g.log.info("Expected:Mounting has failed successfully")
         else:
             raise ExecutionError("Unexpected Mounting of Volume %s successful"
                                  % self.volname)

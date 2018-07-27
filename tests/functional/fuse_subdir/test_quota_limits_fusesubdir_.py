@@ -200,7 +200,7 @@ class FuseSubdirQuotaTest(GlusterBaseClass):
                    "count=1;done" % (mount_object.mountpoint))
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertEqual(ret, 0, "Failed to create files on mountpoint")
-            g.log.info("Files created succesfully on mountpoint")
+            g.log.info("Files created successfully on mountpoint")
 
         # Again Get Quota List on the volume
 
@@ -254,7 +254,7 @@ class FuseSubdirQuotaTest(GlusterBaseClass):
         ret, _, _ = g.run(self.clients[1], cmd)
         self.assertEqual(ret, 0, ("Failed to create files on %s"
                                   % self.clients[1]))
-        g.log.info("Files created succesfully on %s:%s",
+        g.log.info("Files created successfully on %s:%s",
                    self.clients[1], self.subdir_mounts[1].mountpoint)
 
     def tearDown(self):

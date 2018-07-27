@@ -785,7 +785,7 @@ if __name__ == "__main__":
     create_deep_dir_parser = subparsers.add_parser(
         'create_deep_dir',
         help=("Create deep dirs under 'dir' with depth 'dir_depth'."
-              "In each level creates sub-dirs max upto 'max_num_of_dirs'."),
+              "In each level creates sub-dirs max up to 'max_num_of_dirs'."),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     create_deep_dir_parser.add_argument(
         '-d', '--dir-depth',
@@ -814,7 +814,7 @@ if __name__ == "__main__":
     create_deep_dir_with_files_parser = subparsers.add_parser(
         'create_deep_dirs_with_files',
         help=("Create deep dirs under 'dir' with depth 'dir_depth'. "
-              "In each level creates sub-dirs max upto 'max_num_of_dirs'. "
+              "In each level creates sub-dirs max up to 'max_num_of_dirs'. "
               "Creates specified 'num_of_files' in each dir created."),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     create_deep_dir_with_files_parser.add_argument(

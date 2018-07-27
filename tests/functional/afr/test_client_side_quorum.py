@@ -114,7 +114,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, ("Unable to set volume option %s for"
                               "volume %s" % (options, self.volname)))
-        g.log.info("Sucessfully set %s for volume %s", options, self.volname)
+        g.log.info("Successfully set %s for volume %s", options, self.volname)
 
         # write files on all mounts
         g.log.info("Starting IO on all mounts...")
@@ -155,7 +155,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
             g.log.info("Brought down the brick process "
-                       "for %s succesfully", bricks_to_bring_offline)
+                       "for %s successfully", bricks_to_bring_offline)
 
         # create 2 files named newfile0.txt and newfile1.txt
         g.log.info("Start creating 2 files on all mounts...")
@@ -172,7 +172,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         g.log.info("Validating whether IO failed with read-only filesystem")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected error and IO successfull"
+        self.assertTrue(ret, ("Unexpected error and IO successful"
                               " on read-only filesystem"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
 
@@ -190,7 +190,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         g.log.info("Validating whether IO failed with read-only filesystem")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected error and IO successfull"
+        self.assertTrue(ret, ("Unexpected error and IO successful"
                               " on read-only filesystem"))
         g.log.info("EXPECTED: Read-only file system in IO while"
                    " creating directory")
@@ -282,7 +282,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
             ret, _, err = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, ("Unexpected error and stat on file fails"
                                    " on read-only filesystem"))
-            g.log.info("stat on file is successfull on read-only filesystem")
+            g.log.info("stat on file is successful on read-only filesystem")
 
         # stat on dir
         g.log.info("stat on directory on all mounts")
@@ -292,7 +292,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
             ret, _, err = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, ("Unexpected error and stat on directory"
                                    " fails on read-only filesystem"))
-            g.log.info("stat on dir is successfull on read-only filesystem")
+            g.log.info("stat on dir is successful on read-only filesystem")
 
         # ls on mount point
         g.log.info("ls on mount point on all mounts")
@@ -302,7 +302,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
             ret, _, err = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, ("Unexpected error and listing file fails"
                                    " on read-only filesystem"))
-            g.log.info("listing files is successfull on read-only filesystem")
+            g.log.info("listing files is successful on read-only filesystem")
 
     def test_client_side_quorum_with_fixed_validate_max_bricks(self):
         """
@@ -402,7 +402,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         self.assertEqual(option_dict['cluster.quorum-count'], '(null)',
                          ("Default value for %s is not null"
                           " for volume %s" % (option, self.volname)))
-        g.log.info("Succesfull in getting %s for the volume %s",
+        g.log.info("Successful in getting %s for the volume %s",
                    option, self.volname)
 
         # set cluster.quorum-type to fixed and cluster.quorum-count to 1
@@ -452,7 +452,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
             g.log.info("Brought down the brick process "
-                       "for %s succesfully", bricks_to_bring_offline)
+                       "for %s successfully", bricks_to_bring_offline)
 
         # create files
         g.log.info("Starting IO on all mounts...")
@@ -609,7 +609,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, ("Unable to set volume option %s for"
                               "volume %s" % (options, self.volname)))
-        g.log.info("Sucessfully set %s for volume %s", options, self.volname)
+        g.log.info("Successfully set %s for volume %s", options, self.volname)
 
         # Start IO on mounts
         g.log.info("Starting IO on all mounts...")
@@ -991,7 +991,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read Only File System")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+        self.assertTrue(ret, ("Unexpected Error and IO successful"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
 
@@ -1062,7 +1062,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully", subvolumes_second_brick_list)
+                   "for %s successfully", subvolumes_second_brick_list)
 
         # start I/0 ( write and read ) - read must pass, write will fail
         g.log.info("Start creating files on all mounts...")
@@ -1079,7 +1079,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read Only File System")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+        self.assertTrue(ret, ("Unexpected Error and IO successful"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
 
@@ -1203,7 +1203,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully", subvolumes_first_brick_list)
+                   "for %s successfully", subvolumes_first_brick_list)
 
         # start I/0 ( write and read ) - read must pass, write will fail
         g.log.info("Start creating files on all mounts...")
@@ -1220,7 +1220,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read Only File System")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+        self.assertTrue(ret, ("Unexpected Error and IO successful"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
 
@@ -1508,7 +1508,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
             ret = set_volume_options(self.mnode, vol_name, options)
             self.assertTrue(ret, ("Unable to set volume option %s for "
                                   "volume %s" % (options, vol_name)))
-            g.log.info("Sucessfully set %s for volume %s", options, vol_name)
+            g.log.info("Successfully set %s for volume %s", options, vol_name)
 
         # check is options are set correctly
         volume_list = get_volume_list(self.mnode)
@@ -1612,7 +1612,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
                 g.log.info("Validating if IO failed with read-only filesystem")
                 ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                                     self.mounts)
-                self.assertTrue(ret, ("Unexpected error and IO successfull"
+                self.assertTrue(ret, ("Unexpected error and IO successful"
                                       " on read-only filesystem"))
                 g.log.info("EXPECTED: "
                            "Read-only file system in IO while creating file")
@@ -1803,7 +1803,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
             g.log.info("Brought down the brick process "
-                       "for %s succesfully", brick_to_bring_offline1)
+                       "for %s successfully", brick_to_bring_offline1)
             offline_brick1_from_replicasets.append(brick_to_bring_offline1)
 
         # start I/0 ( write and read ) - must succeed
@@ -1853,7 +1853,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
             g.log.info("Brought down the brick process "
-                       "for %s succesfully", brick_to_bring_offline2)
+                       "for %s successfully", brick_to_bring_offline2)
             offline_brick2_from_replicasets.append(brick_to_bring_offline2)
 
         # start I/0 ( write and read ) - must succeed
@@ -1957,7 +1957,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read Only File System")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected Error and IO successfull"
+        self.assertTrue(ret, ("Unexpected Error and IO successful"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
 
@@ -2120,7 +2120,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
             g.log.info("Brought down the brick process "
-                       "for %s succesfully", bricks_to_bring_offline)
+                       "for %s successfully", bricks_to_bring_offline)
 
         # start I/0 ( write and read ) - read must pass, write will fail
         g.log.info("Start creating files on all mounts...")
@@ -2137,7 +2137,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read-only file system")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected error and IO successfull"
+        self.assertTrue(ret, ("Unexpected error and IO successful"
                               " on Read-only file system"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
 
@@ -2181,7 +2181,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read-only file system")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected error and IO successfull"
+        self.assertTrue(ret, ("Unexpected error and IO successful"
                               " on Read-only file system"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
 
@@ -2225,7 +2225,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Validating whether IO failed with Read-only file system")
         ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
                                             self.mounts)
-        self.assertTrue(ret, ("Unexpected error and IO successfull"
+        self.assertTrue(ret, ("Unexpected error and IO successful"
                               " on Read-only file system"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
 

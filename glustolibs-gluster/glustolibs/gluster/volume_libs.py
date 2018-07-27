@@ -143,7 +143,7 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         if 'dist_count' in volume_config['voltype']:
             kwargs['dist_count'] = (volume_config['voltype']['dist_count'])
         else:
-            g.log.error("Distibute Count not specified in the volume config")
+            g.log.error("Distribute count not specified in the volume config")
             return False
 
         number_of_bricks = kwargs['dist_count']
@@ -166,7 +166,7 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         if 'dist_count' in volume_config['voltype']:
             kwargs['dist_count'] = (volume_config['voltype']['dist_count'])
         else:
-            g.log.error("Distibute Count not specified in the volume config")
+            g.log.error("Distribute count not specified in the volume config")
             return False
 
         if 'replica_count' in volume_config['voltype']:
@@ -203,7 +203,7 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         if 'dist_count' in volume_config['voltype']:
             kwargs['dist_count'] = (volume_config['voltype']['dist_count'])
         else:
-            g.log.error("Distibute Count not specified in the volume config")
+            g.log.error("Distribute Count not specified in the volume config")
             return False
 
         if 'disperse_count' in volume_config['voltype']:
@@ -613,7 +613,7 @@ def is_tiered_volume(mnode, volname):
 
     Returns:
         bool : True if the volume is tiered volume. False otherwise
-        NoneType: None if volume doesnot exist.
+        NoneType: None if volume does not exist.
     """
     volinfo = get_volume_info(mnode, volname)
     if volinfo is None:
@@ -636,7 +636,7 @@ def is_distribute_volume(mnode, volname):
 
     Returns:
         bool : True if the volume is distributed volume. False otherwise
-        NoneType: None if volume doesnot exist.
+        NoneType: None if volume does not exist.
     """
     volume_type_info = get_volume_type_info(mnode, volname)
     if volume_type_info is None:
@@ -666,7 +666,7 @@ def get_volume_type_info(mnode, volname):
         mnode (str): Node on which commands are executed.
         volname (str): Name of the volume.
 
-    Retunrs:
+    Returns:
         dict : Dict containing the keys, values defining the volume type:
             Example:
                 volume_type_info = {
@@ -751,7 +751,7 @@ def get_cold_tier_type_info(mnode, volname):
         mnode (str): Node on which commands are executed.
         volname (str): Name of the volume.
 
-    Retunrs:
+    Returns:
         dict : Dict containing the keys, values defining the cold tier type:
             Example:
                 cold_tier_type_info = {
@@ -805,7 +805,7 @@ def get_hot_tier_type_info(mnode, volname):
         mnode (str): Node on which commands are executed.
         volname (str): Name of the volume.
 
-    Retunrs:
+    Returns:
         dict : Dict containing the keys, values defining the hot tier type:
             Example:
                 hot_tier_type_info = {
@@ -865,7 +865,7 @@ def get_num_of_bricks_per_subvol(mnode, volname):
                         'volume_num_of_bricks_per_subvol': None
                         }
 
-        NoneType: None if volume doesnot exist or is a tiered volume.
+        NoneType: None if volume does not exist or is a tiered volume.
     """
     bricks_per_subvol_dict = {
         'is_tier': False,
@@ -899,7 +899,7 @@ def get_cold_tier_num_of_bricks_per_subvol(mnode, volname):
 
     Returns:
         int : Number of bricks per subvol on cold tier.
-        NoneType: None if volume doesnot exist or not a tiered volume.
+        NoneType: None if volume does not exist or not a tiered volume.
     """
     if not is_tiered_volume(mnode, volname):
         g.log.error("Volume %s is not a tiered volume", volname)
@@ -920,7 +920,7 @@ def get_hot_tier_num_of_bricks_per_subvol(mnode, volname):
 
     Returns:
         int : Number of bricks per subvol on hot tier.
-        NoneType: None if volume doesnot exist or not a tiered volume.
+        NoneType: None if volume does not exist or not a tiered volume.
     """
     if not is_tiered_volume(mnode, volname):
         g.log.error("Volume %s is not a tiered volume", volname)
@@ -1708,8 +1708,8 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
         g.log.error("Failed to commit remove-brick of bricks %s on volume %s",
                     bricks_list_to_remove, volname)
         return False
-    g.log.info("Successfully commited remove-bricks of bricks %s on volume %s",
-               bricks_list_to_remove, volname)
+    g.log.info("Successfully committed remove-bricks of bricks %s on volume "
+               "%s", bricks_list_to_remove, volname)
 
     # Delete the removed bricks
     if delete_bricks:
@@ -1941,7 +1941,7 @@ def get_client_quorum_info(mnode, volname):
                     'quorum_count': None
                     }
         }
-        NoneType: None if volume doesnot exist.
+        NoneType: None if volume does not exist.
     """
     client_quorum_dict = {
         'is_tier': False,

@@ -96,7 +96,7 @@ class CheckVolumeChecksumAfterChangingNetworkPingTimeOut(GlusterBaseClass):
         # Mounting volume as glusterfs
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, "volume mount failed for %s" % self.volname)
-        g.log.info("Volume mounted sucessfully : %s", self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
 
         # Checking volume mounted or not
         ret = is_mounted(self.volname, self.mounts[0].mountpoint, self.mnode,

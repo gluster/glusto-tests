@@ -111,7 +111,7 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         # Mounting volume
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, "Volume mount failed for %s" % self.volname)
-        g.log.info("Volume mounted sucessfully : %s", self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
 
         # run IOs
         g.log.info("Starting IO on all mounts...")

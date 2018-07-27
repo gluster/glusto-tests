@@ -38,7 +38,7 @@ class SanpCreate256(GlusterBaseClass):
         4. Varify IO
         5. modify max snap limit to default to 256.
         6. Create 256 snapshots
-        7. Varify 256 created sucessfully
+        7. Varify 256 created successfully
         8. Create 257th snapshot -  check for failure
           -- it should fail.
         9. Cleanup
@@ -92,7 +92,7 @@ class SanpCreate256(GlusterBaseClass):
         ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
         if not ret:
             raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successfull for the volume and mount")
+        g.log.info("Cleanup successful for the volume and mount")
 
         GlusterBaseClass.tearDownClass.im_func(cls)
 
@@ -155,7 +155,7 @@ class SanpCreate256(GlusterBaseClass):
         for i in range(1, 257, 1):
             self.assertTrue(("snapy%s" % i in snap_list), "%s snap not "
                             "found " % ("snapy%s" % i))
-        g.log.info("Sucessfully validated names of snap")
+        g.log.info("Successfully validated names of snap")
 
         # Try to create 257th snapshot
         cmd_str = "gluster snapshot create %s %s %s" % ("snap", self.volname,

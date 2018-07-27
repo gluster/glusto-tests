@@ -104,7 +104,7 @@ class TestSelfHeal(GlusterBaseClass):
         self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                               "check the log file for more details."))
         g.log.info("Brought down the brick process "
-                   "for %s succesfully", brick_list)
+                   "for %s successfully", brick_list)
         ret = are_bricks_offline(self.mnode, self.volname, brick_list)
         self.assertTrue(ret, 'Bricks %s are not offline' % brick_list)
 
@@ -157,7 +157,7 @@ class TestSelfHeal(GlusterBaseClass):
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, ("Unable to set volume option %s for "
                               "volume %s" % (options, self.volname)))
-        g.log.info("Sucessfully set %s for volume %s", options, self.volname)
+        g.log.info("Successfully set %s for volume %s", options, self.volname)
 
         # Create dir inside which I/O will be performed.
         ret = mkdir(self.mounts[0].client_system, "%s/test_gfid_split_brain"

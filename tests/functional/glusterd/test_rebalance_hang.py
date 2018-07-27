@@ -114,7 +114,7 @@ class TestRebalanceHang(GlusterBaseClass):
                                   bricks_list, force=False)
         self.assertEqual(ret, 0, ("Unable"
                                   "to create volume %s" % self.volname))
-        g.log.info("Volume created successfuly %s", self.volname)
+        g.log.info("Volume created successfully %s", self.volname)
 
         ret, _, _ = volume_start(self.mnode, self.volname, False)
         self.assertEqual(ret, 0, ("Failed to start the "
@@ -130,7 +130,7 @@ class TestRebalanceHang(GlusterBaseClass):
                                  mserver=self.mnode,
                                  mclient=self.mounts[0].client_system)
         self.assertEqual(ret, 0, ("Volume %s is not mounted") % self.volname)
-        g.log.info("Volume mounted sucessfully : %s", self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
 
         self.all_mounts_procs = []
         # Creating files

@@ -161,7 +161,7 @@ class TestVolumeGet(GlusterBaseClass):
                    "existing volume %s with non existing option",
                    self.volname)
 
-        # perfroming gluster volume get volname all
+        # performing gluster volume get volname all
 
         ret = get_volume_options(self.mnode, self.volname, "all")
         self.assertIsNotNone(ret, "gluster volume get %s all command "
@@ -194,7 +194,7 @@ class TestVolumeGet(GlusterBaseClass):
                       "performance.low-prio-threads value is not correct")
         g.log.info("performance.low-prio-threads value is correct")
 
-        # perfroming gluster volume get volname all
+        # performing gluster volume get volname all
         ret = get_volume_options(self.mnode, self.volname, "all")
         self.assertIsNotNone(ret, "gluster volume get %s all command "
                                   "failed" % self.volname)

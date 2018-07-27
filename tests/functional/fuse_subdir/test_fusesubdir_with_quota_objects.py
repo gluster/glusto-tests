@@ -171,7 +171,7 @@ class SubdirWithQuotaObject(GlusterBaseClass):
                    % (mount_object.mountpoint))
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertEqual(ret, 0, "Failed to create files on mountpoint")
-            g.log.info("Files created succesfully on mountpoint")
+            g.log.info("Files created successfully on mountpoint")
 
         # Fetch Quota List object on the volume
         g.log.info("Get Quota list on the volume %s",
@@ -215,7 +215,7 @@ class SubdirWithQuotaObject(GlusterBaseClass):
                             % (mount_object.mountpoint, i), parents=True)
                 self.assertTrue(ret, "Failed to create directories"
                                      "on mountpoint")
-                g.log.info("Directories created succesfully on mountpoint")
+                g.log.info("Directories created successfully on mountpoint")
 
         # Get Quota List on the volume
         g.log.info("Get Quota list on the volume %s",
@@ -240,7 +240,7 @@ class SubdirWithQuotaObject(GlusterBaseClass):
             else:
                 self.assertTrue(ret, "Directory creation got failed"
                                      "on volume")
-                g.log.info("Direction creation successfull  on volume")
+                g.log.info("Direction creation successful  on volume")
 
     def tearDown(self):
         """

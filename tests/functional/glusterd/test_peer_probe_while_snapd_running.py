@@ -97,7 +97,7 @@ class TestPeerProbeWhileSnapdRunning(GlusterBaseClass):
 
         # Checking snapd running or not
         ret = is_snapd_running(self.mnode, self.volname)
-        self.assertTrue(ret, "Snapd not runnig for volume %s" % self.volname)
+        self.assertTrue(ret, "Snapd not running for volume %s" % self.volname)
         g.log.info("snapd running for volume %s", self.volname)
 
         # Probing new node

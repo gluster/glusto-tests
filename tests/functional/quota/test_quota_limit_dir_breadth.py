@@ -165,7 +165,7 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
                 ret, _, _ = g.run(mount_object.client_system, cmd)
                 self.assertFalse(ret, "Failed to create files in %s"
                                  % dir_name)
-                g.log.info("Files created succesfully in %s", dir_name)
+                g.log.info("Files created successfully in %s", dir_name)
 
         # Get Quota list on Volume
         g.log.info("Get Quota list for every directory on the volume %s",

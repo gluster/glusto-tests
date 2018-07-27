@@ -68,7 +68,7 @@ class PeerDetachVerification(GlusterBaseClass):
         # Assigning non existing host to variable
         self.non_exist_host = '256.256.256.256'
 
-        # Assigning invalid ip to vaiable
+        # Assigning invalid ip to variable
         self.invalid_ip = '10.11.a'
 
         # Peer detach to specified server

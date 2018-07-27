@@ -200,7 +200,7 @@ class LimitUsageDeepDir(GlusterBaseClass):
                                 dir_name)
                 g.log.info("Quota list validate  and file created successful "
                            "for %s", dir_name)
-            g.log.info("Files created and quota validated succesfully")
+            g.log.info("Files created and quota validated successfully")
 
         # Deleting data and validating quota
         self.all_mounts_procs = []

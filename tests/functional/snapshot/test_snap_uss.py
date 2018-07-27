@@ -197,7 +197,7 @@ class SnapshotUssSnap(GlusterBaseClass):
         for mount_obj in self.mounts:
             ret, _, _ = uss_list_snaps(mount_obj.client_system,
                                        mount_obj.mountpoint)
-            self.assertEqual(ret, 0, "Falied to list snapshot Informations")
+            self.assertEqual(ret, 0, "Failed to list snapshot information")
             g.log.info("Successfully Listed snapshots Created")
 
         # Disable USS running
@@ -211,8 +211,8 @@ class SnapshotUssSnap(GlusterBaseClass):
         for mount_obj in self.mounts:
             ret, out, _ = uss_list_snaps(mount_obj.client_system,
                                          mount_obj.mountpoint)
-            self.assertEqual(ret, 0, "Failed to list snapshot Informations")
-            g.log.info("Successfully Listed snapshots Created")
+            self.assertEqual(ret, 0, "Failed to list snapshot information")
+            g.log.info("Successfully listed snapshots Created")
 
         # Validate after disabling USS, all files should be same
         g.log.info("Validate files after disabling uss")

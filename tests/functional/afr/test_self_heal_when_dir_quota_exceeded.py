@@ -101,7 +101,7 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
                       path))
             ret = g.run(mount_object.client_system, cmd)
             self.assertTrue(ret, "Failed to create directory on mountpoint")
-            g.log.info("Directory created succesfully on mountpoint")
+            g.log.info("Directory created successfully on mountpoint")
 
         # Enable Quota
         g.log.info("Enabling quota on the volume %s", self.volname)
@@ -142,7 +142,7 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
                    "count=20; done" % (mount_object.mountpoint, path))
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertEqual(ret, 0, ("Failed to create files on %s", path))
-            g.log.info("Files created succesfully on mountpoint")
+            g.log.info("Files created successfully on mountpoint")
 
         bricks_list = get_all_bricks(self.mnode, self.volname)
 

@@ -75,7 +75,7 @@ class TestNfsGaneshaSanity(NfsGaneshaVolumeBaseClass):
                        "tar xvf linux-2.6.1.tar.gz" % (mount_obj.mountpoint))
                 ret, out, err = g.run(mount_obj.client_system, cmd)
                 if ret == 0:
-                    g.log.info("Succesfully untared the tarball!")
+                    g.log.info("Successfully untared the tarball!")
                 else:
                     g.log.error("ERROR ! Kernel untar errored out!")
                     self.assertEqual(ret, 0, "Kernel untar failed!")

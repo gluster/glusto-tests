@@ -186,7 +186,7 @@ def find_hashed_subvol(subvols, parent_path, name):
 
             name: file or directory name
 
-        Retrun Values:
+        Return Values:
             hashed_subvol object: An object of type BrickDir type representing
                                   the hashed subvolume
 
@@ -224,7 +224,7 @@ def find_nonhashed_subvol(subvols, parent_path, name):
 
             name: file or directory name
 
-        Retrun Values:
+        Return Values:
             nonhashed_subvol object: An object of type BrickDir type
                                      representing the nonhashed subvolume
 

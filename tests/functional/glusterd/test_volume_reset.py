@@ -124,10 +124,10 @@ class GlusterdVolumeReset(GlusterBaseClass):
         cmd = "gluster volume reset " + self.volname
         ret, _, _ = g.run(self.mnode, cmd)
         self.assertEqual(ret, 0, "volume reset failed for : %s" % self.volname)
-        g.log.info("volume resetted succefully :%s", self.volname)
+        g.log.info("Volume reset successfully :%s", self.volname)
 
         # After volume reset snap daemon will not be running,
-        # bitd and scrub deamons will be in running state.
+        # bitd and scrub daemons will be in running state.
         g.log.info("checking snapshot, scrub and bitrot daemons\
         running or not after volume reset")
         for mnode in self.servers:
@@ -157,7 +157,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
         ret, _, _ = g.run(self.mnode, cmd)
         self.assertEqual(ret, 0, "volume reset fail\
                for : %s" % self.volname)
-        g.log.info("Volume reset sucessfully with force option :%s",
+        g.log.info("Volume reset successfully with force option :%s",
                    self.volname)
 
         # After volume reset bitd, snapd, scrub daemons will not be running,

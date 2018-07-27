@@ -663,7 +663,7 @@ class TestGlusterReplaceBrickSanity(GlusterBasicFeaturesSanityBaseClass):
 
 
 # This test is disabled on nfs because of bug 1473668. A patch to apply the
-# workaround mentiond on the bug could not make this test green either.
+# workaround mentioned on the bug could not make this test green either.
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
            'distributed-dispersed'],
           ['glusterfs', 'cifs']])

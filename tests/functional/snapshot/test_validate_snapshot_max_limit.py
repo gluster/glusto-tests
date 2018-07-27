@@ -26,7 +26,7 @@ Steps :
     5. modify max snap limit to default to 10.
     6. modify soft-limit to 50%
     6. Create 5 snapshots
-    7. Varify 5 created sucessfully
+    7. Varify 5 created successfully
     8. Create 6th snapshot -  check for warning
        -- it should not fail.
     9. modify soft-limit to 100%
@@ -65,7 +65,7 @@ class SnapCreateMax(GlusterBaseClass):
         5. modify max snap limit to default to 10.
         6. modify soft-limit to 50%
         6. Create 5 snapshots
-        7. Varify 5 created sucessfully
+        7. Varify 5 created successfully
         8. Create 6th snapshot -  check for warning
            -- it should not fail.
         9. modify soft-limit to 100%
@@ -125,7 +125,7 @@ class SnapCreateMax(GlusterBaseClass):
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successfull for the volume and mount")
+        g.log.info("Cleanup successful for the volume and mount")
 
     def test_validate_snaps_max_limit(self):
         # pylint: disable=too-many-statements
@@ -194,7 +194,7 @@ class SnapCreateMax(GlusterBaseClass):
         for i in range(1, 6):
             self.assertTrue(("snapy%s" % i in snap_list), "%s snap not "
                             "found " % ("snapy%s" % i))
-        g.log.info("Sucessfully validated names of snapshots")
+        g.log.info("Successfully validated names of snapshots")
 
         # create 6th snapshot
         cmd_str = "gluster snapshot create %s %s %s" % ("snapy6", self.volname,
@@ -246,7 +246,7 @@ class SnapCreateMax(GlusterBaseClass):
         cmd_str = "gluster snapshot create %s %s %s" % ("snap", self.volname,
                                                         "no-timestamp")
         ret, _, _ = g.run(self.mnode, cmd_str)
-        self.assertNotEqual(ret, 0, ("Unexpected: sucessfully created 'snap' "
+        self.assertNotEqual(ret, 0, ("Unexpected: successfully created 'snap' "
                                      "for %s" % self.volname))
         g.log.info("Expected: Snapshot 'snap' not created as it is 11th snap")
 

@@ -177,7 +177,7 @@ class TestSnapMountSnapshot(GlusterBaseClass):
         # validate io should fail
         self.assertFalse(
             validate_io_procs(all_mounts_procs, self.mounts),
-            "Unexpected: IO Successfull on all clients"
+            "Unexpected: IO Successful on all clients"
         )
         g.log.info("Expected: IO failed on clients")
 

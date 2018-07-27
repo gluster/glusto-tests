@@ -100,7 +100,7 @@ class SnapUssActiveD(GlusterBaseClass):
         * Perform I/O on mounts
         * Create 2 snapshots snapy1 & snapy2
         * Validate snap created
-        * Enbale USS
+        * Enable USS
         * Validate USS is enabled
         * Validate snapd is running
         * Activate snapy1 & snapy2

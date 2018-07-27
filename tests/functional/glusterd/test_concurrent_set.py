@@ -60,7 +60,7 @@ class TestConcurrentSet(GlusterBaseClass):
                             self.brick_list, force=False)
         self.assertEqual(ret[0], 0, ("Unable"
                                      "to create volume %s" % self.volname))
-        g.log.info("Volume created successfuly %s", self.volname)
+        g.log.info("Volume created successfully %s", self.volname)
 
         # Create a volume
         self.volname = "second-vol"
@@ -72,7 +72,7 @@ class TestConcurrentSet(GlusterBaseClass):
                             self.brick_list, force=False)
         self.assertEqual(ret[0], 0, ("Unable"
                                      "to create volume %s" % self.volname))
-        g.log.info("Volume created successfuly %s", self.volname)
+        g.log.info("Volume created successfully %s", self.volname)
 
         cmd1 = ("for i in `seq 1 100`; do gluster volume set first-vol "
                 "read-ahead on; done")

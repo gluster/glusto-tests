@@ -198,7 +198,7 @@ class CloneSnapshot(GlusterBaseClass):
                    "do touch file$i; done; cd;") % mount_obj
             proc = g.run(self.clients[0], cmd)
             all_mounts_procs.append(proc)
-        g.log.info("I/O on mountpoint is Successfull")
+        g.log.info("I/O on mountpoint is successful")
 
         # create snapshot
         g.log.info("Starting to Create snapshot of clone volume")
@@ -226,7 +226,7 @@ class CloneSnapshot(GlusterBaseClass):
             ret, _, _ = umount_volume(self.clients[0], self.mpoint,
                                       self.mount_type)
             if ret == 1:
-                raise ExecutionError("Unmounting the moint point %s failed"
+                raise ExecutionError("Unmounting the mount point %s failed"
                                      % self.mpoint)
             g.log.info("Mount point %s deleted successfully", self.mpoint)
         g.log.info("Unmount Volume Successful")

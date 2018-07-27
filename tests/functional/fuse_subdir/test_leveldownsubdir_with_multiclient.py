@@ -60,7 +60,7 @@ class SubdirLevelDownDirMapping(GlusterBaseClass):
         ret, _, _ = g.run(self.mounts[0].client_system, cmd)
         self.assertEqual(ret, 0, "Failed to create Nested directories"
                          "on mountpoint")
-        g.log.info("Nested Directories created succesfully on mountpoint")
+        g.log.info("Nested Directories created successfully on mountpoint")
 
         # unmount volume
         ret = self.unmount_volume(self.mounts)
@@ -134,7 +134,7 @@ class SubdirLevelDownDirMapping(GlusterBaseClass):
             ret, _, _ = umount_volume(client, self.mpoint,
                                       self.mount_type)
             if ret == 1:
-                raise ExecutionError("Unmounting the moint point %s failed"
+                raise ExecutionError("Unmounting the mount point %s failed"
                                      % self.mpoint)
             g.log.info("Unmount Volume Successful")
             cmd = ("rm -rf %s") % self.mpoint

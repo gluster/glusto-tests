@@ -156,7 +156,7 @@ class QuotaUniqueSoftLimit(GlusterBaseClass):
             ret, _, _ = g.run(client, cmd)
             self.assertEqual(ret, 0, ("Failed to create files on %s",
                                       dir_name))
-            g.log.info("Files created succesfully on %s", dir_name)
+            g.log.info("Files created successfully on %s", dir_name)
 
             time.sleep(1)
 

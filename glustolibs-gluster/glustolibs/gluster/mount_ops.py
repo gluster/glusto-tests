@@ -322,7 +322,7 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
 
         ret, out, err = g.run(mclient, mcmd, user=user)
         if ret != 0:
-            g.log.error("net use comand failed on windows client %s "
+            g.log.error("net use command failed on windows client %s "
                         "failed: %s" % (mclient, err))
             return (ret, out, err)
 
@@ -332,7 +332,7 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
                        "Share is : %s" % (mclient, drv_ltr))
             return (ret, drv_ltr, err)
 
-        g.log.error("net use comand successful but error in mount of samba "
+        g.log.error("net use command successful but error in mount of samba "
                     " share for windows client %s for reason %s" %
                     (mclient, err))
         return (1, out, err)
@@ -370,7 +370,7 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
             if "Santiago" in name:
                 cifs_options = "sec=ntlmssp"
         except Exception as e:
-            g.log.error("Exception occured while getting the platform "
+            g.log.error("Exception occurred while getting the platform "
                         "of node %s: %s", mclient, str(e))
             return (1, '', '')
         finally:

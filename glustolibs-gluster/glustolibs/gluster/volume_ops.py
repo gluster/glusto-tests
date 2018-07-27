@@ -377,7 +377,7 @@ def get_volume_status(mnode, volname='all', service='', options=''):
     Kwargs:
         volname (str): volume name. Defaults to 'all'
         service (str): name of the service to get status.
-            serivce can be, [nfs|shd|<BRICK>|quotad]], If not given,
+            service can be, [nfs|shd|<BRICK>|quotad]], If not given,
             the function returns all the services
         options (str): options can be,
             [detail|clients|mem|inode|fd|callpool|tasks]. If not given,

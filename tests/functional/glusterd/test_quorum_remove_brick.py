@@ -120,7 +120,7 @@ class TestServerQuorumNotMet(GlusterBaseClass):
                         % self.random_server)
         g.log.info("Glusterd stopped successfully on %s", self.random_server)
 
-        # Forming brick list for perfroming remove brick operation
+        # Forming brick list for performing remove brick operation
         remove_brick_list = form_bricks_list_to_remove_brick(self.mnode,
                                                              self.volname)
         self.assertIsNotNone(remove_brick_list, "Failed to get brick list for "

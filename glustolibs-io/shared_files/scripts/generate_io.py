@@ -338,7 +338,7 @@ def stop_populate_data(proc_list, proc_queue, mevent=None):
             proc.terminate()
         return True
     except Exception as e:
-        print("Exception occured in stop_populate_data(): %s"
+        print("Exception occurred in stop_populate_data(): %s"
               % e)
         return False
 

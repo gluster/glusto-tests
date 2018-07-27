@@ -229,7 +229,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
             ret = bring_bricks_offline(volname, bricks_to_bring_offline)
             self.assertTrue(ret, ("Failed to bring down the bricks. Please "
                                   "check the log file for more details."))
-            g.log.info("Brought down the brick process for %s succesfully",
+            g.log.info("Brought down the brick process for %s successfully",
                        bricks_to_bring_offline)
 
         # delete files on all mounts

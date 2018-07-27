@@ -101,7 +101,7 @@ class SnapCreate(GlusterBaseClass):
         ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
         if not ret:
             raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successfull for the volume and mount")
+        g.log.info("Cleanup successful for the volume and mount")
 
         GlusterBaseClass.tearDownClass.im_func(cls)
 
@@ -202,4 +202,4 @@ class SnapCreate(GlusterBaseClass):
         for i in range(0, 5):
             self.assertIn("snapy%s" % i, snap_list, "%s snap not "
                           "found " % ("snapy%s" % i))
-        g.log.info("Sucessfully validated names of snap")
+        g.log.info("Successfully validated names of snap")

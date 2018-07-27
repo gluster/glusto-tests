@@ -104,7 +104,7 @@ class TestBrickPortAfterModifyVolume(GlusterBaseClass):
                             bricks_list, force=False)
         self.assertEqual(ret[0], 0, ("Unable"
                                      "to create volume %s" % self.volname))
-        g.log.info("Volume created successfuly %s", self.volname)
+        g.log.info("Volume created successfully %s", self.volname)
 
         ret, _, _ = volume_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, ("Failed to start the "

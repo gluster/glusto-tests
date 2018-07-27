@@ -276,7 +276,7 @@ def share_volume_over_smb(mnode, volname, smb_users_info):
     cmd = ("smbclient -L localhost -U | grep -i -Fw gluster-%s " % volname)
     ret, _, _ = g.run(mnode, cmd)
     if ret != 0:
-        g.log.error("volume '%s' not accessable via SMB/CIFS share", volname)
+        g.log.error("volume '%s' not accessible via SMB/CIFS share", volname)
         return False
     g.log.info("volume '%s' can be accessed from SMB/CIFS share", volname)
 

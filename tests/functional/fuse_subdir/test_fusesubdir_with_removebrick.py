@@ -220,7 +220,7 @@ class SubdirWithRemoveBrick(GlusterBaseClass):
             ret, _, _ = umount_volume(client, self.mpoint,
                                       self.mount_type)
             if ret != 0:
-                raise ExecutionError("Unmounting the moint point %s failed"
+                raise ExecutionError("Unmounting the mount point %s failed"
                                      % self.mpoint)
             g.log.info("Unmount Volume Successful")
             cmd = ("rm -rf %s") % self.mpoint

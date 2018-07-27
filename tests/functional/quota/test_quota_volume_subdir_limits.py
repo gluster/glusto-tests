@@ -153,7 +153,7 @@ class QuotaVolumeAndSubdirLimits(GlusterBaseClass):
             ret, _, _ = g.run(client, cmd)
             self.assertEqual(ret, 0, ("Failed to create files in /foo%s",
                                       var1))
-            g.log.info("Files created succesfully in /foo%s", var1)
+            g.log.info("Files created successfully in /foo%s", var1)
         g.log.info("Files creation is successful on all directories of the "
                    "volume %s", self.volname)
 

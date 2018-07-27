@@ -110,17 +110,17 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         command on all clusters randomly.
             "gluster volume status volname inode" command should not get
         hang while IOs in progress.
-        Then check that IOs completed successfullly or not on mount point.
+        Then check that IOs completed successfully or not on mount point.
         Check that files in mount point listing properly or not.
         '''
 
         # Mounting a volume
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, "Volume mount failed for %s" % self.volname)
-        g.log.info("Volume mounted sucessfully : %s", self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
 
-        # After Mounting immediately writting IO's are failing some times,
-        # thats why keeping sleep for 10 secs
+        # After Mounting immediately writing IO's are failing some times,
+        # that's why keeping sleep for 10 secs
         sleep(10)
 
         # run IOs
