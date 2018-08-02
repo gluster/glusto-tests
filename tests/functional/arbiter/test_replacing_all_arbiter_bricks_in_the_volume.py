@@ -34,7 +34,7 @@ from glustolibs.io.utils import (validate_io_procs,
 
 
 @runs_on([['distributed-replicated'],
-          ['glusterfs', 'nfs']])
+          ['glusterfs']])
 class TestArbiterSelfHeal(GlusterBaseClass):
     """
     Description:
