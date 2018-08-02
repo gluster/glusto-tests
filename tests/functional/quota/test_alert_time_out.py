@@ -219,7 +219,7 @@ class QuotaTimeOut(GlusterBaseClass):
 
         # Inserting sleep of 2 seconds so the alert message gets enough time
         # to be logged
-        time.sleep(10)
+        time.sleep(2)
 
         # Append unique string to the brick log
         g.log.info("Appending string 'appended_string_3' to the log:")
@@ -254,7 +254,7 @@ class QuotaTimeOut(GlusterBaseClass):
 
         # Inserting sleep of 2 seconds so the alert message gets enough time
         # to be logged
-        time.sleep(10)
+        time.sleep(2)
 
         # Append unique string to the brick log
         g.log.info("Appending string 'appended_string_5' to the log:")
@@ -284,7 +284,7 @@ class QuotaTimeOut(GlusterBaseClass):
 
         # Inserting sleep of 2 seconds so the alert message gets enough time
         # to be logged
-        time.sleep(10)
+        time.sleep(2)
 
         # Append unique string to the brick log
         g.log.info("Appending string 'appended_string_6' to the log:")
@@ -313,7 +313,7 @@ class QuotaTimeOut(GlusterBaseClass):
 
         # Inserting sleep of 2 seconds so the alert message gets enough time
         # to be logged
-        time.sleep(10)
+        time.sleep(2)
 
         # Append unique string to the brick log
         g.log.info("Appending string 'Done_with_alert_check_8' to the log:")
