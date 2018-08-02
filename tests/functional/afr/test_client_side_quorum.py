@@ -372,10 +372,10 @@ class ClientSideQuorumTests(GlusterBaseClass):
         self.assertIsNotNone(option_dict, ("Failed to get %s volume option"
                                            " for volume %s"
                                            % (option, self.volname)))
-        self.assertEqual(option_dict['cluster.quorum-type'], 'none',
-                         ("Default value for %s is not NONE"
+        self.assertEqual(option_dict['cluster.quorum-type'], 'auto',
+                         ("Default value for %s is not auto"
                           " for volume %s" % (option, self.volname)))
-        g.log.info("Succesfull in getting %s for the volume %s",
+        g.log.info("Succesfully verified default value of %s for volume %s",
                    option, self.volname)
 
         # set the junk value to cluster.quorum-type
