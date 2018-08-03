@@ -170,7 +170,8 @@ class ClientSideQuorumTests(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with read-only filesystem")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected error and IO successfull"
                               " on read-only filesystem"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
@@ -187,7 +188,8 @@ class ClientSideQuorumTests(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with read-only filesystem")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected error and IO successfull"
                               " on read-only filesystem"))
         g.log.info("EXPECTED: Read-only file system in IO while"
@@ -493,7 +495,8 @@ class ClientSideQuorumTests(GlusterBaseClass):
 
         # check IO failed with Read Only File System error
         g.log.info("Wait for IO to complete and validate IO.....")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected error and IO successful "
                               "on Read-only file system. Please check the "
                               "logs for more details"))
@@ -986,7 +989,8 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read Only File System")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected Error and IO successfull"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
@@ -1073,7 +1077,8 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read Only File System")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected Error and IO successfull"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
@@ -1213,7 +1218,8 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read Only File System")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected Error and IO successfull"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
@@ -1604,8 +1610,8 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
 
                 # Validate IO
                 g.log.info("Validating if IO failed with read-only filesystem")
-                ret = is_io_procs_fail_with_rofs(self, all_mounts_procs,
-                                                 self.mounts)
+                ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                                    self.mounts)
                 self.assertTrue(ret, ("Unexpected error and IO successfull"
                                       " on read-only filesystem"))
                 g.log.info("EXPECTED: "
@@ -1949,7 +1955,8 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read Only File System")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected Error and IO successfull"
                               " on Read-Only File System"))
         g.log.info("EXPECTED Read-only file system in IO while creating file")
@@ -2128,7 +2135,8 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read-only file system")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected error and IO successfull"
                               " on Read-only file system"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
@@ -2171,7 +2179,8 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read-only file system")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected error and IO successfull"
                               " on Read-only file system"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
@@ -2214,7 +2223,8 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
 
         # Validate IO
         g.log.info("Validating whether IO failed with Read-only file system")
-        ret = is_io_procs_fail_with_rofs(self, all_mounts_procs, self.mounts)
+        ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
+                                            self.mounts)
         self.assertTrue(ret, ("Unexpected error and IO successfull"
                               " on Read-only file system"))
         g.log.info("EXPECTED: Read-only file system in IO while creating file")
