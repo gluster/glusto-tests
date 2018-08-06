@@ -23,8 +23,7 @@ Description:
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.io.utils import (validate_io_procs,
                                  view_snaps_from_mount)
 from glustolibs.gluster.snap_ops import (snap_create, snap_delete_all,
@@ -137,11 +136,11 @@ class SnapUssActiveD(GlusterBaseClass):
         self.io_validation_complete = False
 
         # Validate IO
-        self.assertTrue(
-            validate_io_procs(self.all_mounts_procs, self.mounts),
-            "IO failed on some of the clients"
-        )
+        g.log.info("Wait for IO to complete and validate IO ...")
+        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
         self.io_validation_complete = True
+        g.log.info("I/O successful on clients")
 
         # Enable USS
         g.log.info("Enable USS on volume")
@@ -166,7 +165,7 @@ class SnapUssActiveD(GlusterBaseClass):
 
         # Create 2 snapshot
         g.log.info("Creating 2 snapshots for volume %s", self.volname)
-        for i in range(0, 2):
+        for i in range(1, 3):
             ret, _, _ = snap_create(self.mnode, self.volname, "snapy%s" % i)
             self.assertEqual(ret, 0, ("Failed to create snapshot for %s"
                                       % self.volname))
@@ -181,7 +180,7 @@ class SnapUssActiveD(GlusterBaseClass):
 
         # Activate snapshot snapy1 & snapy2
         g.log.info("Activating snapshot snapy1 & snapy2")
-        for i in range(0, 2):
+        for i in range(1, 3):
             ret, _, _ = snap_activate(self.mnode, "snapy%s" % i)
             self.assertEqual(ret, 0, "Failed to activate snapshot snapy%s" % i)
         g.log.info("Both snapshots activated successfully")
@@ -211,7 +210,7 @@ class SnapUssActiveD(GlusterBaseClass):
         ret = view_snaps_from_mount(self.mounts, "snapy2")
         self.assertFalse(ret, " UnExpected : Still able to View snapy2"
                          " from mount ")
-        g.log.info("Successfully varified deactivated snapshot "
+        g.log.info("Successfully verified deactivated snapshot "
                    "snapy2 is not listed")
 
         # Activate snapshot snapy2
