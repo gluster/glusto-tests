@@ -39,6 +39,7 @@ from glustolibs.gluster.nfs_libs import export_volume_through_nfs
 from glustolibs.gluster.mount_ops import create_mount_objs
 from glustolibs.io.utils import log_mounts_info
 from glustolibs.gluster.lib_utils import inject_msg_in_logs
+from glustolibs.gluster.exceptions import ExecutionError
 
 
 class runs_on(g.CarteTestClass):
@@ -180,8 +181,8 @@ class GlusterBaseClass(unittest.TestCase):
             volume_create_force(bool): True if create_volume should be
                 executed with 'force' option.
 
-        Returns (bool): True if all the steps mentioned in the descriptions
-            passes. False otherwise.
+        Raises:
+            ExecutionError in the event of an error.
         """
         force_volume_create = False
         if volume_create_force or cls.volume_create_force:
@@ -191,9 +192,8 @@ class GlusterBaseClass(unittest.TestCase):
         g.log.info("Validate peers before setting up volume ")
         ret = cls.validate_peers_are_connected()
         if not ret:
-            g.log.error("Failed to validate peers are in connected state "
-                        "before setting up volume")
-            return False
+            raise ExecutionError("Failed to validate peers are in connected "
+                                 "state before setting up volume")
         g.log.info("Successfully validated peers are in connected state "
                    "before setting up volume")
 
@@ -203,87 +203,77 @@ class GlusterBaseClass(unittest.TestCase):
                            all_servers_info=cls.all_servers_info,
                            volume_config=cls.volume, force=force_volume_create)
         if not ret:
-            g.log.error("Failed to Setup volume %s", cls.volname)
-            return False
+            raise ExecutionError("Failed to Setup volume %s" % cls.volname)
         g.log.info("Successful in setting up volume %s", cls.volname)
 
         # Wait for volume processes to be online
         g.log.info("Wait for volume %s processes to be online", cls.volname)
         ret = wait_for_volume_process_to_be_online(cls.mnode, cls.volname)
         if not ret:
-            g.log.error("Failed to wait for volume %s processes to "
-                        "be online", cls.volname)
-            return False
+            raise ExecutionError("Failed to wait for volume %s processes to "
+                                 "be online" % cls.volname)
+
         g.log.info("Successful in waiting for volume %s processes to be "
                    "online", cls.volname)
 
         # Export/Share the volume based on mount_type
-        if cls.mount_type != "glusterfs":
-            g.log.info("Export/Sharing the volume %s", cls.volname)
-            if "nfs" in cls.mount_type:
-                ret = export_volume_through_nfs(
+        if "nfs" in cls.mount_type:
+            ret = export_volume_through_nfs(
+                mnode=cls.mnode, volname=cls.volname,
+                enable_ganesha=cls.enable_nfs_ganesha)
+            if not ret:
+                raise ExecutionError("Failed to export volume %s as NFS export"
+                                     % cls.volname)
+            g.log.info("Successful in exporting the volume %s as NFS export",
+                       cls.volname)
+
+            # Set NFS-Ganesha specific volume options
+            if cls.enable_nfs_ganesha and cls.nfs_ganesha_export_options:
+                g.log.info("Setting NFS-Ganesha export specific "
+                           "volume options on volume %s", cls.volname)
+                ret = set_volume_options(
                     mnode=cls.mnode, volname=cls.volname,
-                    enable_ganesha=cls.enable_nfs_ganesha)
+                    options=cls.nfs_ganesha_export_options)
                 if not ret:
-                    g.log.error("Failed to export volume %s "
-                                "as NFS export", cls.volname)
-                    return False
-                g.log.info("Successful in exporting the volume %s "
-                           "as NFS export", cls.volname)
-
-                # Set NFS-Ganesha specific volume options
-                if cls.enable_nfs_ganesha and cls.nfs_ganesha_export_options:
-                    g.log.info("Setting NFS-Ganesha export specific "
-                               "volume options on volume %s", cls.volname)
-                    ret = set_volume_options(
-                        mnode=cls.mnode, volname=cls.volname,
-                        options=cls.nfs_ganesha_export_options)
-                    if not ret:
-                        g.log.error("Failed to set NFS-Ganesha "
-                                    "export specific options on "
-                                    "volume %s", cls.volname)
-                        return False
-                    g.log.info("Successful in setting NFS-Ganesha export "
-                               "specific volume options on volume %s",
-                               cls.volname)
-
-            if "smb" in cls.mount_type or "cifs" in cls.mount_type:
-                ret = share_volume_over_smb(mnode=cls.mnode,
-                                            volname=cls.volname,
-                                            smb_users_info=cls.smb_users_info)
-                if not ret:
-                    g.log.error("Failed to export volume %s "
-                                "as SMB Share", cls.volname)
-                    return False
-                g.log.info("Successful in exporting volume %s as SMB Share",
+                    raise ExecutionError("Failed to set NFS-Ganesha "
+                                         "export specific options on "
+                                         "volume %s" % cls.volname)
+                g.log.info("Successful in setting NFS-Ganesha export "
+                           "specific volume options on volume %s",
                            cls.volname)
 
-                # Set SMB share specific volume options
-                if cls.smb_share_options:
-                    g.log.info("Setting SMB share specific volume options "
-                               "on volume %s", cls.volname)
-                    ret = set_volume_options(mnode=cls.mnode,
-                                             volname=cls.volname,
-                                             options=cls.smb_share_options)
-                    if not ret:
-                        g.log.error("Failed to set SMB share "
-                                    "specific options "
-                                    "on volume %s", cls.volname)
-                        return False
-                    g.log.info("Successful in setting SMB share specific "
-                               "volume options on volume %s", cls.volname)
+        if "smb" in cls.mount_type or "cifs" in cls.mount_type:
+            ret = share_volume_over_smb(mnode=cls.mnode,
+                                        volname=cls.volname,
+                                        smb_users_info=cls.smb_users_info)
+            if not ret:
+                raise ExecutionError("Failed to export volume %s "
+                                     "as SMB Share" % cls.volname)
+            g.log.info("Successful in exporting volume %s as SMB Share",
+                       cls.volname)
+
+            # Set SMB share specific volume options
+            if cls.smb_share_options:
+                g.log.info("Setting SMB share specific volume options "
+                           "on volume %s", cls.volname)
+                ret = set_volume_options(mnode=cls.mnode,
+                                         volname=cls.volname,
+                                         options=cls.smb_share_options)
+                if not ret:
+                    raise ExecutionError("Failed to set SMB share "
+                                         "specific options "
+                                         "on volume %s" % cls.volname)
+                g.log.info("Successful in setting SMB share specific "
+                           "volume options on volume %s", cls.volname)
 
         # Log Volume Info and Status
         g.log.info("Log Volume %s Info and Status", cls.volname)
         ret = log_volume_info_and_status(cls.mnode, cls.volname)
         if not ret:
-            g.log.error("Logging volume %s info and status failed",
-                        cls.volname)
-            return False
+            raise ExecutionError("Logging volume %s info and status failed" %
+                                 cls.volname)
         g.log.info("Successful in logging volume %s info and status",
                    cls.volname)
-
-        return True
 
     @classmethod
     def mount_volume(cls, mounts):
@@ -302,23 +292,21 @@ class GlusterBaseClass(unittest.TestCase):
                        mount_obj.client_system, mount_obj.mountpoint)
             ret = mount_obj.mount()
             if not ret:
-                g.log.error("Failed to mount volume '%s:%s' on '%s:%s'",
-                            mount_obj.server_system, mount_obj.volname,
-                            mount_obj.client_system, mount_obj.mountpoint)
-                return False
-            else:
-                g.log.info("Successful in mounting volume '%s:%s' on "
-                           "'%s:%s'", mount_obj.server_system,
-                           mount_obj.volname, mount_obj.client_system,
-                           mount_obj.mountpoint)
+                raise ExecutionError("Failed to mount volume '%s:%s' on "
+                                     "'%s:%s'" % (mount_obj.server_system,
+                                                  mount_obj.volname,
+                                                  mount_obj.client_system,
+                                                  mount_obj.mountpoint))
+            g.log.info("Successful in mounting volume '%s:%s' on "
+                       "'%s:%s'", mount_obj.server_system,
+                       mount_obj.volname, mount_obj.client_system,
+                       mount_obj.mountpoint)
         g.log.info("Successful in mounting all mount objs for the volume %s",
                    cls.volname)
 
         # Get mounts info
         g.log.info("Get mounts Info:")
         log_mounts_info(mounts)
-
-        return True
 
     @classmethod
     def setup_volume_and_mount_volume(cls, mounts, volume_create_force=False):
@@ -329,20 +317,12 @@ class GlusterBaseClass(unittest.TestCase):
             volume_create_force(bool): True if create_volume should be
                 executed with 'force' option.
 
-        Returns (bool): True if setting up volume and mounting the volume
-            for a mount obj is successful. False otherwise
+        Returns: None
         """
         # Setup Volume
-        _rc = cls.setup_volume(volume_create_force)
-        if not _rc:
-            return _rc
-
+        cls.setup_volume(volume_create_force)
         # Mount Volume
-        _rc = cls.mount_volume(mounts)
-        if not _rc:
-            return _rc
-
-        return True
+        cls.mount_volume(mounts)
 
     @classmethod
     def unmount_volume(cls, mounts):
@@ -371,11 +351,10 @@ class GlusterBaseClass(unittest.TestCase):
                 log_mounts_info(cls.mounts)
 
                 return False
-            else:
-                g.log.info("Successful in unmounting volume '%s:%s' on "
-                           "'%s:%s'", mount_obj.server_system,
-                           mount_obj.volname, mount_obj.client_system,
-                           mount_obj.mountpoint)
+            g.log.info("Successful in unmounting volume '%s:%s' on "
+                       "'%s:%s'", mount_obj.server_system,
+                       mount_obj.volname, mount_obj.client_system,
+                       mount_obj.mountpoint)
         g.log.info("Successful in unmounting all mount objs for the volume %s",
                    cls.volname)
 
@@ -474,10 +453,12 @@ class GlusterBaseClass(unittest.TestCase):
             cls.smb_users_info = (
                 g.config['gluster']['cluster_config']['smb']['users_info'])
         except KeyError:
-            cls.smb_users_info = {}
-            cls.smb_users_info['root'] = {}
-            cls.smb_users_info['root']['password'] = 'foobar'
-            cls.smb_users_info['root']['acl'] = 'rwx'
+            cls.smb_users_info = {
+                'root': {
+                    'password': 'foobar',
+                    'acl': 'rwx',
+                    }
+            }
 
         # NFS-Ganesha Cluster info
         try:
