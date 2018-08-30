@@ -31,12 +31,29 @@ def is_brick_mux_enabled(mnode):
         mnode (str): Node on which cmd has to be executed.
 
     Returns:
-        bool : True if successfully enabled brickmux. False otherwise.
+        bool : True if brickmux is enabled. False otherwise.
     """
     cmd = ("gluster v get all all | grep cluster.brick-multiplex |"
            "awk '{print $2}'")
     _, out, _ = g.run(mnode, cmd)
     if "enable" in out:
+        return True
+    return False
+
+
+def is_brick_mux_disabled(mnode):
+    """Checks for brick multiplex operation is disabled
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+        bool : True if brickmux is disabled. False otherwise.
+    """
+    cmd = ("gluster v get all all | grep cluster.brick-multiplex |"
+           "awk '{print $2}'")
+    _, out, _ = g.run(mnode, cmd)
+    if "disabled" in out:
         return True
     return False
 
