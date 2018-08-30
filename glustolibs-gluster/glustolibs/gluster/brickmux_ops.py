@@ -20,42 +20,45 @@
 """
 
 from glusto.core import Glusto as g
-import glustolibs.gluster.brick_libs
 from glustolibs.gluster.volume_ops import get_volume_status
 
 
-def is_brick_mux_enabled(mnode):
-    """Checks for brick multiplex operation enabled or not
+def get_brick_mux_status(mnode):
+    """Gets brick multiplex status
 
-    Args:
-        mnode (str): Node on which cmd has to be executed.
+        Args:
+            mnode (str): Node on which cmd has to be executed.
 
-    Returns:
-        bool : True if brickmux is enabled. False otherwise.
-    """
+        Returns:
+            str : Brick multiplex status. None otherwise
+        """
     cmd = ("gluster v get all all | grep cluster.brick-multiplex |"
            "awk '{print $2}'")
     _, out, _ = g.run(mnode, cmd)
-    if "enable" in out:
+    return out.strip()
+
+
+def is_brick_mux_enable(mnode):
+    """Gets brick multiplex status and checks for positive and negative states
+
+
+        Args:
+            mnode (str): Node on which cmd has to be executed.
+
+        Returns:
+            True : Brick multiplex status is one of 'true, on, 1, enable'.
+            False : Brick multiplex status is one of 'false, off, 0, disable'.
+            Exception : otherwise
+        """
+    positive_states = ['true', 'on', '1', 'enable']
+    negative_states = ['off', 'disable', '0', 'false']
+    if get_brick_mux_status(mnode) in positive_states:
         return True
-    return False
-
-
-def is_brick_mux_disabled(mnode):
-    """Checks for brick multiplex operation is disabled
-
-    Args:
-        mnode (str): Node on which cmd has to be executed.
-
-    Returns:
-        bool : True if brickmux is disabled. False otherwise.
-    """
-    cmd = ("gluster v get all all | grep cluster.brick-multiplex |"
-           "awk '{print $2}'")
-    _, out, _ = g.run(mnode, cmd)
-    if "disable" in out:
-        return True
-    return False
+    elif get_brick_mux_status(mnode) in negative_states:
+        return False
+    else:
+        raise ValueError('Brick mux status % is incorrect',
+                         get_brick_mux_status(mnode))
 
 
 def enable_brick_mux(mnode):
@@ -67,11 +70,29 @@ def enable_brick_mux(mnode):
     Returns:
         bool : True if successfully enabled brickmux. False otherwise.
     """
-    cmd = ("gluster v set all cluster.brick-multiplex enable")
-    _, out, _ = g.run(mnode, cmd)
-    if "success" in out:
-        return True
-    return False
+    cmd = "gluster v set all cluster.brick-multiplex enable --mode=script"
+    ret, _, err = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to enable brick multiplex: %s", err)
+        return False
+    return True
+
+
+def disable_brick_mux(mnode):
+    """Disables brick multiplex operation on all servers
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+        bool : True if successfully disabled brickmux. False otherwise.
+    """
+    cmd = "gluster v set all cluster.brick-multiplex disable --mode=script"
+    ret, _, err = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to disable brick multiplex: %s", err)
+        return False
+    return True
 
 
 def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
@@ -87,9 +108,9 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
     Returns:
         bool : True if pid's matches. False otherwise.
     """
+    from glustolibs.gluster.brick_libs import get_all_bricks
     _rc = True
-    bricks_list = glustolibs.gluster.brick_libs.get_all_bricks(mnode,
-                                                               volname)
+    bricks_list = get_all_bricks(mnode, volname)
     for brick in bricks_list:
         brick_node, brick_path = brick.split(":")
         ret = get_volume_status(mnode, volname)
