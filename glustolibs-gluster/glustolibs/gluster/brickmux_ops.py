@@ -53,7 +53,7 @@ def is_brick_mux_disabled(mnode):
     cmd = ("gluster v get all all | grep cluster.brick-multiplex |"
            "awk '{print $2}'")
     _, out, _ = g.run(mnode, cmd)
-    if "disabled" in out:
+    if "disable" in out:
         return True
     return False
 
