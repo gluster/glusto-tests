@@ -38,9 +38,8 @@ def get_brick_mux_status(mnode):
     return out.strip()
 
 
-def is_brick_mux_enable(mnode):
+def is_brick_mux_enabled(mnode):
     """Gets brick multiplex status and checks for positive and negative states
-
 
         Args:
             mnode (str): Node on which cmd has to be executed.
