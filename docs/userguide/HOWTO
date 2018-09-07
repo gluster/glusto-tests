@@ -6,8 +6,6 @@ The testrun is divided in several phases:
     3) Setup Servers/Clients Environment
     4) Install glusto-tests dependencies
     5) Running the tests
-    6) Reporting
-    7) Teardown
 
 1) Installation of OS:
     This phase is to install the OS on all the storage servers, clients.
@@ -60,6 +58,8 @@ The testrun is divided in several phases:
             # cd glusto-tests/glustolibs-gluster
             # python setup.py install
             # cd glusto-tests/glustolibs-io
+            # python setup.py install
+            # cd glusto-tests/glustolibs-misc
             # python setup.py install
 
         - Install latest version of gdeploy from below link.
@@ -207,7 +207,7 @@ The testrun is divided in several phases:
         # glusto -c 'config.yml' -d 'tests'
         # glusto -c 'config.yml unittest_list.yml' -u
 
-    To run PyTest tests:
+    To run PyTest tests(mostly used):
         - To run all tests that are marked with tag 'bvt'.
         # glusto -c 'config.yml' --pytest='-v -x tests -m bvt'
 
@@ -218,9 +218,3 @@ The testrun is divided in several phases:
         # glusto -c 'config.yml' --nosetests='-v -w tests'
 
     Refer: http://glusto.readthedocs.io/en/latest/userguide/glusto.html#options-for-running-unit-tests
-
-6) Reporting: TBD
-
-7) Teardown: TBD
-
-

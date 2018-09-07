@@ -1,0 +1,63 @@
+log_file: /var/log/tests/gluster_tests.log
+log_level: DEBUG
+
+# 'servers' is list of Hostnames/IP's of servers in the cluster.
+# This section has to be defined.
+servers:
+    - server-vm1
+    - server-vm2
+    - server-vm3
+    - server-vm4
+    - server-vm5
+    - server-vm6
+
+# 'clients' is list of Hostnames/IP's of clients in the cluster.
+# This section has to be defined.
+clients:
+    - client-vm1
+    - client-vm2
+
+# 'servers_info' is info about each server in the cluster.
+# each server_info is a dict with 'Hostname/IP' of the server as key.
+# The info should contain the host(Hostname/IP) of server, devices to use
+# for creating bricks, brick_root i.e dirname of brick mount point.
+# Note: Use the same Hostname/IP used in the above 'servers' section.
+# This section has to be defined.
+
+servers_info:
+    server-vm1: &server1
+        host: server-vm1
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm2: &server2
+        host: server-vm2
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm3: &server3
+        host: server-vm3
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm4: &server4
+        host: server-vm4
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm5: &server5
+        host: server-vm5
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+    server-vm6: &server6
+        host: server-vm6
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde"]
+        brick_root: "/bricks"
+
+# 'clients_info' is info about each client in  the cluster.
+# each client_info is a dict with 'Hostname/IP' of the client as key.
+# The info should contain the host(Hostname/IP) of client, platform(Linux or
+# Windows), super_user name(Admin/Administrator/* in case of windows or root/*
+# in case of linux).
+# This section has to be defined.
+clients_info:
+    client-vm1: &client1
+        host: client-vm1
+    client-vm2: &client2
+        host: client-vm2
