@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
     Description: Helpers for performing file/dir operations
 """
 
+from __future__ import print_function
 import os
 import argparse
 import sys
@@ -105,7 +106,7 @@ def create_dir(dir_path):
         try:
             os.makedirs(dir_abs_path)
         except (OSError, IOError):
-            print "Unable to create dir: %s" % dir_abs_path
+            print ("Unable to create dir: %s" % dir_abs_path)
             return 1
     return 0
 
@@ -137,7 +138,8 @@ def create_dirs(dir_path, depth, num_of_dirs, num_of_files=0,
                               base_file_name, file_types)
         except (OSError, IOError) as e:
             if 'File exists' not in e.strerror:
-                print "Unable to create dir '%s' : %s" % (dir_path, e.strerror)
+                print ("Unable to create dir '%s' : %s"
+                       % (dir_path, e.strerror))
                 with open("/tmp/file_dir_ops_create_dirs_rc", "w") as fd:
                     try:
                         fd.write("1")
@@ -274,12 +276,13 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
         fname = base_file_name + str(count)
         fname_abs_path = os.path.join(dir_path, fname)
         if fixed_file_size is None:
-            file_size = file_sizes_dict[random.choice(file_sizes_dict.keys())]
+            file_size = (
+                file_sizes_dict[random.choice(list(file_sizes_dict.keys()))])
         else:
             try:
                 file_size = file_sizes_dict[fixed_file_size]
             except KeyError as e:
-                print "File sizes can be [1k, 10k, 512k, 1M]"
+                print ("File sizes can be [1k, 10k, 512k, 1M]")
                 return 1
 
         type = random.choice(file_types_list)
@@ -364,7 +367,7 @@ def rename(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print "Directory '%s' does not exist" % dir_path
+        print ("Directory '%s' does not exist" % dir_path)
         return 1
 
     rc = 0
@@ -378,7 +381,7 @@ def rename(args):
                 os.rename(old, new)
             except OSError:
                 rc = 1
-                print "Unable to rename %s -> %s" % (old, new)
+                print ("Unable to rename %s -> %s" % (old, new))
 
         # rename dirs
         if dirName != dir_path:
@@ -388,7 +391,7 @@ def rename(args):
                 os.rename(old, new)
             except OSError:
                 rc = 1
-                print "Unable to rename %s -> %s" % (old, new)
+                print ("Unable to rename %s -> %s" % (old, new))
     return rc
 
 
@@ -400,22 +403,22 @@ def ls(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print "Directory '%s' does not exist" % dir_path
+        print ("Directory '%s' does not exist" % dir_path)
         return 1
 
     with open_file_to_write(log_file_name) as file_handle:
         if log_file_name:
             time_str = _get_current_time()
-            print >>file_handle, "Starting 'ls -R' : %s" % time_str
+            file_handle.write("Starting 'ls -R' : %s" % time_str)
         for dirName, subdirList, fileList in os.walk(dir_path):
-            print >>file_handle, ('Dir: %s' % dirName)
+            file_handle.write('Dir: %s' % dirName)
             for dname in subdirList:
-                print >>file_handle, ('\t%s' % os.path.join(dirName, dname))
+                file_handle.write('\t%s' % os.path.join(dirName, dname))
             for fname in fileList:
-                print >>file_handle, ('\t%s' % os.path.join(dirName, fname))
+                file_handle.write('\t%s' % os.path.join(dirName, fname))
         if log_file_name:
             time_str = _get_current_time()
-            print >>file_handle, "Ending 'ls -R' : %s" % time_str
+            file_handle.write("\tEnding 'ls -R' : %s" % time_str)
     return 0
 
 
@@ -438,6 +441,7 @@ def _get_path_stats(path):
             rc = 1
         else:
             if out:
+                out = out.decode()
                 out = out.split(" ")
                 file_stats['mode'] = out[0].strip()
                 file_stats['user'] = out[1].strip()
@@ -469,7 +473,7 @@ def get_path_stats(args):
 
     # Check if dir_path exists
     if not path_exists(path):
-        print "PATH '%s' does not exist" % path
+        print ("PATH '%s' does not exist" % path)
         return 1
 
     file_stats = {}
@@ -494,21 +498,21 @@ def get_path_stats(args):
     with open_file_to_write(log_file_name) as file_handle:
         if log_file_name:
             time_str = _get_current_time()
-            print >>file_handle, "Starting 'stat %s' : %s" % (
-                path, time_str)
+            file_handle.write("Starting 'stat %s' : %s" % (
+                path, time_str))
         for key in file_stats.keys():
-            print >>file_handle, "\nFile: %s" % key
+            file_handle.write("\nFile: %s" % key)
             ret, file_stat, err = file_stats[key]
             if ret != 0:
                 rc = 1
-                print >>file_handle, "\t%s" % err
+                file_handle.write("\t%s\n" % err)
             else:
-                print >>file_handle, "\t%s" % file_stat
+                file_handle.write("\t%s\n" % file_stat)
         if log_file_name:
             time_str = _get_current_time()
-            print >>file_handle, "Ending 'stat %s' : %s" % (
-                path, time_str)
-        print >>file_handle, "\n"
+            file_handle.write("Ending 'stat %s' : %s" % (
+                path, time_str))
+        file_handle.write("\n")
 
     return rc
 
@@ -527,7 +531,7 @@ def compress(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print "Directory '%s' does not exist" % dir_path
+        print ("Directory '%s' does not exist" % dir_path)
         return 1
 
     # Create dir_path
@@ -629,7 +633,7 @@ def create_hard_links(args):
 
     # Check if src_dir exists
     if not path_exists(src_dir):
-        print "Directory '%s' does not exist" % src_dir
+        print ("Directory '%s' does not exist" % src_dir)
         return 1
 
     # Create dir_path
@@ -710,7 +714,7 @@ def copy(args):
 
     # Check if src_dir exists
     if not path_exists(src_dir):
-        print "Directory '%s' does not exist" % src_dir
+        print ("Directory '%s' does not exist" % src_dir)
         return 1
 
     # Create dest_dir
@@ -751,7 +755,7 @@ def delete(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print "Directory '%s' does not exist" % dir_path
+        print ("Directory '%s' does not exist" % dir_path)
         return 1
 
     rc = 0
@@ -771,7 +775,7 @@ def delete(args):
 
 
 if __name__ == "__main__":
-    print "Starting File/Dir Ops: %s" % _get_current_time()
+    print ("Starting File/Dir Ops: %s" % _get_current_time())
     test_start_time = datetime.datetime.now().replace(microsecond=0)
 
     parser = argparse.ArgumentParser(
@@ -1043,6 +1047,6 @@ if __name__ == "__main__":
     rc = args.func(args)
 
     test_end_time = datetime.datetime.now().replace(microsecond=0)
-    print "Execution time: %s" % (test_end_time - test_start_time)
-    print "Ending File/Dir Ops %s" % _get_current_time()
+    print ("Execution time: %s" % (test_end_time - test_start_time))
+    print ("Ending File/Dir Ops %s" % _get_current_time())
     sys.exit(rc)
