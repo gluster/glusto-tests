@@ -289,7 +289,7 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
 
         # Wait for rebalance to complete
         g.log.info("Waiting for rebalance to complete")
-        ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
+        ret = wait_for_rebalance_to_complete(self.mnode, self.volname, 600)
         self.assertTrue(ret, "Rebalance did not start "
                              "despite waiting for 5 mins")
         g.log.info("Rebalance is successfully complete on the volume %s",
@@ -353,7 +353,7 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
 
         # Shrinking volume by removing bricks from volume when IO in progress
         g.log.info("Start removing bricks from volume when IO in progress")
-        ret = shrink_volume(self.mnode, self.volname)
+        ret = shrink_volume(self.mnode, self.volname, rebalance_timeout=900)
         self.assertTrue(ret, ("Failed to shrink the volume when IO in "
                               "progress on volume %s", self.volname))
         g.log.info("Shrinking volume when IO in progress is successful on "
