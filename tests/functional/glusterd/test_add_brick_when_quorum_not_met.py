@@ -19,7 +19,9 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import setup_volume
-from glustolibs.gluster.volume_ops import set_volume_options, get_volume_status
+from glustolibs.gluster.volume_ops import (set_volume_options,
+                                           get_volume_status,
+                                           volume_reset)
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
                                              is_glusterd_running)
 from glustolibs.gluster.brick_libs import get_all_bricks, are_bricks_offline
@@ -29,17 +31,6 @@ from glustolibs.gluster.lib_utils import form_bricks_list
 
 @runs_on([['distributed'], ['glusterfs']])
 class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
-
-    def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
-
-        # check whether peers are in connected state
-        ret = self.validate_peers_are_connected()
-        if not ret:
-            raise ExecutionError("Peers are not in connected state")
-
-        g.log.info("Peers are in connected state")
 
     def tearDown(self):
 
@@ -64,6 +55,12 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
             raise ExecutionError("Servers are not in connected state")
 
         g.log.info("Peers are in connected state")
+
+        # reset quorum ratio to default
+        g.log.info("resetting quorum ratio")
+        ret, _, _ = volume_reset(self.mnode, 'all')
+        self.assertEqual(ret, 0, "Failed to reset quorum ratio")
+        g.log.info("Successfully resetted quorum ratio")
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
@@ -137,23 +134,24 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
         self.assertIsNotNone(bricks_list, "Failed to get the brick list")
         bricks_to_check = bricks_list[0:num_of_nodes_to_bring_down]
         ret = are_bricks_offline(self.mnode, self.volname, bricks_to_check)
-        self.assertTrue(ret, "Server quorum is not met, Bricks are up")
-        g.log.info("Server quorum is met, bricks are down")
+        self.assertTrue(ret, "Unexpected: Server quorum is not met, "
+                        "Bricks are up")
+        g.log.info("Server quorum is not met, bricks are down as expected")
 
         # try add brick operation, which should fail
         num_bricks_to_add = 1
         brick = form_bricks_list(self.mnode, self.volname, num_bricks_to_add,
                                  self.servers, self.all_servers_info)
         ret, _, _ = add_brick(self.mnode, self.volname, brick)
-        self.assertNotEqual(ret, 0, ("add brick is success, when quorum is"
-                                     " met"))
-        g.log.info("Add brick is failed as expected, when quorum is met")
+        self.assertNotEqual(ret, 0, ("Unexpected: add brick is success, "
+                                     "when quorum is not met"))
+        g.log.info("Add brick is failed as expected, when quorum is not met")
 
         # confirm that, newly added brick is not part of volume
         bricks_list = get_all_bricks(self.mnode, self.volname)
         self.assertIsNotNone(bricks_list, "Failed to get the brick list")
         if brick in bricks_list:
             ret = False
-            self.assertTrue(ret, ("add brick is success, when quorum is"
-                                  " met"))
-        g.log.info("Add brick is failed as expected, when quorum is met")
+            self.assertTrue(ret, ("Unexpected: add brick is success, "
+                                  "when quorum is not met"))
+        g.log.info("Add brick is failed as expected, when quorum is not met")
