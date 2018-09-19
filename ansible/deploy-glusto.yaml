@@ -1,0 +1,65 @@
+---
+- hosts: gluster_hosts
+  gather_facts: no
+
+  tasks:
+  -  name: Add EPEL repository
+     yum_repository:
+       name: epel
+       description: EPEL YUM repo
+       mirrorlist: https://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch
+       enabled: no
+       gpgcheck: no
+
+  - name: Install required packages
+    yum:
+      name: "{{ item }}"
+      state: present
+      disablerepo: "epel"
+    with_items:
+      - git
+      - yum-plugin-copr
+
+  - name: Install EPEL required packages
+    yum:
+      name: "{{ item }}"
+      state: present
+      enablerepo: "epel"
+    with_items:
+      - python-pip
+
+  - name: upgrade setuptools
+    pip:
+      name: "{{ item }}"
+      extra_args: --upgrade
+    with_items:
+      - setuptools
+      - six
+
+  - name: enable copr repo
+    shell: yum copr enable sac/gdeploy -y
+
+  - name: install gdeploy
+    yum:
+      name: gdeploy
+      state: latest
+
+  - name: clone glusto, glusto-tests
+    git:
+      repo: "{{ item.repo }}"
+      dest: "{{ item.dest }}"
+      depth: 1
+    with_items:
+      - {repo: "http://review.gluster.org/glusto-tests", dest: "~/glusto-tests" }
+      - {repo: "https://github.com/loadtheaccumulator/glusto.git", dest: "~/glusto" }
+
+  - name: setup glusto-test
+    shell: python setup.py install
+    args:
+      chdir: "{{ item }}"
+    with_items:
+      - ~/glusto
+      - ~/glusto-tests/glustolibs-gluster/
+      - ~/glusto-tests/glustolibs-io/
+      - ~/glusto-tests/glustolibs-misc/
+
