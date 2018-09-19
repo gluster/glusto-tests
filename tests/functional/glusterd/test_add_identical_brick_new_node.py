@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+import time
 import string
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -109,6 +109,9 @@ class TestAddIdenticalBrick(GlusterBaseClass):
                                   self.servers[0], self.servers[1]))
         g.log.info("peer probe is success from %s to "
                    "%s", self.servers[0], self.servers[1])
+
+        # wait for some time before add-brick
+        time.sleep(2)
 
         # Replace just host IP to create identical brick
         add_bricks = []
