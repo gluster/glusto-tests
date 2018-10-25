@@ -28,10 +28,8 @@ from glustolibs.gluster.brick_libs import (select_bricks_to_bring_offline,
                                            bring_bricks_offline,
                                            bring_bricks_online,
                                            are_bricks_offline,
-                                           get_all_bricks,
-                                           wait_for_bricks_to_be_online)
+                                           get_all_bricks)
 from glustolibs.gluster.heal_libs import (
-    wait_for_self_heal_daemons_to_be_online,
     monitor_heal_completion,
     is_heal_complete,
     is_volume_in_split_brain,
@@ -1178,114 +1176,6 @@ class TestSelfHeal(GlusterBaseClass):
                               'after adding bricks are not equal')
         g.log.info('Checksums after bringing bricks online and '
                    'after adding bricks are equal')
-
-    def test_self_heal_algorithm_full_daemon_off(self):
-        """""
-        Description:-
-        Checking healing when algorithm is set to "full" and self heal daemon
-        is "off".
-        """""
-        # pylint: disable=too-many-statements
-
-        # Setting volume option of self heal & algorithm
-        options = {"metadata-self-heal": "disable",
-                   "entry-self-heal": "disable",
-                   "data-self-heal": "disable",
-                   "data-self-heal-algorithm": "full",
-                   "self-heal-daemon": "off"}
-        ret = set_volume_options(self.mnode, self.volname, options)
-        self.assertTrue(ret, "Failed to set the volume options %s" % options)
-        g.log.info(" Volume set options success")
-
-        # Select bricks to bring down
-        bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
-            self.mnode, self.volname))
-        bricks_to_bring_offline = bricks_to_bring_offline_dict['volume_bricks']
-        g.log.info("Bringing bricks: %s offline", bricks_to_bring_offline)
-
-        ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
-        self.assertTrue(ret, ("Failed to bring bricks: %s offline",
-                              bricks_to_bring_offline))
-        g.log.info("Successful in bringing bricks: %s offline",
-                   bricks_to_bring_offline)
-
-        # Validate if bricks are offline
-        g.log.info("Validating if bricks: %s are offline",
-                   bricks_to_bring_offline)
-        ret = are_bricks_offline(self.mnode, self.volname,
-                                 bricks_to_bring_offline)
-        self.assertTrue(ret, "Not all the bricks in list:%s are offline"
-                        % bricks_to_bring_offline)
-        g.log.info("Successfully validated that bricks %s are all offline",
-                   bricks_to_bring_offline)
-
-        # IO on the mount point
-        for mount_object in self.mounts:
-            g.log.info("Creating Files on %s:%s", mount_object.client_system,
-                       mount_object.mountpoint)
-            cmd = ("cd %s ;for i in `seq 1 100` ;"
-                   "do dd if=/dev/urandom of=file$i bs=1M "
-                   "count=1;done" % mount_object.mountpoint)
-            ret, _, _ = g.run(mount_object.client_system, cmd)
-            self.assertEqual(ret, 0, "Failed to create files")
-            g.log.info(" Files created successfully")
-
-        # Collecting Arequal before bring the bricks up
-        g.log.info("Collecting Arequal before the bring of bricks down")
-        result_before = collect_mounts_arequal(self.mounts)
-
-        # Turning self heal daemon ON
-        optionstwo = {"self-heal-daemon": "on"}
-        ret = set_volume_options(self.mnode, self.volname, optionstwo)
-        self.assertTrue(ret, "Failed to turn self-heal ON")
-        g.log.info("Volume set options %s: success", optionstwo)
-
-        # Bring bricks online
-        g.log.info("Bring bricks: %s online", bricks_to_bring_offline)
-        ret = bring_bricks_online(self.mnode, self.volname,
-                                  bricks_to_bring_offline)
-        self.assertTrue(ret, "Failed to bring bricks: %s online"
-                        % bricks_to_bring_offline)
-        g.log.info("Successfully brought all bricks:%s online",
-                   bricks_to_bring_offline)
-
-        # Waiting for bricks to come online
-        g.log.info("Waiting for brick process to come online")
-        timeout = 30
-        ret = wait_for_bricks_to_be_online(self.mnode, self.volname, timeout)
-        self.assertTrue(ret, "bricks didn't come online after adding bricks")
-        g.log.info("Bricks are online")
-
-        # Verifying all bricks online
-        g.log.info("Verifying volume's all process are online")
-        ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
-        self.assertTrue(ret, "Volume %s : All process are not online"
-                        % self.volname)
-        g.log.info("Volume %s : All process are online", self.volname)
-
-        # Wait for self heal processes to come online
-        g.log.info("Wait for selfheal process to come online")
-        timeout = 300
-        ret = wait_for_self_heal_daemons_to_be_online(self.mnode,
-                                                      self.volname, timeout)
-        self.assertTrue(ret, "Self-heal process are not online")
-        g.log.info("All self heal process are online")
-
-        # Wait for self-heal to complete
-        g.log.info("Wait for self-heal to complete")
-        ret = monitor_heal_completion(self.mnode, self.volname)
-        self.assertTrue(ret, "Self heal didn't complete even after waiting "
-                        "for 20 minutes. 20 minutes is too much a time for "
-                        "current test workload")
-        g.log.info("self-heal is successful after replace-brick operation")
-
-        # arequal after healing
-        g.log.info("Collecting Arequal before the bring of bricks down")
-        result_after = collect_mounts_arequal(self.mounts)
-
-        # Comparing the results
-        g.log.info("comparing both the results")
-        self.assertEqual(result_before, result_after, "Arequals are not equal")
 
 
 @runs_on([['replicated', 'distributed-replicated'],
