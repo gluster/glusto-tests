@@ -184,7 +184,7 @@ def heal_info_summary(mnode, volname):
             The third element 'err' is of type 'str' and is the stderr value
             of the command execution.
     """
-    cmd = ("gluster volume heal %s info | grep 'entries\|Brick\|Status'" %
+    cmd = (r"gluster volume heal %s info | grep 'entries\|Brick\|Status'" %
            volname)
     return g.run(mnode, cmd)
 

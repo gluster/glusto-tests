@@ -105,7 +105,7 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
                     ganesha_ha_contents = fh.read()
                 g.rpyc_close_connection(
                     host=cls.servers_in_nfs_ganesha_cluster[0], user="root")
-                servers_in_existing_cluster = re.findall('VIP_(.*)\=.*',
+                servers_in_existing_cluster = re.findall(r'VIP_(.*)\=.*',
                                                          ganesha_ha_contents)
 
                 ret = teardown_nfs_ganesha_cluster(

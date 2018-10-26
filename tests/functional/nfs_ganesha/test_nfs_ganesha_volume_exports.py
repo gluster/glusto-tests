@@ -463,7 +463,7 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaIOBaseClass):
 
         export_file = ("/var/run/gluster/shared_storage/nfs-ganesha/exports/"
                        "export.%s.conf" % self.volname)
-        cmd = ("sed -i  s/'Path = .*'/'Path = \"\/%s\";'/g %s"
+        cmd = (r"sed -i  s/'Path = .*'/'Path = \"\/%s\";'/g %s"
                % (re.escape(self.mounts[0].volname), export_file))
         ret, _, _ = g.run(self.mnode, cmd)
         self.assertEqual(ret, 0, ("Unable to change Path info to %s in %s"
@@ -477,7 +477,7 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaIOBaseClass):
                                   % ("/" + self.mounts[0].volname,
                                      export_file)))
 
-        cmd = ("sed -i  s/'Pseudo=.*'/'Pseudo=\"\/%s\";'/g %s"
+        cmd = (r"sed -i  s/'Pseudo=.*'/'Pseudo=\"\/%s\";'/g %s"
                % (re.escape(self.mounts[0].volname), export_file))
         ret, _, _ = g.run(self.mnode, cmd)
         self.assertEqual(ret, 0, ("Unable to change pseudo Path info to "

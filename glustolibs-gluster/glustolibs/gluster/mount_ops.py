@@ -251,18 +251,15 @@ def is_mounted(volname, mpoint, mserver, mclient, mtype, user='root'):
     if mtype == "smb":
         if mpoint == "*":
             return False
-        else:
-            cmd = powershell("net use %s" % mpoint)
-            ret, out, err = g.run(mclient, cmd, user)
-            if ret != 0:
-                return False
-            else:
-                expected_output = ("Remote name       \\\%s\gluster-%s" %
-                                   (mserver, volname))
-                if expected_output in out:
-                    return True
-                else:
-                    return False
+        cmd = powershell("net use %s" % mpoint)
+        ret, out, err = g.run(mclient, cmd, user)
+        if ret != 0:
+            return False
+        expected_output = (r"\\\%s\gluster-%s" %
+                           (mserver, volname))
+        if "Remote name" in out and expected_output in out:
+            return True
+        return False
     else:
         ret, _, _ = g.run(mclient, "mount | grep %s | grep %s | grep \"%s\""
                           % (volname, mpoint, mserver), user)

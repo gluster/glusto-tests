@@ -343,7 +343,7 @@ def get_self_heal_daemon_pid(nodes):
     _rc = True
     if isinstance(nodes, str):
         nodes = [nodes]
-    cmd = "pgrep -f glustershd | grep -v ^$$\$"
+    cmd = r"pgrep -f glustershd | grep -v ^$$\$"
     g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
     results = g.run_parallel(nodes, cmd)
     for node in results:

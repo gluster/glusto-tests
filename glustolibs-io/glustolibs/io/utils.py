@@ -149,7 +149,7 @@ def list_all_files_and_dirs_mounts(mounts):
         mounts = [mounts]
 
     ignore_dirs_list = [".trashcan"]
-    ignore_dirs = "\|".join(ignore_dirs_list)
+    ignore_dirs = r"\|".join(ignore_dirs_list)
 
     g.log.info("Start Listing mounts files and dirs")
     all_mounts_procs = []
@@ -349,7 +349,7 @@ def cleanup_mounts(mounts):
 
     # Check if mount points are empty
     ignore_dirs_list = [".trashcan"]
-    ignore_dirs = "\|".join(ignore_dirs_list)
+    ignore_dirs = r"\|".join(ignore_dirs_list)
     all_mounts_procs = []
     for mount_obj in mounts:
         cmd = ("find %s -mindepth 1 | grep -ve '%s'" %

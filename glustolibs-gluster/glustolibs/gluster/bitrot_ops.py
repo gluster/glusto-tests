@@ -566,7 +566,7 @@ def get_scrub_status(mnode, volname):
         temp_list = re.findall(regex, info, re.S)
         corrupt_list = []
         for node in temp_list:
-            tmp_reg = ('Node: (\S+)\n.*Error count.*'
+            tmp_reg = (r'Node: (\S+)\n.*Error count.*'
                        'Corrupted object.*?:(.*)\n=.*')
             m = re.search(tmp_reg, node, re.S)
             if m is None:

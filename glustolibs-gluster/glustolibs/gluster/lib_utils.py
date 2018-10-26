@@ -247,7 +247,7 @@ def get_pathinfo(mnode, filename, volname):
     umount_volume(mnode, mount_point)
     g.run(mnode, "rm -rf " + mount_point)
 
-    return re.findall(".*?POSIX.*?:(\S+)\>", pathinfo)
+    return re.findall(r".*?POSIX.*?:(\S+)\>", pathinfo)
 
 
 def list_files(mnode, dir_path, parse_str="", user="root"):
@@ -815,7 +815,7 @@ def is_core_file_created(nodes, testrun_timestamp,
             g.log.info("checking core file created or not")
             for file1 in dir_list:
                 if (re.search(r'\bcore\.[\S]+\b', file1)):
-                    file_path_list = re.split('[\s]+', cmd)
+                    file_path_list = re.split(r'[\s]+', cmd)
                     file_path = file_path_list[1] + '/' + file1
                     time_cmd = 'stat ' + '-c ' + '%X ' + file_path
                     ret, file_timestamp, _ = g.run(node, time_cmd)

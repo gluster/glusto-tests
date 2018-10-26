@@ -366,7 +366,7 @@ def get_pathinfo(host, fqpath):
     """
     pathinfo = {}
     pathinfo['raw'] = get_fattr(host, fqpath, 'trusted.glusterfs.pathinfo')
-    pathinfo['brickdir_paths'] = re.findall(".*?POSIX.*?:(\S+)\>",
+    pathinfo['brickdir_paths'] = re.findall(r".*?POSIX.*?:(\S+)\>",
                                             pathinfo['raw'])
 
     return pathinfo
