@@ -320,7 +320,7 @@ def get_servers_bricks_dict(servers, servers_info):
         else:
             servers_bricks_dict[server] = out.strip().split("\n")
 
-    for key, value in servers_bricks_dict.items():
+    for key, value in list(servers_bricks_dict.items()):
         value.sort()
 
     return servers_bricks_dict
@@ -365,7 +365,7 @@ def get_servers_used_bricks_dict(mnode, servers):
             else:
                 servers_used_bricks_dict[list2[0]] = [list2[1]]
 
-    for key, value in servers_used_bricks_dict.items():
+    for key, value in list(servers_used_bricks_dict.items()):
         value.sort()
 
     return servers_used_bricks_dict
@@ -394,14 +394,14 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
     dict1 = get_servers_bricks_dict(servers, servers_info)
     dict2 = get_servers_used_bricks_dict(mnode, servers)
     servers_unused_bricks_dict = OrderedDict()
-    for key, value in dict1.items():
+    for key, value in list(dict1.items()):
         if key in dict2:
             unused_bricks = list(set(value) - set(dict2[key]))
             servers_unused_bricks_dict[key] = unused_bricks
         else:
             servers_unused_bricks_dict[key] = value
 
-    for key, value in servers_unused_bricks_dict.items():
+    for key, value in list(servers_unused_bricks_dict.items()):
         value.sort()
 
     return servers_unused_bricks_dict
@@ -436,7 +436,8 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
     servers_unused_bricks_dict = get_servers_unused_bricks_dict(mnode, servers,
                                                                 servers_info)
     num_of_unused_bricks = 0
-    for each_server_unused_bricks_list in servers_unused_bricks_dict.values():
+    for each_server_unused_bricks_list in list(
+            servers_unused_bricks_dict.values()):
         num_of_unused_bricks = (num_of_unused_bricks +
                                 len(each_server_unused_bricks_list))
 
@@ -451,9 +452,9 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
 
     for num in range(brick_index, brick_index + number_of_bricks):
         # current_server is the server from which brick path will be created
-        current_server = servers_unused_bricks_dict.keys()[dict_index]
+        current_server = list(servers_unused_bricks_dict.keys())[dict_index]
         current_server_unused_bricks_list = (
-            servers_unused_bricks_dict.values()[dict_index])
+            list(servers_unused_bricks_dict.values())[dict_index])
         brick_path = ''
         if current_server_unused_bricks_list:
             brick_path = ("%s:%s/%s_brick%s" %
@@ -462,7 +463,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
             bricks_list.append(brick_path)
 
             # Remove the added brick from the current_server_unused_bricks_list
-            servers_unused_bricks_dict.values()[dict_index].pop(0)
+            list(servers_unused_bricks_dict.values())[dict_index].pop(0)
 
         if dict_index < len(servers_unused_bricks_dict) - 1:
             dict_index = dict_index + 1
@@ -486,7 +487,7 @@ def is_rhel6(servers):
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
     rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in list(results.items()):
         retcode, out, err = ret_values
         if retcode != 0:
             g.log.error("Unable to get the RHEL version on server %s" %
@@ -512,7 +513,7 @@ def is_rhel7(servers):
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
     rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in list(results.items()):
         retcode, out, err = ret_values
         if retcode != 0:
             g.log.error("Unable to get the RHEL version on server %s" %
@@ -569,7 +570,7 @@ def get_disk_usage(mnode, path, user="root"):
     usage_info = dict()
     keys = ['b_size', 'b_total', 'b_free', 'b_avail', 'i_total', 'i_free']
     val = list(match.groups())
-    info = dict(zip(keys, val))
+    info = dict(list(zip(keys, val)))
     usage_info['total'] = ((int(info['b_total']) * int(info['b_size'])) /
                            ONE_GB_BYTES)
     usage_info['free'] = ((int(info['b_free']) * int(info['b_size'])) /

@@ -48,7 +48,7 @@ def set_auth_allow(volname, server, auth_dict):
     # If authentication has to be set on sub-dirs, convert the key-value pair
     # to gluster authentication set command format.
     if 'all' not in auth_dict:
-        for key, value in auth_dict.iteritems():
+        for key, value in list(auth_dict.items()):
             auth_cmds.append("%s(%s)" % (key, "|".join(value)))
 
         auth_cmd = ("gluster volume set %s auth.allow \"%s\""
@@ -111,7 +111,7 @@ def verify_auth_allow(volname, server, auth_dict):
 
     # When authentication has to be verified on on sub-dirs, convert the key-
     # value pair to a format which matches the value of auth.allow option.
-    for key, value in auth_dict.iteritems():
+    for key, value in list(auth_dict.items()):
         auth_details.append("%s(%s)" % (key, "|".join(value)))
 
     # Check whether the required clients names are listed in auth.allow option
@@ -168,7 +168,7 @@ def verify_auth_reject(volname, server, auth_dict):
 
     # When authentication has to be verified on on sub-dirs, convert the key-
     # value pair to a format which matches the value of auth.reject option.
-    for key, value in auth_dict.iteritems():
+    for key, value in list(auth_dict.items()):
         auth_details.append("%s(%s)" % (key, "|".join(value)))
 
     # Check if the required clients names are listed in auth.reject option
@@ -208,7 +208,7 @@ def set_auth_reject(volname, server, auth_dict):
     # If authentication has to be set on sub-dirs, convert the key-value pair
     # to gluster authentication set command format.
     if 'all' not in auth_dict:
-        for key, value in auth_dict.iteritems():
+        for key, value in list(auth_dict.items()):
             auth_cmds.append("%s(%s)" % (key, "|".join(value)))
 
             auth_cmd = ("gluster volume set %s auth.reject \"%s\""
