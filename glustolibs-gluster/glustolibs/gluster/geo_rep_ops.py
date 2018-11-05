@@ -123,7 +123,7 @@ def georep_groupadd(servers, groupname):
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_value in results.iteritems():
+    for server, ret_value in list(results.items()):
         retcode, _, err = ret_value
         if retcode != 0 and "already exists" not in err:
             g.log.error("Unable to add group %s on server %s",
@@ -153,7 +153,7 @@ def georep_geoaccount(servers, groupname, groupaccount):
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_value in results.iteritems():
+    for server, ret_value in list(results.items()):
         retcode, _, err = ret_value
         if retcode != 0 and "already exists" not in err:
             g.log.error("Unable to add user on %s", server)
@@ -183,7 +183,7 @@ def georep_geoaccount_setpasswd(servers, groupname, groupaccount, passwd):
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_value in results.iteritems():
+    for server, ret_value in list(results.items()):
         retcode, _, err = ret_value
         if retcode != 0:
             g.log.error("Unable to set passwd for user %s on %s",
