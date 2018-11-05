@@ -601,9 +601,9 @@ def get_scrub_status(mnode, volname):
 
     status_dict['status_info'] = tmp_dict1
     for elmt in corrupt_list:
-        if elmt[0].strip(' ') in status_dict['status_info'].keys():
+        if elmt[0].strip(' ') in list(status_dict['status_info'].keys()):
             val = elmt[1].split('\n')
-            val = filter(None, val)
+            val = [_f for _f in val if _f is not None]
             gfid = "corrupted_gfid"
             status_dict['status_info'][elmt[0].strip(' ')][gfid] = val
     return status_dict
