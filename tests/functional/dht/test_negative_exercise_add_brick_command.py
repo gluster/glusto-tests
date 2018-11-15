@@ -75,9 +75,9 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
                                                     self.all_servers_info)
         cmd = ("gluster volume add-brick %s " % (' '.join(bricks_list)))
         g.log.info("Adding bricks without specifying volume name")
-        _, _, err = g.run(self.mnode, cmd)
-        self.assertIn("does not exist", err, "add-brick is successful")
-        g.log.info("Volume add-brick failed with error %s ", err)
+        ret, _, _ = g.run(self.mnode, cmd)
+        self.assertTrue(ret, "add-brick is successful")
+        g.log.info("Volume %s: add-brick failed", self.volname)
 
     def test_add_duplicate_brick(self):
         """Test add-bricks to the volume which are already part of the volume
