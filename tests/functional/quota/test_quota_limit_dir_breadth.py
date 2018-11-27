@@ -17,9 +17,8 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
-from glustolibs.gluster.quota_ops import (quota_enable,
-                                          quota_fetch_list,
-                                          quota_limit_usage)
+from glustolibs.gluster.quota_ops import (quota_enable, quota_limit_usage)
+from glustolibs.gluster.quota_libs import quota_validate
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
@@ -96,15 +95,17 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Successfully enabled quota on the volume %s", self.volname)
 
         # Create Directories in the mount point
-        for mount_object in self.mounts:
-            g.log.info("Creating Directories on %s:%s",
-                       mount_object.client_system, mount_object.mountpoint)
-            cmd = ('python %s create_deep_dir -d 0 -l 10 %s'
-                   % (self.script_upload_path, mount_object.mountpoint))
+        mount_obj = self.mounts[0]
+        mount_dir = mount_obj.mountpoint
+        client = mount_obj.client_system
 
-            proc = g.run_async(mount_object.client_system, cmd,
-                               user=mount_object.user)
-            self.all_mounts_procs.append(proc)
+        g.log.info("Creating Directories on %s:%s",
+                   client, mount_dir)
+        cmd = ('python %s create_deep_dir -d 0 -l 10 %s'
+               % (self.script_upload_path, mount_dir))
+
+        proc = g.run_async(client, cmd, user=mount_obj.user)
+        self.all_mounts_procs.append(proc)
 
         # Validate IO
         self.assertTrue(
@@ -114,8 +115,8 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
 
         # Get dir list
         g.log.info('Getting dir list in %s', self.volname)
-        cmd = ('ls %s' % self.mounts[0].mountpoint)
-        ret, out, err = g.run(self.mounts[0].client_system, cmd)
+        cmd = ('ls %s' % mount_dir)
+        ret, out, err = g.run(client, cmd)
         self.assertFalse(ret, err)
         dir_list = out.split()
         for dir_name in dir_list:
@@ -132,54 +133,41 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Successfully set the Quota limit on each path of the "
                    "volume %s", self.volname)
 
-        # Get Quota List on every Directory of the Volume
-        g.log.info("Get Quota list for every directory on the volume %s",
-                   self.volname)
+        # Get Quota List and Verify Hard-Limit on each Directory of the Volume
+        g.log.info("Get Quota list and validate the hardlimit for every"
+                   " directory on the volume %s", self.volname)
         for dir_name in dir_list:
-            quota_list = quota_fetch_list(self.mnode, self.volname,
-                                          path=dir_name)
-            self.assertIsNotNone(quota_list, ("Failed to get the quota list "
-                                              "for the volume %s",
-                                              self.volname))
-            hard_limit = quota_list[dir_name]['hard_limit']
-            self.assertEqual(hard_limit, '1073741824',
-                             "Hard limit does not match the actual "
-                             "limit-usage set on the directory %s" % dir_name)
-
+            ret = quota_validate(self.mnode, self.volname, path=dir_name,
+                                 hard_limit=1073741824)
+            self.assertTrue(ret, ("Failed to validate quota limit usage on the"
+                                  " directory %s of the volume %s",
+                                  dir_name, self.volname))
             g.log.info("Hard limit matches the actual limit-usage "
                        "set on the directory %s", dir_name)
 
         # Create some data inside each directory
         self.all_mounts_procs = []
-        for mount_object in self.mounts:
-            g.log.info("Creating Files on %s:%s",
-                       mount_object.client_system,
-                       mount_object.mountpoint)
-            for i in range(1, 11):
-                dir_name = "/user" + str(i)
-                cmd = ("python %s create_files -f 10 --fixed-file-size 1M "
-                       "%s/%s"
-                       % (self.script_upload_path, mount_object.mountpoint,
-                          dir_name))
+        g.log.info("Creating Files on %s:%s", client, mount_dir)
+        for i in range(1, 11):
+            dir_name = "/user" + str(i)
+            cmd = ("python %s create_files -f 10 --fixed-file-size 1M "
+                   "%s/%s"
+                   % (self.script_upload_path, mount_dir,
+                      dir_name))
 
-                ret, _, _ = g.run(mount_object.client_system, cmd)
-                self.assertFalse(ret, "Failed to create files in %s"
-                                 % dir_name)
-                g.log.info("Files created successfully in %s", dir_name)
+            ret, _, _ = g.run(client, cmd)
+            self.assertFalse(ret, "Failed to create files in %s"
+                             % dir_name)
+            g.log.info("Files created successfully in %s", dir_name)
 
-        # Get Quota list on Volume
-        g.log.info("Get Quota list for every directory on the volume %s",
-                   self.volname)
+        # Get Quota List and Verify Hard-Limit on each Directory of the Volume
+        g.log.info("Get Quota list and validate the hardlimit for every"
+                   " directory on the volume %s", self.volname)
         for dir_name in dir_list:
-            quota_list = quota_fetch_list(self.mnode, self.volname,
-                                          path=dir_name)
-            self.assertIsNotNone(quota_list, ("Failed to get the quota list "
-                                              "for the volume %s",
-                                              self.volname))
-            hard_limit = quota_list[dir_name]['hard_limit']
-            self.assertEqual(hard_limit, '1073741824',
-                             "Hard limit does not match the actual "
-                             "limit-usage set on the directory %s" % dir_name)
-
+            ret = quota_validate(self.mnode, self.volname, path=dir_name,
+                                 hard_limit=1073741824)
+            self.assertTrue(ret, ("Hard limit does not match the actual "
+                                  "limit-usage set on the directory %s"
+                                  % dir_name))
             g.log.info("Hard limit matches the actual limit-usage "
                        "set on the directory %s", dir_name)
