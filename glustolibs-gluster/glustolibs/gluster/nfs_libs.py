@@ -37,13 +37,6 @@ def export_volume_through_nfs(mnode, volname, enable_ganesha=False,
         bool: If volume is successfully exported through nfs returns True.
             False Otherwise.
     """
-    # Enable nfs on the volume
-    cmd = ("gluster volume set %s nfs.disable off --mode=script" % volname)
-    ret, _, _ = g.run(mnode, cmd)
-    if ret != 0:
-        g.log.error("Failed to enable nfs for the volume %s", volname)
-        return False
-
     # Enable ganesha on the volume if enable_ganesha is True
     if enable_ganesha:
         cmd = ("gluster volume set %s ganesha.enable on --mode=script" %
@@ -51,6 +44,13 @@ def export_volume_through_nfs(mnode, volname, enable_ganesha=False,
         ret, _, _ = g.run(mnode, cmd)
         if ret != 0:
             g.log.error("Failed to enable nfs ganesha for volume %s", volname)
+            return False
+    else:
+        # Enable nfs on the volume
+        cmd = ("gluster volume set %s nfs.disable off --mode=script" % volname)
+        ret, _, _ = g.run(mnode, cmd)
+        if ret != 0:
+            g.log.error("Failed to enable nfs for the volume %s", volname)
             return False
 
     time.sleep(time_delay)
