@@ -26,7 +26,8 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (set_volume_options, volume_start,
-                                           volume_create, get_volume_status)
+                                           volume_create, get_volume_status,
+                                           volume_reset)
 from glustolibs.gluster.gluster_init import (stop_glusterd,
                                              is_glusterd_running,
                                              start_glusterd)
@@ -59,6 +60,12 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
 
         if not ret:
             raise ExecutionError("Servers are not in peer probed state")
+
+        # reset quorum ratio to default
+        g.log.info("resetting quorum ratio")
+        ret, _, _ = volume_reset(self.mnode, 'all')
+        self.assertEqual(ret, 0, "Failed to reset quorum ratio")
+        g.log.info("Successfully resetted quorum ratio")
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
