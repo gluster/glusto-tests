@@ -148,7 +148,7 @@ class TestSelfHeal(GlusterBaseClass):
         # Add bricks
         g.log.info("Start adding bricks to volume...")
         ret, _, _ = add_brick(self.mnode, self.volname, bricks_to_add,
-                              replica_count=2)
+                              force=True, replica_count=2)
         self.assertFalse(ret, "Failed to add bricks %s" % bricks_to_add)
         g.log.info("Adding bricks is successful on volume %s", self.volname)
 
