@@ -21,15 +21,19 @@
     management node.
 """
 
+import time
+import socket
+import re
 from glusto.core import Glusto as g
 from glustolibs.gluster.nfs_ganesha_ops import (
-                                    is_nfs_ganesha_cluster_exists,
-                                    is_nfs_ganesha_cluster_in_healthy_state,
-                                    teardown_nfs_ganesha_cluster,
-                                    create_nfs_ganesha_cluster,
-                                    export_nfs_ganesha_volume,
-                                    unexport_nfs_ganesha_volume,
-                                    set_nfs_ganesha_client_configuration)
+    is_nfs_ganesha_cluster_exists,
+    is_nfs_ganesha_cluster_in_healthy_state,
+    teardown_nfs_ganesha_cluster,
+    create_nfs_ganesha_cluster,
+    export_nfs_ganesha_volume,
+    unexport_nfs_ganesha_volume,
+    configure_ports_on_clients,
+    ganesha_client_firewall_settings)
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError, ConfigError
 from glustolibs.gluster.peer_ops import peer_probe_servers, peer_status
@@ -41,9 +45,6 @@ from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume,
 from glustolibs.gluster.mount_ops import create_mount_objs
 from glustolibs.io.utils import log_mounts_info, wait_for_io_to_complete
 from glustolibs.misc.misc_libs import upload_scripts
-import time
-import socket
-import re
 
 
 class NfsGaneshaClusterSetupClass(GlusterBaseClass):
@@ -51,15 +52,10 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        """Setup nfs-ganesha cluster
-        tests.
         """
-
-        # Check if gdeploy is installed on glusto-tests management node.
-        ret, _, _ = g.run_local("gdeploy --version")
-        if ret != 0:
-            raise ConfigError("Please install gdeploy to run the scripts")
-
+        Setup variable for nfs-ganesha tests.
+        """
+        # pylint: disable=too-many-statements, too-many-branches
         GlusterBaseClass.setUpClass.im_func(cls)
 
         # Check if enable_nfs_ganesha is set in config file
@@ -74,11 +70,37 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
         cls.vips_in_nfs_ganesha_cluster = (
             cls.vips[:cls.num_of_nfs_ganesha_nodes])
 
-        # Create nfs ganesha cluster if not exists already
-        if (is_nfs_ganesha_cluster_exists(
-         cls.servers_in_nfs_ganesha_cluster[0])):
-            if is_nfs_ganesha_cluster_in_healthy_state(
-             cls.servers_in_nfs_ganesha_cluster[0]):
+        # Obtain hostname of servers in ganesha cluster
+        cls.ganesha_servers_hostname = []
+        for ganesha_server in cls.servers_in_nfs_ganesha_cluster:
+            ret, hostname, _ = g.run(ganesha_server, "hostname")
+            if ret:
+                raise ExecutionError("Failed to obtain hostname of %s"
+                                     % ganesha_server)
+            hostname = hostname.strip()
+            g.log.info("Obtained hostname: IP- %s, hostname- %s",
+                       ganesha_server, hostname)
+            cls.ganesha_servers_hostname.append(hostname)
+
+    @classmethod
+    def setup_nfs_ganesha(cls):
+        """
+        Create nfs-ganesha cluster if not exists
+        Set client configurations for nfs-ganesha
+
+        Returns:
+            True(bool): If setup is successful
+            False(bool): If setup is failure
+        """
+        # pylint: disable = too-many-statements, too-many-branches
+        # pylint: disable = too-many-return-statements
+        cluster_exists = is_nfs_ganesha_cluster_exists(
+            cls.servers_in_nfs_ganesha_cluster[0])
+        if cluster_exists:
+            is_healthy = is_nfs_ganesha_cluster_in_healthy_state(
+                cls.servers_in_nfs_ganesha_cluster[0])
+
+            if is_healthy:
                 g.log.info("Nfs-ganesha Cluster exists and is in healthy "
                            "state. Skipping cluster creation...")
             else:
@@ -93,16 +115,17 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
                            "nfs ganesha cluster")
                 conn = g.rpyc_get_connection(
                     cls.servers_in_nfs_ganesha_cluster[0], user="root")
-                if conn is None:
+                if not conn:
                     tmp_node = cls.servers_in_nfs_ganesha_cluster[0]
-                    raise ExecutionError("Unable to get connection to 'root' "
-                                         " of node %s "
-                                         % tmp_node)
+                    g.log.error("Unable to get connection to 'root' of node"
+                                " %s", tmp_node)
+                    return False
+
                 if not conn.modules.os.path.exists(ganesha_ha_file):
-                    raise ExecutionError("Unable to locate %s"
-                                         % ganesha_ha_file)
-                with conn.builtin.open(ganesha_ha_file, "r") as fh:
-                    ganesha_ha_contents = fh.read()
+                    g.log.error("Unable to locate %s", ganesha_ha_file)
+                    return False
+                with conn.builtin.open(ganesha_ha_file, "r") as fhand:
+                    ganesha_ha_contents = fhand.read()
                 g.rpyc_close_connection(
                     host=cls.servers_in_nfs_ganesha_cluster[0], user="root")
                 servers_in_existing_cluster = re.findall(r'VIP_(.*)\=.*',
@@ -111,45 +134,43 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
                 ret = teardown_nfs_ganesha_cluster(
                     servers_in_existing_cluster, force=True)
                 if not ret:
-                    raise ExecutionError("Failed to teardown nfs "
-                                         "ganesha cluster")
-                g.log.info("Existing cluster got teardown successfully")
-                g.log.info("Creating nfs-ganesha cluster of %s nodes"
-                           % str(cls.num_of_nfs_ganesha_nodes))
-                g.log.info("Nfs-ganesha cluster node info: %s"
-                           % cls.servers_in_nfs_ganesha_cluster)
-                g.log.info("Nfs-ganesha cluster vip info: %s"
-                           % cls.vips_in_nfs_ganesha_cluster)
-                ret = create_nfs_ganesha_cluster(
-                    cls.servers_in_nfs_ganesha_cluster,
-                    cls.vips_in_nfs_ganesha_cluster)
-                if not ret:
-                    raise ExecutionError("Failed to create "
-                                         "nfs-ganesha cluster")
-        else:
+                    g.log.error("Failed to teardown unhealthy ganesha "
+                                "cluster")
+                    return False
+
+                g.log.info("Existing unhealthy cluster got teardown "
+                           "successfully")
+
+        if (not cluster_exists) or (not is_healthy):
             g.log.info("Creating nfs-ganesha cluster of %s nodes"
                        % str(cls.num_of_nfs_ganesha_nodes))
             g.log.info("Nfs-ganesha cluster node info: %s"
                        % cls.servers_in_nfs_ganesha_cluster)
             g.log.info("Nfs-ganesha cluster vip info: %s"
                        % cls.vips_in_nfs_ganesha_cluster)
+
             ret = create_nfs_ganesha_cluster(
-                cls.servers_in_nfs_ganesha_cluster,
+                cls.ganesha_servers_hostname,
                 cls.vips_in_nfs_ganesha_cluster)
             if not ret:
-                raise ExecutionError("Failed to create "
-                                     "nfs-ganesha cluster")
+                g.log.error("Creation of nfs-ganesha cluster failed")
+                return False
 
-        if is_nfs_ganesha_cluster_in_healthy_state(
-         cls.servers_in_nfs_ganesha_cluster[0]):
-            g.log.info("Nfs-ganesha Cluster exists is in healthy state")
-        else:
-            raise ExecutionError("Nfs-ganesha Cluster setup Failed")
+        if not is_nfs_ganesha_cluster_in_healthy_state(
+                cls.servers_in_nfs_ganesha_cluster[0]):
+            g.log.error("Nfs-ganesha cluster is not healthy")
+            return False
+        g.log.info("Nfs-ganesha Cluster exists is in healthy state")
 
-        ret = set_nfs_ganesha_client_configuration(cls.clients)
+        ret = configure_ports_on_clients(cls.clients)
         if not ret:
-            raise ExecutionError("Failed to do client nfs ganesha "
-                                 "configuration")
+            g.log.error("Failed to configure ports on clients")
+            return False
+
+        ret = ganesha_client_firewall_settings(cls.clients)
+        if not ret:
+            g.log.error("Failed to do firewall setting in clients")
+            return False
 
         for server in cls.servers:
             for client in cls.clients:
@@ -172,16 +193,7 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
                     g.log.error("Failed to add entry of server %s in "
                                 "/etc/hosts of client %s"
                                 % (server, client))
-
-    def setUp(self):
-        """setUp required for tests
-        """
-        GlusterBaseClass.setUp.im_func(self)
-
-    def tearDown(self):
-        """tearDown required for tests
-        """
-        GlusterBaseClass.tearDown.im_func(self)
+        return True
 
     @classmethod
     def tearDownClass(cls, delete_nfs_ganesha_cluster=True):
@@ -213,6 +225,7 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
         """Setup volume exports volume with nfs-ganesha,
             mounts the volume.
         """
+        # pylint: disable=too-many-branches
         NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
 
         # Peer probe servers
@@ -227,12 +240,12 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
 
         for server in cls.servers:
             mount_info = [
-                          {'protocol': 'glusterfs',
-                           'mountpoint': '/run/gluster/shared_storage',
-                           'server': server,
-                           'client': {'host': server},
-                           'volname': 'gluster_shared_storage',
-                           'options': ''}]
+                {'protocol': 'glusterfs',
+                 'mountpoint': '/run/gluster/shared_storage',
+                 'server': server,
+                 'client': {'host': server},
+                 'volname': 'gluster_shared_storage',
+                 'options': ''}]
 
             mount_obj = create_mount_objs(mount_info)
             if not mount_obj[0].is_mounted():
@@ -248,7 +261,7 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
         # Setup Volume
         ret = setup_volume(mnode=cls.mnode,
                            all_servers_info=cls.all_servers_info,
-                           volume_config=cls.volume, force=True)
+                           volume_config=cls.volume)
         if not ret:
             raise ExecutionError("Setup volume %s failed", cls.volume)
         time.sleep(10)
@@ -260,7 +273,7 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
             raise ExecutionError("Failed to get ganesha.enable volume option "
                                  "for %s " % cls.volume)
         if vol_option['ganesha.enable'] != 'on':
-            ret, out, err = export_nfs_ganesha_volume(
+            ret, _, _ = export_nfs_ganesha_volume(
                 mnode=cls.mnode, volname=cls.volname)
             if ret != 0:
                 raise ExecutionError("Failed to export volume %s "
@@ -303,7 +316,7 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
                       teardown_nfs_ganesha_cluster=True):
         """Teardown the export, mounts and volume.
         """
-
+        # pylint: disable=too-many-branches
         # Unmount volume
         if umount_vol:
             _rc = True
@@ -334,7 +347,7 @@ class NfsGaneshaVolumeBaseClass(NfsGaneshaClusterSetupClass):
                                          " option for %s " % cls.volume)
                 if vol_option['ganesha.enable'] != 'off':
                     if is_volume_exported(cls.mnode, cls.volname, "nfs"):
-                        ret, out, err = unexport_nfs_ganesha_volume(
+                        ret, _, _ = unexport_nfs_ganesha_volume(
                             mnode=cls.mnode, volname=cls.volname)
                         if ret != 0:
                             raise ExecutionError("Failed to unexport volume %s"
@@ -459,7 +472,7 @@ def wait_for_nfs_ganesha_volume_to_get_exported(mnode, volname, timeout=120):
     """
     count = 0
     flag = 0
-    while (count < timeout):
+    while count < timeout:
         if is_volume_exported(mnode, volname, "nfs"):
             flag = 1
             break
@@ -492,7 +505,7 @@ def wait_for_nfs_ganesha_volume_to_get_unexported(mnode, volname, timeout=120):
     """
     count = 0
     flag = 0
-    while (count < timeout):
+    while count < timeout:
         if not is_volume_exported(mnode, volname, "nfs"):
             flag = 1
             break
