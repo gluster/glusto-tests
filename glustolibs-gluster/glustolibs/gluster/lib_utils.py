@@ -397,7 +397,8 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
     for key, value in list(dict1.items()):
         if key in dict2:
             unused_bricks = list(set(value) - set(dict2[key]))
-            servers_unused_bricks_dict[key] = unused_bricks
+            if unused_bricks:
+                servers_unused_bricks_dict[key] = unused_bricks
         else:
             servers_unused_bricks_dict[key] = value
 
