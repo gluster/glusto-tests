@@ -69,10 +69,20 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
+        # Setting quorum ratio to 51%
+        ret = set_volume_options(self.mnode, 'all',
+                                 {'cluster.server-quorum-ratio': '51%'})
+        if not ret:
+            raise ExecutionError("Failed to set server quorum ratio on %s"
+                                 % self.volname)
+        g.log.info("Able to set server quorum ratio successfully on %s",
+                   self.servers)
+
         GlusterBaseClass.tearDown.im_func(self)
 
     def test_add_brick_when_quorum_not_met(self):
 
+        # pylint: disable=too-many-statements
         # create and start a volume
         ret = setup_volume(self.mnode, self.all_servers_info, self.volume)
         self.assertTrue(ret, ("Failed to create "
@@ -155,3 +165,11 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
             self.assertTrue(ret, ("Unexpected: add brick is success, "
                                   "when quorum is not met"))
         g.log.info("Add brick is failed as expected, when quorum is not met")
+
+        # set cluster.server-quorum-type as none
+        ret = set_volume_options(self.mnode, self.volname,
+                                 {'cluster.server-quorum-type': 'none'})
+        self.assertTrue(ret, ("Failed to set the quorum type as a server"
+                              " on volume %s", self.volname))
+        g.log.info("Able to set server quorum successfully on volume %s",
+                   self.volname)

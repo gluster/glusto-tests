@@ -26,8 +26,10 @@ from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
-from glustolibs.gluster.volume_ops import volume_stop, volume_create
-from glustolibs.gluster.volume_libs import volume_exists
+from glustolibs.gluster.volume_ops import (volume_stop, volume_create,
+                                           get_volume_list)
+from glustolibs.gluster.volume_libs import (cleanup_volume, setup_volume)
+from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -51,30 +53,20 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
 
-    def setUp(self):
-        """
-        setUp method for every test
-        """
-        # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
-
-        # Creating Volume
-        ret = self.setup_volume()
-        if not ret:
-            raise ExecutionError("Volume creation failed: %s" % self.volname)
-        g.log.info("Volme created successfully : %s", self.volname)
-
     def tearDown(self):
         """
         tearDown for every test
         """
-        ret = volume_exists(self.mnode, self.volname)
-        if ret:
-            # stopping the volume and Cleaning up the volume
-            ret = self.cleanup_volume()
+        # clean up all volumes
+        vol_list = get_volume_list(self.mnode)
+        if vol_list is None:
+            raise ExecutionError("Failed to get the volume list")
+
+        for volume in vol_list:
+            ret = cleanup_volume(self.mnode, volume)
             if not ret:
-                raise ExecutionError("Failed Cleanup the Volume %s"
-                                     % self.volname)
+                raise ExecutionError("Unable to delete volume % s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
 
         # Cleaning the deleted volume bricks
         for brick in self.brick_list:
@@ -99,6 +91,12 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         -> Create another volume using bricks of deleted volume
         '''
 
+        # Create and start a volume
+        self.volume['name'] = "test_create_vol_with_fresh_bricks"
+        self.volname = "test_create_vol_with_fresh_bricks"
+        ret = setup_volume(self.mnode, self.all_servers_info, self.volume)
+        self.assertTrue(ret, "Failed to create and start volume")
+
         # Forming brick list
         brick_list = form_bricks_list(self.mnode, self.volname, 6,
                                       self.servers, self.all_servers_info)
@@ -108,9 +106,12 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
                          % self.volname)
         g.log.info("Bricks added successfully to the volume %s", self.volname)
 
-        # Mounting volume
-        ret = self.mount_volume(self.mounts)
-        self.assertTrue(ret, "Volume mount failed for %s" % self.volname)
+        # Mounting the volume.
+        ret, _, _ = mount_volume(self.volname, mtype=self.mount_type,
+                                 mpoint=self.mounts[0].mountpoint,
+                                 mserver=self.mnode,
+                                 mclient=self.mounts[0].client_system)
+        self.assertEqual(ret, 0, ("Volume %s is not mounted") % self.volname)
         g.log.info("Volume mounted successfully : %s", self.volname)
 
         # run IOs
@@ -139,10 +140,11 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
             "IO failed on some of the clients"
         )
 
-        # Unmount volume
-        ret = self.unmount_volume(self.mounts)
-        self.assertTrue(ret, "Failed to unmount the volume %s" % self.volname)
-        g.log.info("Volume unmounted successfully %s", self.volname)
+        # Unmouting the volume.
+        ret, _, _ = umount_volume(mclient=self.mounts[0].client_system,
+                                  mpoint=self.mounts[0].mountpoint)
+        self.assertEqual(ret, 0, ("Volume %s is not unmounted") % self.volname)
+        g.log.info("Volume unmounted successfully : %s", self.volname)
 
         # Getting brick list
         self.brick_list = get_all_bricks(self.mnode, self.volname)
@@ -163,7 +165,7 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         g.log.info("Volume deleted successfully %s", self.volname)
 
         # Create another volume by using bricks of deleted volume
-        self.volname = "second_volume"
+        self.volname = "test_create_vol_used_bricks"
         ret, _, err = volume_create(self.mnode, self.volname, brick_list[0:6],
                                     replica_count=3)
         self.assertNotEqual(ret, 0, "Volume creation should fail with used "
@@ -171,7 +173,7 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         g.log.info("Failed to create volume with used bricks")
 
         # Checking failed message of volume creation
-        msg = ' '.join(['volume create: second_volume: failed:',
+        msg = ' '.join(['volume create: test_create_vol_used_bricks: failed:',
                         brick_list[0].split(':')[1],
                         'is already part of a volume'])
         self.assertIn(msg, err, "Incorrect error message for volume creation "
