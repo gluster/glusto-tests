@@ -43,6 +43,15 @@ class TestPeerProbe(GlusterBaseClass):
 
     def tearDown(self):
 
+        # clean up all volumes and detaches peers from cluster
+        vol_list = get_volume_list(self.mnode)
+        for volume in vol_list:
+            ret = cleanup_volume(self.mnode, volume)
+            if not ret:
+                raise ExecutionError("Failed to Cleanup the "
+                                     "Volume %s" % volume)
+            g.log.info("Volume deleted successfully : %s", volume)
+
         # Peer probe detached servers
         pool = nodes_from_pool_list(self.mnode)
         for node in pool:
@@ -54,20 +63,11 @@ class TestPeerProbe(GlusterBaseClass):
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
 
-        # clean up all volumes and detaches peers from cluster
-
-        vol_list = get_volume_list(self.mnode)
-        for volume in vol_list:
-            ret = cleanup_volume(self.mnode, volume)
-            if not ret:
-                raise ExecutionError("Failed to Cleanup the "
-                                     "Volume %s" % volume)
-            g.log.info("Volume deleted successfully : %s", volume)
-
         # Calling GlusterBaseClass tearDown
         GlusterBaseClass.tearDown.im_func(self)
 
     def test_peer_probe_validation(self):
+        # pylint: disable=too-many-statements
         '''
         -> Create trusted storage pool, by probing with networkshort names
         -> Create volume using IP of host
@@ -89,6 +89,15 @@ class TestPeerProbe(GlusterBaseClass):
             self.assertEqual(ret, 0, ("Unable to get short name "
                                       "for server % s" % server))
             ret, _, _ = peer_probe(self.mnode, hostname)
+
+            if ret == 1:
+                ret, hostname, _ = g.run(server, "hostname")
+                self.assertEqual(ret, 0, ("Unable to get short name "
+                                          "for server % s" % server))
+
+                hostname = hostname.split(".")[0]+"."+hostname.split(".")[1]
+                ret, _, _ = peer_probe(self.mnode, hostname)
+
             self.assertEqual(ret, 0, "Unable to peer"
                              "probe to the server % s" % hostname)
             g.log.info("Peer probe succeeded for server %s", hostname)
