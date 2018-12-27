@@ -100,6 +100,16 @@ class TestQuorumRelatedMessagesInSyslog(GlusterBaseClass):
         if peers_not_connected:
             raise ExecutionError("Servers are not in peer probed state")
 
+        # Reverting back the quorum ratio to 51%
+        self.quorum_perecent = {'cluster.server-quorum-ratio': '51%'}
+        ret = set_volume_options(self.mnode, 'all', self.quorum_perecent)
+        if not ret:
+            raise ExecutionError(ret, "gluster volume set all cluster"
+                                 ".server-quorum- ratio percentage Failed"
+                                 " :%s" % self.servers)
+        g.log.info("gluster volume set all cluster.server-quorum-ratio 51"
+                   "percentage enabled successfully :%s", self.servers)
+
         # stopping the volume and Cleaning up the volume
         for volume in self.volume_list:
             ret = cleanup_volume(self.mnode, volume)
@@ -283,7 +293,6 @@ class TestQuorumRelatedMessagesInSyslog(GlusterBaseClass):
                                         "messages in :%s" % self.log_messages)
         g.log.info("regain messages recorded for two volumes successfully "
                    "after glusterd services start in :%s", self.log_messages)
-
         # Finding quorum regain message-id count difference between before
         # and after glusterd services start in /var/log/glusterfs/glusterd.log
         count_diff = (int(after_glusterd_start_glusterd_id_count) -
