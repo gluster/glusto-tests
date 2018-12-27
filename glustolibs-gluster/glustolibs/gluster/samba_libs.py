@@ -244,6 +244,14 @@ def share_volume_over_smb(mnode, volname, smb_users_info):
     """
     g.log.info("Start sharing the volume over SMB")
 
+    # Set volume option 'user.cifs' to 'on'.
+    cmd = "gluster volume set %s user.cifs on" % volname
+    ret, _, _ = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to set the volume option user.cifs on")
+        return False
+    g.log.info("Successfully set 'user.cifs' to 'on' on %s", volname)
+
     # Set volume option 'stat-prefetch' to 'on'.
     cmd = "gluster volume set %s stat-prefetch on" % volname
     ret, _, _ = g.run(mnode, cmd)
