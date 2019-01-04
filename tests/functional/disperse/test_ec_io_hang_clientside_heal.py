@@ -64,7 +64,7 @@ class EcClientHealHangTest(GlusterBaseClass):
         g.log.info("Successful in Setup Volume and Mount Volume")
 
     # Test Case
-    def test_heal_io_hang(self):
+    def test_heal_client_io_hang(self):
         mountpoint = self.mounts[0].mountpoint
 
         # disable server side heal
