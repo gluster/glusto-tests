@@ -29,8 +29,7 @@ from glustolibs.gluster.volume_libs import (
 from glustolibs.gluster.heal_libs import monitor_heal_completion
 
 
-@runs_on([['replicated', 'distributed-replicated',
-           'dispersed', 'distributed-dispersed'],
+@runs_on([['replicated', 'distributed-replicated'],
           ['glusterfs']])
 class SubdirWithReplaceBrick(GlusterBaseClass):
     """
