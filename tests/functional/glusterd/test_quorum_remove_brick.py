@@ -71,6 +71,15 @@ class TestServerQuorumNotMet(GlusterBaseClass):
             raise ExecutionError("Servers are not in peer probed state")
         g.log.info("All peers are in connected state")
 
+        # Setting server-quorum-ratio to 51%
+        ret = set_volume_options(self.mnode, 'all',
+                                 {'cluster.server-quorum-ratio': '51%'})
+        if not ret:
+            raise ExecutionError("Failed to set server quorum ratio for %s"
+                                 % self.servers)
+        g.log.info("Able to set server quorum ratio successfully for %s",
+                   self.servers)
+
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
