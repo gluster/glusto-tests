@@ -40,6 +40,14 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
 
     def tearDown(self):
 
+        # Setting Quorum ratio to 51%
+        self.quorum_perecent = {'cluster.server-quorum-ratio': '51%'}
+        ret = set_volume_options(self.mnode, 'all', self.quorum_perecent)
+        self.assertTrue(ret, "gluster volume set all cluster.server-quorum-rat"
+                             "io percentage Failed :%s" % self.servers)
+        g.log.info("gluster volume set all cluster.server-quorum-ratio 51 "
+                   "percentage enabled successfully on :%s", self.servers)
+
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
