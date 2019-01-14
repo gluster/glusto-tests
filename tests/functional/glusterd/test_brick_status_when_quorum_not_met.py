@@ -22,7 +22,7 @@ from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.volume_ops import set_volume_options, volume_reset
+from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
                                              is_glusterd_running)
 from glustolibs.gluster.brick_libs import (are_bricks_offline,
@@ -68,11 +68,13 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Servers are not in peer probed state")
 
-        # reset quorum ratio to default
-        g.log.info("resetting quorum ratio")
-        ret, _, _ = volume_reset(self.mnode, 'all')
-        self.assertEqual(ret, 0, "Failed to reset quorum ratio")
-        g.log.info("Successfully resetted quorum ratio")
+        # Setting quorum ratio to 51%
+        ret = set_volume_options(self.mnode, 'all',
+                                 {'cluster.server-quorum-ratio': '51%'})
+        self.assertTrue(ret, "Failed to set quorum ratio to 51 percentage on "
+                             "servers %s" % self.servers)
+        g.log.info("Able to set server quorum ratio to 51 percentage "
+                   "on servers %s", self.servers)
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
