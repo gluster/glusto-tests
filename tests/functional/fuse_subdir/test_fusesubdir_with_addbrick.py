@@ -219,10 +219,10 @@ class SubdirWithAddBrick(GlusterBaseClass):
         # Unmount sub-directories from client
         # Test needs to continue if  unmount fail.Not asserting here.
         ret = self.unmount_volume(self.subdir_mounts)
-        if ret == 0:
+        if ret:
             g.log.info("Successfully unmounted all the subdirectories")
         else:
-            g.log.error(ret, "Failed to unmount sub-directories")
+            g.log.error("Failed to unmount sub-directories")
 
         # cleanup-volume
         ret = self.cleanup_volume()
