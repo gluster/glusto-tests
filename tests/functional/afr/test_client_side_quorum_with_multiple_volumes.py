@@ -31,7 +31,7 @@ from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            get_all_bricks,
                                            are_bricks_offline)
 from glustolibs.io.utils import (validate_io_procs,
-                                 is_io_procs_fail_with_rofs,
+                                 is_io_procs_fail_with_error,
                                  list_all_files_and_dirs_mounts,
                                  wait_for_io_to_complete)
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
@@ -358,8 +358,9 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
 
                 # Validate IO
                 g.log.info("Validating if IO failed with read-only filesystem")
-                ret, _ = is_io_procs_fail_with_rofs(self, all_mounts_procs,
-                                                    self.mounts)
+                ret, _ = is_io_procs_fail_with_error(self, all_mounts_procs,
+                                                     self.mounts,
+                                                     self.mount_type)
                 self.assertTrue(ret, ("Unexpected error and IO successful"
                                       " on read-only filesystem"))
                 g.log.info("EXPECTED: "
