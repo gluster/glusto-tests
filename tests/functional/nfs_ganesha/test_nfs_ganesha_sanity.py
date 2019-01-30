@@ -69,16 +69,16 @@ class TestNfsGaneshaSanity(NfsGaneshaVolumeBaseClass):
         # Running kernel untar now,single loop for the sanity test
         g.log.info("Running kernel untars now")
         for mount_obj in self.mounts:
-                cmd = ("cd %s ;mkdir $(hostname);cd $(hostname);"
-                       "wget https://www.kernel.org/pub/linux/kernel/v2.6"
-                       "/linux-2.6.1.tar.gz;"
-                       "tar xvf linux-2.6.1.tar.gz" % (mount_obj.mountpoint))
-                ret, out, err = g.run(mount_obj.client_system, cmd)
-                if ret == 0:
-                    g.log.info("Successfully untared the tarball!")
-                else:
-                    g.log.error("ERROR ! Kernel untar errored out!")
-                    self.assertEqual(ret, 0, "Kernel untar failed!")
+            cmd = ("cd %s ;mkdir $(hostname);cd $(hostname);"
+                   "wget https://www.kernel.org/pub/linux/kernel/v2.6"
+                   "/linux-2.6.1.tar.gz;"
+                   "tar xvf linux-2.6.1.tar.gz" % mount_obj.mountpoint)
+            ret, out, err = g.run(mount_obj.client_system, cmd)
+            if ret == 0:
+                g.log.info("Successfully untared the tarball!")
+            else:
+                g.log.error("ERROR ! Kernel untar errored out!")
+                self.assertEqual(ret, 0, "Kernel untar failed!")
 
         # Check for crashes after kernel untar
         g.log.info("Checking for Cluster Status after kernel untar")

@@ -48,7 +48,7 @@ def is_root(path):
     Returns:
         True if path is '/' , False otherwise
     """
-    if os.path.realpath(os.path.abspath(path)) is '/':
+    if os.path.realpath(os.path.abspath(path)) == '/':
         print ("Directory '%s' is the root of filesystem. "
                "Not performing any operations on the root of filesystem" %
                os.path.abspath(path))

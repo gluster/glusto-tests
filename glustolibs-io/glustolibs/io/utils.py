@@ -317,7 +317,7 @@ def cleanup_mounts(mounts):
                    mount_obj.mountpoint)
         if (not mount_obj.mountpoint or
                 (os.path.realpath(os.path.abspath(mount_obj.mountpoint))
-                 is '/')):
+                 == '/')):
             g.log.error("%s on %s is not a valid mount point",
                         mount_obj.mountpoint, mount_obj.client_system)
             continue

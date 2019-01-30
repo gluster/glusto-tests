@@ -142,7 +142,7 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
 
         if is_nfs_ganesha_cluster_in_healthy_state(
          cls.servers_in_nfs_ganesha_cluster[0]):
-                g.log.info("Nfs-ganesha Cluster exists is in healthy state")
+            g.log.info("Nfs-ganesha Cluster exists is in healthy state")
         else:
             raise ExecutionError("Nfs-ganesha Cluster setup Failed")
 
