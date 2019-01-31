@@ -192,10 +192,10 @@ class SubdirWithAddBrick(GlusterBaseClass):
 
         # Wait for rebalance to complete
         g.log.info("Waiting for rebalance to complete")
-        ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
-        self.assertTrue(ret, "Rebalance did not start "
-                             "despite waiting for 5 mins")
-        g.log.info("Rebalance is successfully complete on the volume %s",
+        ret = wait_for_rebalance_to_complete(self.mnode, self.volname, 600)
+        self.assertTrue(ret, "Rebalance did not complete "
+                             "despite waiting for 10 minutes")
+        g.log.info("Rebalance successfully completed on the volume %s",
                    self.volname)
 
         # Again validate if subdirectories are still mounted post add-brick
