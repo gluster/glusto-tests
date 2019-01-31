@@ -171,7 +171,7 @@ class SubdirWithRemoveBrick(GlusterBaseClass):
 
         # Perform remove brick operation when subdir is mounted on client
         g.log.info("Start removing bricks from volume")
-        ret = shrink_volume(self.mnode, self.volname)
+        ret = shrink_volume(self.mnode, self.volname, rebalance_timeout=600)
         self.assertTrue(ret, ("Remove brick operation failed on "
                               "%s", self.volname))
         g.log.info("Remove brick operation is successful on "
