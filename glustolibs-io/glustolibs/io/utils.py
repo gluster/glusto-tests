@@ -629,6 +629,7 @@ def is_io_procs_fail_with_rofs(self, all_mounts_procs, mounts):
             g.log.error("IO Successful on Read-only file system %s:%s",
                         self.mounts[i].client_system,
                         self.mounts[i].mountpoint)
+            io_results[proc] = False
     ret = all(io_results.values())
 
     return ret, io_results
@@ -693,6 +694,7 @@ def is_io_procs_fail_with_error(self, all_mounts_procs, mounts, mount_type):
             g.log.error("IO Successful on not connected mountpoint %s:%s",
                         self.mounts[i].client_system,
                         self.mounts[i].mountpoint)
+            io_results[proc] = False
     ret = all(io_results.values())
 
     return ret, io_results
