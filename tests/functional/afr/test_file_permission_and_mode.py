@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2019  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,34 +27,44 @@ class FileModeAndPermissionsTest(GlusterBaseClass):
     """
      Description:
     """
+
     @classmethod
-    def setUpClass(cls):
+    def create_user(cls, host, user):
+        """
+        Creates a user on a host
+        """
+        g.log.info("Creating user '%s' for %s...", user, host)
+        command = "useradd %s" % user
+        _, _, err = g.run(host, command)
 
-        GlusterBaseClass.setUpClass.im_func(cls)
+        if 'already exists' in err:
+            g.log.warn("User '%s' is already exists on %s", user, host)
+        else:
+            g.log.info("User '%s' is created successfully on %s", user, host)
 
-        # Override Volumes
-        if cls.volume_type == "replicated":
-            # Define 1x3 replicated volume
-            cls.volume['voltype'] = {
-                'type': 'replicated',
-                'replica_count': 3,
-                'transport': 'tcp'}
+    @classmethod
+    def delete_user(cls, host, user):
+        """
+        Deletes a user on a host
+        """
+        g.log.info('Deleting user %s from %s...', user, host)
+        command = "userdel -r %s" % user
+        _, _, err = g.run(host, command)
+
+        if 'does not exist' in err:
+            g.log.warn('User %s is already deleted on %s', user, host)
+        else:
+            g.log.info('User %s successfully deleted on %s', user, host)
 
     def setUp(self):
         GlusterBaseClass.setUp.im_func(self)
 
+        # Create user qa
         for mount_object in self.mounts:
-            # Create user qa
-            g.log.info("Creating user 'qa'...")
-            command = "useradd qa"
-            ret, _, err = g.run(mount_object.client_system, command)
+            self.create_user(mount_object.client_system, 'qa')
 
-            if 'already exists' in err:
-                g.log.warn("User 'qa' is already exists")
-            else:
-                g.log.info("User 'qa' is created successfully")
-
-        g.log.info("Starting to Setup Volume %s", self.volname)
+        for server in self.servers:
+            self.create_user(server, 'qa')
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -67,17 +77,17 @@ class FileModeAndPermissionsTest(GlusterBaseClass):
         self.assertIsNotNone(self.bricks_list, "unable to get list of bricks")
 
     def tearDown(self):
-        # Deleting the user which was created in setUp
-        for mount_object in self.mounts:
-            # Delete user
-            g.log.info('Deleting user qa...')
-            command = "userdel -r qa"
-            ret, _, err = g.run(mount_object.client_system, command)
+        """
+        Cleanup and umount volume
+        """
 
-            if 'does not exist' in err:
-                g.log.warn('User qa is already deleted')
-            else:
-                g.log.info('User qa successfully deleted')
+        # Delete user
+        for mount_object in self.mounts:
+            self.delete_user(mount_object.client_system, 'qa')
+
+        for server in self.servers:
+            self.delete_user(server, 'qa')
+
         # Cleanup and umount volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
@@ -89,29 +99,46 @@ class FileModeAndPermissionsTest(GlusterBaseClass):
         GlusterBaseClass.tearDown.im_func(self)
 
     def test_file_permissions(self):
+        """
+        Description:
+        - create file file.txt on mountpoint
+        - change uid, gid and permission from client
+        - check uid, gid and permission on client and all servers
+        """
+
         # create file
-        fpath = self.mounts[0].mountpoint + "/file.txt"
-        cmd = ("echo 'hello_world' > %s" % fpath)
+        cmd = ("dd if=/dev/urandom of=%s/file.txt bs=1M count=1"
+               % self.mounts[0].mountpoint)
         ret, _, _ = g.run(self.clients[0], cmd)
         self.assertEqual(ret, 0, "File creation failed")
 
-        # check file is created on all bricks
-        for brick in self.bricks_list:
-            node, path = brick.split(':')
-            filepath = path + "/file.txt"
+        # Adding servers and client in single dict to check permissions
+        nodes_to_check = {}
+        all_bricks = get_all_bricks(self.mnode, self.volname)
+        for brick in all_bricks:
+            node, brick_path = brick.split(':')
+            nodes_to_check[node] = brick_path
+        nodes_to_check[self.mounts[0].client_system] = \
+            self.mounts[0].mountpoint
+
+        # check file is created on all bricks and client
+        for node in nodes_to_check:
+            filepath = nodes_to_check[node] + "/file.txt"
             stat_dict = get_file_stat(node, filepath)
             self.assertIsNotNone(stat_dict, "stat on %s failed" % filepath)
-            self.assertEqual(stat_dict['filetype'], 'regular file', "Expected"
-                             " symlink but found %s" % stat_dict['filetype'])
+            self.assertEqual(stat_dict['filetype'], 'regular file',
+                             "Expected regular file but found %s"
+                             % stat_dict['filetype'])
 
         # get file stat info from client
+        fpath = self.mounts[0].mountpoint + "/file.txt"
         stat_dict = get_file_stat(self.clients[0], fpath)
         self.assertIsNotNone(stat_dict, "stat on %s failed" % fpath)
         self.assertEqual(stat_dict['uid'], '0', "Expected uid 0 but found %s"
                          % stat_dict['uid'])
         self.assertEqual(stat_dict['gid'], '0', "Expected gid 0 but found %s"
                          % stat_dict['gid'])
-        self.assertEqual(stat_dict['access'], '644', "Expected permission 644 "
+        self.assertEqual(stat_dict['access'], '644', "Expected permission 644"
                          " but found %s" % stat_dict['access'])
 
         # change uid, gid and permission from client
@@ -127,25 +154,17 @@ class FileModeAndPermissionsTest(GlusterBaseClass):
         ret, _, _ = g.run(self.clients[0], cmd)
         self.assertEqual(ret, 0, "chown failed")
 
-        # Verify that the changes are successful on client
-        stat_dict = get_file_stat(self.clients[0], fpath)
-        self.assertIsNotNone(stat_dict, "stat on %s failed" % fpath)
-        self.assertEqual(stat_dict['uid'], '1000', "Expected uid 1000 (qa) but"
-                         " found %s" % stat_dict['uid'])
-        self.assertEqual(stat_dict['gid'], '1000', "Expected gid 1000 (qa) but"
-                         " found %s" % stat_dict['gid'])
-        self.assertEqual(stat_dict['access'], '777', "Expected permission 777 "
-                         " but found %s" % stat_dict['access'])
-
-        # Verify that the changes are successful on bricks as well
-        for brick in self.bricks_list:
-            node, path = brick.split(':')
-            filepath = path + "/file.txt"
+        # Verify that the changes are successful on bricks and client
+        for node in nodes_to_check:
+            filepath = nodes_to_check[node] + "/file.txt"
             stat_dict = get_file_stat(node, filepath)
             self.assertIsNotNone(stat_dict, "stat on %s failed" % fpath)
-            self.assertEqual(stat_dict['uid'], '1000', "Expected uid 1000 (qa)"
-                             " but found %s" % stat_dict['uid'])
-            self.assertEqual(stat_dict['gid'], '1000', "Expected gid 1000 (qa)"
-                             " but found %s" % stat_dict['gid'])
-            self.assertEqual(stat_dict['access'], '777', "Expected permission"
-                             " 777  but found %s" % stat_dict['access'])
+            self.assertEqual(stat_dict['username'], 'qa',
+                             "Expected qa but found %s"
+                             % stat_dict['username'])
+            self.assertEqual(stat_dict['groupname'], 'qa',
+                             "Expected gid qa but found %s"
+                             % stat_dict['groupname'])
+            self.assertEqual(stat_dict['access'], '777',
+                             "Expected permission 777  but found %s"
+                             % stat_dict['access'])
