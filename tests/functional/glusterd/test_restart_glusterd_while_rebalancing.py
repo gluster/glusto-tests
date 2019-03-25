@@ -30,6 +30,8 @@ from glustolibs.gluster.gluster_init import (restart_glusterd,
                                              is_glusterd_running)
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.misc.misc_libs import upload_scripts
+from glustolibs.gluster.glusterdir import get_dir_contents
+from glustolibs.gluster.lib_utils import get_servers_bricks_dict
 
 
 @runs_on([['distributed', 'replicated', 'distributed-replicated',
@@ -58,6 +60,20 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
         """
         setUp method for every test
         """
+
+        bricks = get_servers_bricks_dict(self.servers,
+                                         self.all_servers_info)
+
+        # Checking brick dir and cleaning it.
+        for server in self.servers:
+            for brick in bricks[server]:
+                if get_dir_contents(server, brick):
+                    cmd = "rm -rf " + brick + "/*"
+                    ret, _, _ = g.run(server, cmd)
+                    if ret:
+                        raise ExecutionError("Failed to delete the brick "
+                                             "dirs of deleted volume.")
+
         # Creating Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
         if not ret:
@@ -131,11 +147,11 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
         )
 
         # Forming brick list
-        brick_list = form_bricks_list_to_add_brick(
+        self.brick_list = form_bricks_list_to_add_brick(
             self.mnode, self.volname, self.servers, self.all_servers_info)
 
         # Adding Bricks
-        ret, _, _ = add_brick(self.mnode, self.volname, brick_list)
+        ret, _, _ = add_brick(self.mnode, self.volname, self.brick_list)
         self.assertEqual(ret, 0, "Failed to add brick to the volume %s"
                          % self.volname)
         g.log.info("Brick added successfully to the volume %s", self.volname)
