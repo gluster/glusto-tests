@@ -14,6 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
@@ -22,6 +23,7 @@ from glustolibs.gluster.volume_ops import (volume_create, volume_start,
 from glustolibs.gluster.volume_libs import (cleanup_volume)
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
                                          peer_probe_servers,
+                                         is_peer_connected,
                                          nodes_from_pool_list)
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.exceptions import ExecutionError
@@ -164,6 +166,17 @@ class TestPeerProbe(GlusterBaseClass):
         g.log.info("peer probe is success from %s to "
                    "%s", self.servers[0], self.servers[1])
 
+        # Checking if peer is connected
+        counter = 0
+        while counter < 30:
+            ret = is_peer_connected(self.servers[0], self.servers[1])
+            counter += 1
+            if ret:
+                break
+            sleep(3)
+        self.assertTrue(ret, "Peer is not in connected state.")
+        g.log.info("Peers is in connected state.")
+
         # Perform peer probe from N3 to N2 should fail
         ret, _, _ = peer_probe(self.servers[2], self.servers[1])
         self.assertNotEqual(ret, 0, (
@@ -204,6 +217,17 @@ class TestPeerProbe(GlusterBaseClass):
                      "failed", self.servers[0], self.servers[2]))
         g.log.info("peer probe is success from %s to "
                    "%s", self.servers[0], self.servers[2])
+
+        # Checking if peer is connected
+        counter = 0
+        while counter < 30:
+            ret = is_peer_connected(self.servers[0], self.servers[:3])
+            counter += 1
+            if ret:
+                break
+            sleep(3)
+        self.assertTrue(ret, "Peer is not in connected state.")
+        g.log.info("Peers is in connected state.")
 
         # Create a replica volume on N1, N2 and N3 with force
         number_of_brick = 3
