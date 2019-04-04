@@ -458,7 +458,11 @@ def get_online_bricks_list(mnode, volname):
     bricks_list = get_all_bricks(mnode, volname)
     for brick in bricks_list:
         brick_node, brick_path = brick.split(":")
-        status = int(volume_status[volname][brick_node][brick_path]['status'])
+        try:
+            status = int(volume_status[volname]
+                         [brick_node][brick_path]['status'])
+        except KeyError:
+            continue
         if status == 1:
             online_bricks_list.append(brick)
 
