@@ -443,6 +443,16 @@ class GlusterBaseClass(unittest.TestCase):
         else:
             raise ConfigError("'servers' not defined in the global config")
 
+        # Get all slaves
+        cls.slaves = None
+        if 'slaves' in g.config and g.config['slaves']:
+            cls.slaves = g.config['slaves']
+            # Set mnode_slave : Node on which slave commands are executed
+            cls.mnode_slave = cls.slaves[0]
+            # Slave IP's
+            cls.slaves_ip = []
+            cls.slaves_ip = cls.get_ip_from_hostname(cls.slaves)
+
         # Get all clients
         cls.all_clients = None
         if 'clients' in g.config and g.config['clients']:
@@ -458,6 +468,10 @@ class GlusterBaseClass(unittest.TestCase):
         else:
             raise ConfigError("'servers_info' not defined in the global "
                               "config")
+        # Get all slaves info
+        cls.all_slaves_info = None
+        if 'slaves_info' in g.config and g.config['slaves_info']:
+            cls.all_slaves_info = g.config['slaves_info']
 
         # All clients_info
         cls.all_clients_info = None
