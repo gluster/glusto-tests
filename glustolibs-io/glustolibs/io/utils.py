@@ -484,7 +484,7 @@ def run_fio(servers, directory_to_run):
                                 "yum list installed fio || "
                                 "yum -y install fio")
             if ret != 0:
-                g.log.error("Failed to install bonnie on %s" % server)
+                g.log.error("Failed to install fio on %s" % server)
                 return False
 
         # building job file for running fio
