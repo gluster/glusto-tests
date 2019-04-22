@@ -72,8 +72,31 @@ Pre-requisites to run glusto-tests:
 - Setup passwordless ssh from the glusto-tests management node to all.
 - Install glusto-tests dependencies on servers and clients.
 - Setup bricks on all servers:
-	- To create bricks refer to [doc](https://gluster.readthedocs.io/en/latest/Administrator%20Guide/formatting-and-mounting-bricks/)
+  - To create bricks refer to [doc](https://gluster.readthedocs.io/en/latest/Administrator%20Guide/formatting-and-mounting-bricks/) **OR** Run gdeploy as shown below.
+	1. Edit the `gdeploy_sample_config.conf` present in `examples` as shown below and also configure passwordless ssh to all servers:
+    ```
+    [hosts]
+    server-vm1
+    server-vm2
+    server-vm3
+    server-vm4
+    server-vm5
+    server-vm6
 
+    [backend-setup]
+    devices
+    vgs
+    pools
+    lvs
+    mountpoints
+    ```
+   	**Note:**
+   	For more details you can view a sample config file avaliable at ``/usr/share/doc/gdeploy/examples/gluster.conf.sample`` which will be installed with gdeploy.
+
+	2. Run gdeploy using the below command:
+    ```
+    gdeploy -c gdeploy_sample_config.conf
+    ```
 Note:
 
 	- To run cifs protocol:
@@ -180,3 +203,4 @@ Default log location is: `/tmp/glustomain.log`
 
 Note: When using `glusto` via the Python Interactive Interpreter,
 the default log location is `/tmp/glusto.log`.
+
