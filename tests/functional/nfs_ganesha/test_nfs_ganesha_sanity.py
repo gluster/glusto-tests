@@ -19,11 +19,15 @@
 """
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on
-from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaClusterSetupClass
+from glustolibs.gluster.nfs_ganesha_libs import (
+     NfsGaneshaClusterSetupClass)
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.misc.misc_libs import upload_scripts
+from glustolibs.misc.misc_libs import (
+     upload_scripts,
+     git_clone_and_compile)
 from glustolibs.gluster.nfs_ganesha_ops import (
-    is_nfs_ganesha_cluster_in_healthy_state)
+     is_nfs_ganesha_cluster_in_healthy_state,
+     set_acl)
 from glustolibs.io.utils import validate_io_procs
 
 
@@ -61,6 +65,23 @@ class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
                                  cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
+
+        # Cloning posix test suite
+        cls.dir_name = "repo_dir"
+        link = "https://github.com/ffilz/ntfs-3g-pjd-fstest.git"
+        ret = git_clone_and_compile(cls.clients, link, cls.dir_name,
+                                    compile_option=False)
+        if not ret:
+            raise ExecutionError("Failed to clone test repo")
+        g.log.info("Successfully cloned test repo on client")
+        cmd = "cd /root/repo_dir; sed 's/ext3/glusterfs/g' tests/conf; make"
+        for client in cls.clients:
+            ret, _, _ = g.run(client, cmd)
+            if ret == 0:
+                g.log.info("Test repo successfully compiled on"
+                           "client %s" % client)
+            else:
+                raise ExecutionError("Failed to compile test repo")
 
     def setUp(self):
         """
@@ -126,6 +147,59 @@ class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
         self.assertTrue(ret, "Nfs Ganesha cluster is not healthy after "
                              "kernel untar")
 
+    def test_nfs_ganesha_posix_compliance(self):
+        """
+        Run Posix Compliance Suite with ACL enabled/disabled.
+        """
+        # Run test with ACL enabled
+
+        # Enable ACL.
+        ret = set_acl(self.mnode, self.volname)
+        self.assertEqual(ret, 0, "Failed to enable ACL")
+        g.log.info("ACL successfully enabled")
+        # Run test
+        for mount_object in self.mounts:
+            g.log.info("Running test now")
+            cmd = ("cd %s ; prove -r /root/%s"
+                   % (mount_object.mountpoint, self.dir_name))
+            ret, _, _ = g.run(mount_object.client_system, cmd)
+            # Not asserting here,so as to continue with ACL disabled.
+            if ret != 0:
+                g.log.error("Posix Compliance Suite failed")
+        g.log.info("Continuing with ACL disabled")
+
+        # Check ganesha cluster status
+        g.log.info("Checking ganesha cluster status")
+        self.assertTrue(is_nfs_ganesha_cluster_in_healthy_state(self.mnode),
+                        "Cluster is not healthy after test")
+        g.log.info("Ganesha cluster is healthy after the test with ACL "
+                   "enabled")
+
+        # Now run test with ACL disabled
+
+        # Disable ACL
+        ret = set_acl(self.mnode, self.volname, acl=False,
+                      do_refresh_config=True)
+        self.assertEqual(ret, 0, "Failed to disable ACL")
+        g.log.info("ACL successfully disabled")
+
+        # Run test
+        for mount_object in self.mounts:
+            cmd = ("cd %s ; prove -r /root/%s"
+                   % (mount_object.mountpoint, self.dir_name))
+            # No assert , known failures with Posix Compliance and glusterfs
+            ret, _, _ = g.run(mount_object.client_system, cmd)
+            if ret != 0:
+                g.log.error("Posix Compliance Suite failed. "
+                            "Full Test Summary in Glusto Logs")
+
+        # Check ganesha cluster status
+        g.log.info("Checking ganesha cluster status")
+        self.assertTrue(is_nfs_ganesha_cluster_in_healthy_state(self.mnode),
+                        "Cluster is not healthy after test")
+        g.log.info("Ganesha cluster is healthy after the test with ACL"
+                   " disabled")
+
     def tearDown(self):
         """
         Unmount and cleanup volume
@@ -142,6 +216,23 @@ class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
         if not ret:
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
+
+        # Cleanup test repo
+        flag = 0
+        for client in self.clients:
+            ret, _, _ = g.run(client, "rm -rf /root/%s" % self.dir_name)
+            if ret:
+                g.log.error("Failed to cleanup test repo on "
+                            "client %s" % client)
+                flag = 1
+            else:
+                g.log.info("Test repo successfully cleaned on "
+                           "client %s" % client)
+        if flag:
+            raise ExecutionError("Test repo deletion failed. "
+                                 "Check log errors for more info")
+        else:
+            g.log.info("Test repo cleanup successfull on all clients")
 
     @classmethod
     def tearDownClass(cls):
