@@ -1,0 +1,9 @@
+---
+- hosts: gluster_clients
+  gather_facts: no
+
+  tasks:
+   - name: Setup Clients to run NFS-Ganesha tests.
+     yum:
+	name: ['wget', 'iozone', 'perl-Test-Harness', 'libacl*', 'gcc']
+	state: latest
