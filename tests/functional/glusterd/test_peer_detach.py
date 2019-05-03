@@ -122,6 +122,15 @@ class PeerDetachVerification(GlusterBaseClass):
                             % self.servers[1])
         msg = ('peer detach: failed: Brick(s) with the peer ' +
                self.servers[1] + ' ' + 'exist in cluster')
+        if msg not in err:
+            msg = ('peer detach: failed: Peer ' + self.servers[1] +
+                   ' hosts one or more bricks. ' +
+                   'If the peer is in not recoverable ' +
+                   'state then use either ' +
+                   'replace-brick or remove-brick command ' +
+                   'with force to remove ' +
+                   'all bricks from the peer and ' +
+                   'attempt the peer detach again.')
         self.assertIn(msg, err, "Peer detach not failed with "
                                 "proper error message")
 
@@ -133,5 +142,12 @@ class PeerDetachVerification(GlusterBaseClass):
                                     "option : %s" % self.servers[1])
         msg = ('peer detach: failed: Brick(s) with the peer ' +
                self.servers[1] + ' ' + 'exist in cluster')
-        self.assertIn(msg, err, "Peer detach not failed with proper "
-                                "error message with force option")
+        if msg not in err:
+            msg = ('peer detach: failed: Peer ' + self.servers[1] +
+                   ' hosts one or more bricks. ' +
+                   'If the peer is in not recoverable ' +
+                   'state then use either ' +
+                   'replace-brick or remove-brick command ' +
+                   'with force to remove ' +
+                   'all bricks from the peer and ' +
+                   'attempt the peer detach again.')
