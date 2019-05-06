@@ -22,6 +22,7 @@ import subprocess
 from glusto.core import Glusto as g
 from glustolibs.gluster.mount_ops import GlusterMount
 from multiprocessing import Pool
+from glustolibs.gluster.volume_libs import get_subvols
 
 
 def collect_mounts_arequal(mounts):
@@ -739,4 +740,63 @@ def compare_dir_structure_mount_with_brick(mnthost, mntloc, brick_list, type):
         if retval != 0:
             return False
 
+    return True
+
+
+def check_arequal_bricks_replicated(mnode, volname):
+    """Collects arequal from all the bricks in subvol and compare it
+       with first brick in subvols.
+
+    Args:
+        mnode : Node on which commands are executed
+        volname : Name of the volume
+
+    Returns:
+        Returns:
+        bool: True if arequal of all the bricks in the subvolume are same.
+        False otherwise.
+    """
+    # Check arequals
+    # get the subvolumes
+    g.log.info("Starting to get sub-volumes for volume %s", volname)
+    subvols_dict = get_subvols(mnode, volname)
+    num_subvols = len(subvols_dict['volume_subvols'])
+    g.log.info("Number of subvolumes in volume %s:", num_subvols)
+
+    # Get arequals and compare
+    for i in range(0, num_subvols):
+        # Get arequal for first brick
+        subvol_brick_list = subvols_dict['volume_subvols'][i]
+        node, brick_path = subvol_brick_list[0].split(':')
+        command = ('arequal-checksum -p %s '
+                   '-i .glusterfs -i .landfill -i .trashcan'
+                   % brick_path)
+        ret, arequal, _ = g.run(node, command)
+        if ret != 0:
+            g.log.error("Failed to calculate arequal for first brick"
+                        "of subvol %s of volume %s", i, volname)
+            return False
+        first_brick_total = arequal.splitlines()[-1].split(':')[-1]
+
+        # Get arequal for every brick and compare with first brick
+        for brick in subvol_brick_list[1:]:
+            node, brick_path = brick.split(':')
+            command = ('arequal-checksum -p %s '
+                       '-i .glusterfs -i .landfill -i .trashcan'
+                       % brick_path)
+            ret, brick_arequal, _ = g.run(node, command)
+            if ret != 0:
+                g.log.error('Failed to get arequal on brick %s'
+                            % brick)
+                return False
+            g.log.info('Getting arequal for %s is successful', brick)
+            brick_total = brick_arequal.splitlines()[-1].split(':')[-1]
+            # compare arequal of first brick of subvol with all brick other
+            # bricks in subvol
+            if first_brick_total != brick_total:
+                g.log.error('Arequals for subvol and %s are not equal'
+                            % brick)
+                return False
+            g.log.info('Arequals for subvol and %s are equal', brick)
+    g.log.info('All arequals are equal for volume %s', volname)
     return True
