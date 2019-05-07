@@ -417,6 +417,52 @@ def get_dht_linkto_xattr(host, fqpath):
     return linkto_xattr
 
 
+def find_and_replace_in_file(host, fpattern, rpattern, fqpath):
+    """Find and replace all occurances of a given pattern in a specific file.
+
+    Args:
+        host (str): The hostname/ip of the remote system.
+        fpattern(str): Pattern to be found in file.
+        rpattern(str): Pattern to used as replacement in file.
+        fqpath (str): The fully-qualified path to the file.
+
+    Returns:
+        True: If find and replace is successful.
+        False: If find and replace is failed.
+    Note:
+    / can't be given as an input in patterns(fpattern/rpattern).
+    Please follow proper regex format for patterns.
+    """
+    cmd = (" sed -i 's/%s/%s/g' %s" % (fpattern, rpattern, fqpath))
+    ret, _, _ = g.run(host, cmd)
+
+    if ret != 0:
+        return False
+    return True
+
+
+def check_if_pattern_in_file(host, pattern, fqpath):
+    """Check if a give pattern is in seen in file or not.
+
+    Args:
+        host (str): The hostname/ip of the remote system.
+        pattern(str): Pattern to be found in file.
+        fqpath (str): The fully-qualified path to the file.
+
+    Returns:
+        0: If pattern present in file.
+        1: If pattern not present in file.
+       -1: If command was not executed.
+    """
+    cmd = ("cat %s | grep '%s'" % (fqpath, pattern))
+    ret, out, _ = g.run(host, cmd)
+    if ret:
+        return -1
+    if not out:
+        return 1
+    return 0
+
+
 class GlusterFile(object):
     """Class to handle files specific to Gluster (client and backend)"""
     def __init__(self, host, fqpath):
