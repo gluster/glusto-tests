@@ -23,10 +23,12 @@
 """
 
 import os
+import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.glusterdir import mkdir
 from glustolibs.gluster.lib_utils import add_services_to_firewall
 from glustolibs.gluster.shared_storage_ops import enable_shared_storage
+from glustolibs.gluster.peer_ops import peer_probe_servers
 
 GDEPLOY_CONF_DIR = "/usr/share/glustolibs/gdeploy_configs/"
 
@@ -732,6 +734,12 @@ def create_nfs_ganesha_cluster(servers, vips):
         return False
     g.log.info("Firewall settings for nfs ganesha was success.")
 
+    # Do peer probe if not already done
+    ret = peer_probe_servers(ganesha_mnode, servers, validate=True)
+    if not ret:
+        g.log.error("Peer probe failed")
+        return False
+
     # Enable shared storage if not present
     ret, _, _ = g.run(ganesha_mnode,
                       "gluster v list | grep 'gluster_shared_storage'")
@@ -888,49 +896,70 @@ def create_nfs_passwordless_ssh(mnode, gnodes, guser='root'):
 
     Args:
         mnode(str): Hostname of ganesha maintenance node.
-        snodes(list): Hostname of all ganesha nodes including maintenance node
+        gnodes(list): Hostname of all ganesha nodes including maintenance node
         guser(str): User for setting password less ssh
     Returns:
         True(bool): On success
         False(bool): On failure
     """
-    loc = '/var/lib/glusterd/nfs'
-    # Generate key on one node if not already present
-    ret, _, _ = g.run(mnode, "test -e %s/secret.pem" % loc)
-    if ret != 0:
-        cmd = "yes n | ssh-keygen -f %s/secret.pem -t rsa -N ''" % loc
-        g.log.info("Generating public key on %s", mnode)
-        ret, _, _ = g.run(mnode, cmd)
-        if ret != 0:
-            g.log.error("Failed to generate ssh key")
-            return False
+    loc = "/var/lib/glusterd/nfs/"
+    mconn_inst = random.randint(20, 100)
+    mconn = g.rpyc_get_connection(host=mnode, instance=mconn_inst)
 
-    # Deploy the generated public key from mnode to all the nodes
-    # (including mnode)
-    g.log.info("Deploying the generated public key from %s to all the nodes",
-               mnode)
-    for node in gnodes:
-        cmd = "ssh-copy-id -i %s/secret.pem.pub %s@%s" % (loc, guser, node)
-        ret, _, _ = g.run(mnode, cmd)
-        if ret != 0:
-            g.log.error("Failed to deploy the public key from %s to %s",
-                        mnode, node)
+    if not mconn.modules.os.path.isfile('/root/.ssh/id_rsa'):
+        # Generate key on mnode if not already present
+        if not mconn.modules.os.path.isfile('%s/secret.pem' % loc):
+            ret, _, _ = g.run(
+                mnode, "ssh-keygen -f %s/secret.pem -q -N ''" % loc)
+            if ret != 0:
+                g.log.error("Failed to generate the secret pem file")
+                return False
+            g.log.info("Key generated on %s" % mnode)
+    else:
+        mconn.modules.shutil.copyfile("/root/.ssh/id_rsa",
+                                      "%s/secret.pem" % loc)
+        g.log.info("Copying the id_rsa.pub to secret.pem.pub")
+        mconn.modules.shutil.copyfile("/root/.ssh/id_rsa.pub",
+                                      "%s/secret.pem.pub" % loc)
+
+    # Create password less ssh from mnode to all ganesha nodes
+    for gnode in gnodes:
+        gconn_inst = random.randint(20, 100)
+        gconn = g.rpyc_get_connection(gnode, user=guser, instance=gconn_inst)
+        try:
+            glocal = gconn.modules.os.path.expanduser('~')
+            gfhand = gconn.builtin.open("%s/.ssh/authorized_keys" % glocal,
+                                        "a")
+            with mconn.builtin.open("/root/.ssh/id_rsa.pub", 'r') as fhand:
+                for line in fhand:
+                    gfhand.write(line)
+            gfhand.close()
+        except Exception as exep:
+            g.log.error("Exception occurred while trying to establish "
+                        "password less ssh from %s@%s to %s@%s. Exception: %s"
+                        % ('root', mnode, guser, gnode, exep))
             return False
+        finally:
+            g.rpyc_close_connection(
+                host=gnode, user=guser, instance=gconn_inst)
+
+    g.rpyc_close_connection(host=mnode, instance=mconn_inst)
 
     # Copy the ssh key pair from mnode to all the nodes in the Ganesha-HA
     # cluster
     g.log.info("Copy the ssh key pair from %s to other nodes in the "
                "Ganesha-HA cluster" % mnode)
-    for node in gnodes:
-        if node != mnode:
+    for gnode in gnodes:
+        # Add ganesha nodes to known_hosts
+        g.run(mnode, "ssh-keyscan -H %s  >> ~/.ssh/known_hosts" % gnode)
+        if gnode != mnode:
             cmd = ("scp -i %s/secret.pem %s/secret.* %s@%s:%s/"
-                   % (loc, loc, guser, node, loc))
+                   % (loc, loc, guser, gnode, loc))
             ret, _, _ = g.run(mnode, cmd)
             if ret != 0:
                 g.log.error("Failed to copy the ssh key pair from %s to %s",
-                            mnode, node)
+                            mnode, gnode)
                 return False
-
     return True
 
 
