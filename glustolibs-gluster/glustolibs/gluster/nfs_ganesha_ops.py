@@ -1009,7 +1009,7 @@ def cluster_auth_setup(servers):
         if ret != 0:
             g.log.error("Failed to enable pcsd in %s", node)
 
-        # Set a password for the user ‘hacluster’ on all the nodes
+        # Set a password for the user 'hacluster' on all the nodes
         ret, _, _ = g.run(node, "echo hacluster | passwd --stdin hacluster")
         if ret != 0:
             g.log.error("unable to set password for hacluster on %s", node)
