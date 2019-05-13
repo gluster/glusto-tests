@@ -29,7 +29,8 @@ from glustolibs.gluster.volume_libs import (
 from glustolibs.gluster.heal_libs import monitor_heal_completion
 
 
-@runs_on([['replicated', 'distributed-replicated'],
+@runs_on([['replicated', 'distributed-replicated',
+           'dispersed', 'distributed-dispersed'],
           ['glusterfs']])
 class SubdirWithReplaceBrick(GlusterBaseClass):
     """
@@ -102,8 +103,8 @@ class SubdirWithReplaceBrick(GlusterBaseClass):
         g.log.info('Setting authentication on subdir25 and subdir15'
                    'for client %s and %s', self.clients[0], self.clients[1])
         ret = set_auth_allow(self.volname, self.mnode,
-                             {'/subdir25': [self.clients[0]],
-                              '/subdir15': [self.clients[1]]})
+                             {'/subdir25': [self.mounts[0].client_system],
+                              '/subdir15': [self.mounts[1].client_system]})
         self.assertTrue(ret,
                         'Failed to set Authentication on volume %s'
                         % self.volume)
