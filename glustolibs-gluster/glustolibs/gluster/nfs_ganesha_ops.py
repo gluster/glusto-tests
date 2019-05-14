@@ -1192,3 +1192,36 @@ def set_acl(mnode, volname, acl=True, do_refresh_config=True):
     if do_refresh_config:
         return refresh_config(mnode, volname)
     return True
+
+
+def is_ganesha_installed(mnode):
+    """Checks if Ganesha rpms are installed(prequisite for add node etc)
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+            True , if Ganesha rpms are installed. Else,False.
+    """
+
+    cmd = "rpm -q glusterfs-ganesha"
+    ret, _, _ = g.run(mnode, cmd)
+    if ret:
+        return False
+    return True
+
+
+def is_ganesha_running(mnode):
+    """Checks if Ganesha service is running (for validation post tests)
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+
+    Returns:
+        True , if Ganesha service is running. False, otherwise.
+    """
+    cmd = "pgrep nfs-ganesha"
+    _, out, _ = g.run(mnode, cmd)
+    if out:
+        return True
+    return False
