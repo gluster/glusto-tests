@@ -19,52 +19,94 @@
 """
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on
-from glustolibs.gluster.nfs_ganesha_libs import (
-    NfsGaneshaVolumeBaseClass,
-    NfsGaneshaIOBaseClass)
+from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaClusterSetupClass
+from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.misc.misc_libs import upload_scripts
+from glustolibs.gluster.nfs_ganesha_ops import (
+    is_nfs_ganesha_cluster_in_healthy_state)
+from glustolibs.io.utils import validate_io_procs
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaSanity(NfsGaneshaVolumeBaseClass):
+class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
     """
         Tests to verify NFS Ganesha Sanity.
     """
-
     @classmethod
     def setUpClass(cls):
-        NfsGaneshaVolumeBaseClass.setUpClass.im_func(cls)
+        """
+        Setup nfs-ganesha if not exists.
+        Upload IO scripts to clients
+        """
+        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
+
+        # Setup nfs-ganesha if not exists.
+        ret = cls.setup_nfs_ganesha()
+        if not ret:
+            raise ExecutionError("Failed to setup nfs-ganesha cluster")
+        g.log.info("nfs-ganesha cluster is healthy")
+
+        # Upload IO scripts for running IO on mounts
+        g.log.info("Upload io scripts to clients %s for running IO on "
+                   "mounts", cls.clients)
+        script_local_path = ("/usr/share/glustolibs/io/scripts/"
+                             "file_dir_ops.py")
+        cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
+                                  "file_dir_ops.py")
+        ret = upload_scripts(cls.clients, script_local_path)
+        if not ret:
+            raise ExecutionError("Failed to upload IO scripts to clients %s" %
+                                 cls.clients)
+        g.log.info("Successfully uploaded IO scripts to clients %s",
+                   cls.clients)
+
+    def setUp(self):
+        """
+        Setup and mount volume
+        """
+        g.log.info("Starting to setup and mount volume %s", self.volname)
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to setup and mount volume %s"
+                                 % self.volname)
+        g.log.info("Successful in setup and mount volume %s", self.volname)
 
     def test_nfs_ganesha_HA_Basic_IO(self):
         """
         Tests to create an HA cluster and run basic IO
         """
 
-        # Starting IO on the mounts.Let's do iozone first.
+        # Starting IO on the mounts
+        all_mounts_procs = []
+        count = 1
         for mount_obj in self.mounts:
-            # Make sure you run relevant setup playbooks,view README !
-            g.log.info("Running iozone on %s", mount_obj.client_system)
-            cmd = ("cd %s ;iozone -a" % (mount_obj.mountpoint))
-            ret, out, err = g.run(mount_obj.client_system, cmd)
-            if ret == 0:
-                g.log.info(" Iozone run successful")
-            else:
-                g.log.error("ERROR! Drastic Iozone error encountered !")
-                self.assertEqual(ret, 0, "Iozone run failed!")
+            g.log.info("Starting IO on %s:%s", mount_obj.client_system,
+                       mount_obj.mountpoint)
+            cmd = ("python %s create_deep_dirs_with_files "
+                   "--dirname-start-num %d "
+                   "--dir-depth 2 "
+                   "--dir-length 10 "
+                   "--max-num-of-dirs 5 "
+                   "--num-of-files 5 %s" % (self.script_upload_path, count,
+                                            mount_obj.mountpoint))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_mounts_procs.append(proc)
+            count = count + 10
 
-        # Check for crashes after iozone run
-        g.log.info("Checking for Cluster Status after iozone run")
-        ret, out, err = g.run(self.servers[0],
-                              "/usr/libexec/ganesha/ganesha-ha.sh --status"
-                              " /var/run/gluster/shared_storage/nfs-ganesha")
+        # Validate IO
+        g.log.info("Validating IO's")
+        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("Successfully validated all IO")
 
-        if "HEALTHY" in out:
-            g.log.info("Cluster is HEALTHY,Continuing..")
-
-        else:
-            g.log.error("ERROR! Cluster unhealthy,check for cores!")
-            self.assertEqual(ret, 0, "Iozone run failed! Cluster Unhealthy")
+        # Check nfs-ganesha status
+        g.log.info("Checking for Cluster Status after IO run")
+        ret = is_nfs_ganesha_cluster_in_healthy_state(self.mnode)
+        self.assertTrue(ret, "Nfs Ganesha cluster is not healthy after "
+                             "running IO")
 
         # Running kernel untar now,single loop for the sanity test
         g.log.info("Running kernel untars now")
@@ -73,29 +115,36 @@ class TestNfsGaneshaSanity(NfsGaneshaVolumeBaseClass):
                    "wget https://www.kernel.org/pub/linux/kernel/v2.6"
                    "/linux-2.6.1.tar.gz;"
                    "tar xvf linux-2.6.1.tar.gz" % mount_obj.mountpoint)
-            ret, out, err = g.run(mount_obj.client_system, cmd)
-            if ret == 0:
-                g.log.info("Successfully untared the tarball!")
-            else:
-                g.log.error("ERROR ! Kernel untar errored out!")
-                self.assertEqual(ret, 0, "Kernel untar failed!")
+            ret, _, _ = g.run(mount_obj.client_system, cmd)
+            self.assertEqual(ret, 0, "Kernel untar failed!")
+            g.log.info("Kernel untar successful on %s"
+                       % mount_obj.client_system)
 
-        # Check for crashes after kernel untar
+        # Check nfs-ganesha status
         g.log.info("Checking for Cluster Status after kernel untar")
-        ret, out, err = g.run(self.servers[0],
-                              "/usr/libexec/ganesha/ganesha-ha.sh --status"
-                              " /var/run/gluster/shared_storage/nfs-ganesha")
+        ret = is_nfs_ganesha_cluster_in_healthy_state(self.mnode)
+        self.assertTrue(ret, "Nfs Ganesha cluster is not healthy after "
+                             "kernel untar")
 
-        if "HEALTHY" in out:
-            g.log.info("Cluster is HEALTHY,Continuing..")
-
+    def tearDown(self):
+        """
+        Unmount and cleanup volume
+        """
+        # Unmount volume
+        ret = self.unmount_volume(self.mounts)
+        if ret:
+            g.log.info("Successfully unmounted the volume")
         else:
-            g.log.error("ERROR! Cluster unhealthy after I/O,check for cores!")
-            self.assertEqual(ret, 0, "Cluster unhealthy after Kernel untar")
+            g.log.error("Failed to unmount volume")
+
+        # Cleanup volume
+        ret = self.cleanup_volume()
+        if not ret:
+            raise ExecutionError("Failed to cleanup volume")
+        g.log.info("Cleanup volume %s completed successfully", self.volname)
 
     @classmethod
     def tearDownClass(cls):
-        (NfsGaneshaIOBaseClass.
+        (NfsGaneshaClusterSetupClass.
          tearDownClass.
-         im_func(cls,
-                 teardown_nfsganesha_cluster=False))
+         im_func(cls, delete_nfs_ganesha_cluster=False))
