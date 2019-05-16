@@ -151,3 +151,5 @@ class PeerDetachVerification(GlusterBaseClass):
                    'with force to remove ' +
                    'all bricks from the peer and ' +
                    'attempt the peer detach again.')
+        self.assertIn(msg, err, "Peer detach not failed with "
+                                "proper error message")
