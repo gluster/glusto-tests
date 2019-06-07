@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,132 +16,152 @@
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.snap_ops import (snap_create,
-                                         snap_delete_all,
                                          set_snap_config,
-                                         get_snap_config)
+                                         get_snap_config,
+                                         get_snap_list)
 
 
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
            'distributed-dispersed', 'distributed'],
           ['glusterfs', 'nfs', 'cifs']])
-class DeleteSnapTests(GlusterBaseClass):
+class TestSnapAutoDelete(GlusterBaseClass):
     """
-    DeleteSnapTests contains tests which verifies the deletion of
-    snapshots
+    TestSnapAutoDelete contains tests which verifies the deletion of
+    snapshots along with the snapshot config option 'auto-delete'
     """
 
-    def test_auto_delete_snap(self):
+    @classmethod
+    def setUpClass(cls):
         """
-        * enabling auto-delete snapshot
-        * Setting max-hard limit and max-soft-limit
-        * Validating max-hard-limit and max-soft-limit
-        * Verify the limits by creating another 20 snapshots
-        * Oldest of newly created snapshots will be deleted
-        * Retaining the latest 8(softlimit) snapshots
-        * cleanup snapshots and volumes
+        setup volume and initialize necessary variables which is used in tests
         """
-        # Setup volume
-        ret = self.setup_volume()
+
+        # calling GlusterBaseClass setUpClass
+        cls.get_super_method(cls, 'setUpClass')()
+        # Setup Volume
+        ret = cls.setup_volume()
         if not ret:
-            raise ExecutionError("Failed to setup volume %s" % self.volname)
-        g.log.info("Volume %s has been setup successfully", self.volname)
+            raise ExecutionError("Failed to Setup_Volume %s" % cls.volname)
+        g.log.info("Successful in Setup Volume %s", cls.volname)
+        cls.autodel_enable = {'auto-delete': 'enable'}
 
-        # enabling auto-delete
-        cmd = "gluster snapshot config auto-delete enable"
-        ret = g.run(self.mnode, cmd)
-        self.assertTrue(ret, ("Failed to enable auto-delete snapshot config"
-                              "option on volume % s" % self.volname))
-        g.log.info("Snapshot auto-delete Successfully enabled")
+    def setUp(self):
+        """
+        Initialize necessary variables.
+        """
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
 
-        # setting max-hard-limit
-        option = {'snap-max-hard-limit': '10'}
-        ret = set_snap_config(self.mnode, option, self.volname)
-        self.assertTrue(ret, ("Failed to set snap-max-hardlimit"
-                              "config option for volume %s" % self.volname))
-        g.log.info("snap-max-hardlimit config option Successfully set for"
-                   "volume %s", self.volname)
+        # Gather the default snapshot config option values
+        self.snap_conf = get_snap_config(self.mnode)
+        self.assertIsNotNone(
+            self.snap_conf, "Failed to get the snapshot config options")
+        softlim = self.snap_conf['systemConfig']['softLimit']
+        self.def_conf_softlim = {'snap-max-soft-limit': softlim[:-1]}
+        autodel = self.snap_conf['systemConfig']['autoDelete']
+        self.def_conf_autodel = {'auto-delete': autodel}
+        g.log.info("Successfully gathered the default snapshot config options")
 
-        # Validating max-hard-limit
-        hardlimit = get_snap_config(self.mnode)
-        get_hardlimit = hardlimit['volumeConfig'][0]['hardLimit']
-        if get_hardlimit != '10':
-            self.assertTrue(ret, ("Failed to Validate max-hard-limit"))
-        g.log.info("Successfully validated max-hard-limit")
-
-        # setting max-soft-limit
-        option = {'snap-max-soft-limit': '80'}
-        ret = set_snap_config(self.mnode, option)
-        self.assertTrue(ret, ("Failed to set snap-max-soft-limit"
-                              "config option"))
-        g.log.info("snap-max-soft-limit config option Successfully set")
-
-        # Validating max-soft-limit
-        softlimit = get_snap_config(self.mnode)
-        get_softlimit = softlimit['volumeConfig'][0]['softLimit']
-        if get_softlimit != '8':
-            self.assertTrue(ret, ("Failed to Validate max-soft-limit"))
-        g.log.info("Successfully validated max-soft-limit")
-
-        # creating 20 snapshots. As the count
-        # of snapshots crosses the
-        # soft-limit the oldest of newly created snapshot should
-        # be deleted only latest 8 snapshots
-        # should remain.
-
-        # creating 20 more snapshots
-        for snap_count in range(10, 30):
-            ret = snap_create(self.mnode, self.volname, "snap%s"
-                              % snap_count, False,
-                              "This is the Description with $p3c1al"
-                              "characters!")
-            self.assertTrue(ret, ("Failed to create snapshot snap%s for volume"
-                                  "%s" % (snap_count, self.volname)))
-            g.log.info("Snapshot snap%s of volume %s created successfully")
-
-        # snapshot list to list total number of snaps after auto-delete
-        cmd = "gluster snapshot list | wc -l"
-        ret, out, _ = g.run(self.mnode, cmd)
-        self.assertEqual(ret, 0, ("Failed to list snapshot of volume %s"
-                                  % self.volname))
-        g.log.info("Total number of snapshots created after auto-delete"
-                   "enabled is %s", out)
-        if out != 8:
-            g.log.info("Failed to validate snapshots with expected"
-                       "number of snapshots")
-        g.log.info("Snapshot Validation Successful")
-        g.log.info("Snapshot list command for volume %s was successful",
-                   self.volname)
+        self.snapshots = [('snap-test-snap-auto-delete-%s-%s'
+                           % (self.volname, i))for i in range(0, 20)]
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
 
-        # disabling auto-delete
-        cmd = "gluster snapshot config auto-delete disable"
-        ret = g.run(self.mnode, cmd)
-        self.assertTrue(ret, ("Failed to disable auto-delete snapshot"
-                              "config option"))
-        g.log.info("Snapshot auto-delete Successfully disabled")
-
-        # deleting created snapshots
-        ret = snap_delete_all(self.mnode)
-        self.assertTrue(ret, ("Failed to delete snapshot of volume"
-                              "%s" % self.volname))
-        g.log.info("Successfully deleted snapshots of volume %s",
-                   self.volname)
-
         # setting back default max-soft-limit to 90%
-        option = {'snap-max-soft-limit': '90'}
-        ret = set_snap_config(self.mnode, option)
-        self.assertTrue(ret, ("Failed to set snap-max-soft-limit"
-                              "config option"))
-        g.log.info("snap-max-soft-limit config option Successfully set")
+        ret, _, _ = set_snap_config(self.mnode, self.def_conf_softlim)
+        if ret:
+            raise ExecutionError("Failed to set the default config options "
+                                 "for snap-max-soft-limit")
+        g.log.info("Successfully set the snapshot config options to default")
 
-        # cleanup-volume
-        ret = self.cleanup_volume()
+        # setting back default value for auto-delete config option
+        ret, _, _ = set_snap_config(self.mnode, self.def_conf_autodel)
+        if ret:
+            raise ExecutionError("Failed to set the default config option for "
+                                 "auto-delete")
+        g.log.info("Successfully set the snapshot config options to default")
+
+    @classmethod
+    def tearDownClass(cls):
+        # calling GlusterBaseClass tearDownClass
+        cls.get_super_method(cls, 'tearDownClass')()
+
+        # Clean up the volume
+        ret = cls.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Cleanup Volume")
-        g.log.info("Cleanup volume %s Completed Successfully", self.volname)
+        g.log.info("Successful in Cleanup Volume")
+
+    def test_snap_auto_delete(self):
+        """
+        Verifying snapshot auto-delete config option
+
+        * Enable auto-delete snapshot
+        * Set snap-max-hard limit and snap-max-soft-limit
+        * Validate snap-max-hard-limit and snap-max-soft-limit
+        * Verify the limits by creating another 20 snapshots
+        * Oldest of newly created snapshots will be deleted
+        * Retaining the latest 8 (softlimit) snapshots
+        * Cleanup snapshots and volumes
+        """
+
+        # pylint: disable=too-many-statements
+        # Enable auto-delete snapshot config option
+        ret, _, _ = set_snap_config(self.mnode, self.autodel_enable)
+        self.assertEqual(ret, 0, ("Failed to enable auto-delete snapshot "
+                                  "config option on volume %s", self.volname))
+        g.log.info("Successfully enabled snapshot auto-delete")
+
+        # Set snap-max-hard-limit snapshot config option for volume
+        max_hard_limit = {'snap-max-hard-limit': '10'}
+        ret, _, _ = set_snap_config(self.mnode, max_hard_limit, self.volname)
+        self.assertEqual(ret, 0, ("Failed to set snap-max-hard-limit"
+                                  "config option for volume %s", self.volname))
+        g.log.info("Successfully set snap-max-hard-limit config option for"
+                   "volume %s", self.volname)
+
+        # Validate snap-max-hard-limit snapshot config option
+        hard_limit_val = get_snap_config(self.mnode)
+        self.assertEqual(hard_limit_val['volumeConfig'][0]['hardLimit'], '10',
+                         ("Failed to Validate snap-max-hard-limit"))
+        g.log.info("Successfully validated snap-max-hard-limit")
+
+        # Set snap-max-soft-limit snapshot config option
+        max_soft_limit = {'snap-max-soft-limit': '80'}
+        ret, _, _ = set_snap_config(self.mnode, max_soft_limit)
+        self.assertEqual(ret, 0, ("Failed to set snap-max-soft-limit"
+                                  "config option"))
+        g.log.info("Successfully set snap-max-soft-limit config option")
+
+        # Validate snap-max-soft-limit snapshot config option
+        soft_limit_val = get_snap_config(self.mnode)
+        self.assertEqual(soft_limit_val['volumeConfig'][0]['softLimit'], '8',
+                         ("Failed to Validate max-soft-limit"))
+        g.log.info("Successfully validated snap-max-soft-limit")
+
+        # Create 20 snapshots. As the count of snapshots crosses the
+        # soft-limit the oldest of newly created snapshot should
+        # be deleted and only the latest 8 snapshots must remain.
+        for snapname in self.snapshots:
+            ret, _, _ = snap_create(self.mnode, self.volname, snapname,
+                                    description="This is the Description wit#"
+                                    " ($p3c1al) ch@r@cters!")
+            self.assertEqual(ret, 0, ("Failed to create snapshot %s for "
+                                      "volume %s", snapname, self.volname))
+            g.log.info("Snapshot snap%s of volume %s created successfully",
+                       snapname, self.volname)
+
+        # Perform snapshot list to get total number of snaps after auto-delete
+        # Validate the existence of the snapshots using the snapname
+        snaplist = get_snap_list(self.mnode)
+        self.assertEqual(len(snaplist), 8,
+                         ("Failed: The snapshot count is not as expected"))
+        for snapname in self.snapshots[-8:]:
+            self.assertIn(snapname, snaplist, "Failed to validate snapshot "
+                          "existence for the snapshot %s" % snapname)
+        g.log.info("Successful in validating the Snapshot count and existence "
+                   "by snapname")
