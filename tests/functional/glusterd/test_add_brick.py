@@ -23,6 +23,7 @@ from glustolibs.gluster.volume_ops import (get_volume_list)
 from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.rebalance_ops import rebalance_start
+from glustolibs.gluster.brick_libs import delete_bricks
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -50,6 +51,12 @@ class TestVolumeCreate(GlusterBaseClass):
                 raise ExecutionError("Unable to delete volume % s" % volume)
             g.log.info("Volume deleted successfully : %s", volume)
 
+        # Checking brick dir and cleaning it.
+        ret = delete_bricks(self.bricks_list)
+        if not ret:
+            raise ExecutionError("Failed to delete the brick dirs.")
+        g.log.info("Successfully cleaned all the brick dirs.")
+
         GlusterBaseClass.tearDown.im_func(self)
 
     def test_add_brick_functionality(self):
@@ -63,15 +70,17 @@ class TestVolumeCreate(GlusterBaseClass):
         # form bricks list to test add brick functionality
         replica_count_of_volume = self.volume['voltype']['replica_count']
         num_of_bricks = 4 * replica_count_of_volume
-        bricks_list = form_bricks_list(self.mnode, self.volname, num_of_bricks,
-                                       self.servers, self.all_servers_info)
-        self.assertIsNotNone(bricks_list, "Bricks list is None")
+        self.bricks_list = form_bricks_list(self.mnode, self.volname,
+                                            num_of_bricks,
+                                            self.servers,
+                                            self.all_servers_info)
+        self.assertIsNotNone(self.bricks_list, "Bricks list is None")
 
         # Try to add a single brick to volume, which should fail as it is a
         # replicated volume, we should pass multiple of replica count number
         # of bricks
         self.assertNotEqual(
-            add_brick(self.mnode, self.volname, bricks_list[0])[0], 0,
+            add_brick(self.mnode, self.volname, self.bricks_list[0])[0], 0,
             "Expected: It should fail to add a single brick to a replicated "
             "volume. Actual: Successfully added single brick to volume")
         g.log.info("Failed to add a single brick to replicated volume "
@@ -80,7 +89,7 @@ class TestVolumeCreate(GlusterBaseClass):
         # add brick replica count number of bricks in which one is a
         # non existing brick (not using the brick used in the earlier test)
         kwargs = {'replica_count': replica_count_of_volume}
-        bricks_to_add = bricks_list[1:replica_count_of_volume + 1]
+        bricks_to_add = self.bricks_list[1:replica_count_of_volume + 1]
         # make one of the bricks a non-existing one (randomly)
         random_index = random.randint(0, replica_count_of_volume - 1)
         bricks_to_add[random_index] += "/non_existing_brick"
@@ -94,8 +103,8 @@ class TestVolumeCreate(GlusterBaseClass):
 
         # add a brick from a node which is not a part of the cluster
         # (not using bricks used in earlier tests)
-        bricks_to_add = bricks_list[replica_count_of_volume + 1:
-                                    (2 * replica_count_of_volume) + 1]
+        bricks_to_add = self.bricks_list[replica_count_of_volume + 1:
+                                         (2 * replica_count_of_volume) + 1]
         # change one (random) brick's node name to a non existent node
         random_index = random.randint(0, replica_count_of_volume - 1)
         brick_to_change = bricks_to_add[random_index].split(":")
@@ -111,8 +120,8 @@ class TestVolumeCreate(GlusterBaseClass):
 
         # add correct number of valid bricks, it should succeed
         # (not using bricks used in earlier tests)
-        bricks_to_add = bricks_list[(2 * replica_count_of_volume) + 1:
-                                    (3 * replica_count_of_volume) + 1]
+        bricks_to_add = self.bricks_list[(2 * replica_count_of_volume) + 1:
+                                         (3 * replica_count_of_volume) + 1]
         self.assertEqual(
             add_brick(self.mnode, self.volname, bricks_to_add, **kwargs)[0], 0,
             "Failed to add the bricks to the volume")
