@@ -282,57 +282,6 @@ def unexport_nfs_ganesha_volume(mnode, volname):
     return g.run(mnode, cmd)
 
 
-def run_refresh_config(mnode, volname):
-    """Runs refresh config on nfs ganesha volume.
-
-    Args:
-        mnode (str): Node in which refresh config command will
-            be executed.
-        volname (str): volume name
-
-    Returns:
-        bool : True on successfully running refresh config on
-            nfs-ganesha volume. False otherwise
-
-    Example:
-        run_refresh_config("abc.com", volname)
-    """
-
-    conf_file = "nfs_ganesha_refresh_config.jinja"
-    gdeploy_config_file = GDEPLOY_CONF_DIR + conf_file
-
-    tmp_gdeploy_config_file = ("/tmp/" + os.path.splitext(conf_file)[0] +
-                               ".conf")
-
-    values_to_substitute_in_template = {'server': mnode,
-                                        'volname': volname}
-
-    ret = g.render_template(gdeploy_config_file,
-                            values_to_substitute_in_template,
-                            tmp_gdeploy_config_file)
-    if not ret:
-        g.log.error("Failed to substitute values in %s file"
-                    % tmp_gdeploy_config_file)
-        return False
-
-    cmd = "gdeploy -c " + tmp_gdeploy_config_file
-    retcode, stdout, stderr = g.run_local(cmd)
-    if retcode != 0:
-        g.log.error("Failed to execute gdeploy cmd %s for running "
-                    "refresh config on nfs ganesha volume" % cmd)
-        g.log.error("gdeploy console output for running refresh config "
-                    "on nfs ganesha volume: %s" % stderr)
-
-        return False
-
-    g.log.info("gdeploy output for running refresh config "
-               "on nfs ganesha volume: %s" % stdout)
-
-    # Removing the gdeploy conf file from /tmp
-    os.remove(tmp_gdeploy_config_file)
-    return True
-
-
 def update_volume_export_configuration(mnode, volname, config_to_update):
     """Updates volume export configuration and runs
        refresh config for the volume.
