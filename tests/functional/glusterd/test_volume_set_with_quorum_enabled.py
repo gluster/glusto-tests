@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-import random
+from random import choice
 from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
@@ -40,11 +40,33 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
 
     def tearDown(self):
 
+        # Check and start if glusterd isn't running.
+        if not self.validate_peers_are_connected():
+
+            # Starting glusterd on node where stopped.
+            ret = start_glusterd(self.node_on_glusterd_to_stop)
+            if ret:
+                raise ExecutionError("Failed to start glusterd.")
+            g.log.info("Successfully started glusterd.")
+
+            # Checking if peer is connected.
+            counter = 0
+            while counter < 30:
+                ret = self.validate_peers_are_connected()
+                counter += 1
+                if ret:
+                    break
+                sleep(3)
+            if not ret:
+                raise ExecutionError("Peer is not in connected state.")
+            g.log.info("Peers is in connected state.")
+
         # Setting Quorum ratio to 51%
         self.quorum_perecent = {'cluster.server-quorum-ratio': '51%'}
         ret = set_volume_options(self.mnode, 'all', self.quorum_perecent)
-        self.assertTrue(ret, "gluster volume set all cluster.server-quorum-rat"
-                             "io percentage Failed :%s" % self.servers)
+        if not ret:
+            raise ExecutionError("gluster volume set all cluster.server-quorum"
+                                 "-ratio percentage Failed :%s" % self.servers)
         g.log.info("gluster volume set all cluster.server-quorum-ratio 51 "
                    "percentage enabled successfully on :%s", self.servers)
 
@@ -85,7 +107,7 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
                    "percentage enabled successfully on :%s", self.servers)
 
         # Stop glusterd on one of the node randomly
-        self.node_on_glusterd_to_stop = random.choice(self.servers)
+        self.node_on_glusterd_to_stop = choice(self.servers[1:])
         ret = stop_glusterd(self.node_on_glusterd_to_stop)
         self.assertTrue(ret, "glusterd stop on the node failed")
         g.log.info("glusterd stop on the node: % "
@@ -103,11 +125,11 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
                               "stopping glusterd on one node")
 
         # Setting volume option when quorum is not met
-        self.new_servers = self.servers[:]
+        self.new_servers = self.servers[1:]
         self.new_servers.remove(self.node_on_glusterd_to_stop)
         self.nfs_options = {"nfs.disable": "off"}
         ret = set_volume_options(
-            random.choice(self.new_servers), self.volname, self.nfs_options)
+            choice(self.new_servers), self.volname, self.nfs_options)
         self.assertFalse(ret, "gluster volume set %s nfs.disable off "
                          "succeeded" % self.volname)
         g.log.info("gluster volume set %s nfs.disable off"
