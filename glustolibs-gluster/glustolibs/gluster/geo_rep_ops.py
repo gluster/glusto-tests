@@ -21,29 +21,6 @@
 from glusto.core import Glusto as g
 
 
-def create_shared_storage(mnode):
-    """Create shared volume which is necessary for the setup of
-       a geo-rep session
-
-    Args:
-        mnode(str): Node on which command is to be executed
-
-    Returns:
-        tuple: Tuple containing three elements (ret, out, err).
-            The first element 'ret' is of type 'int' and is the return value
-            of command execution.
-
-            The second element 'out' is of type 'str' and is the stdout value
-            of the command execution.
-
-            The third element 'err' is of type 'str' and is the stderr value
-            of the command execution.
-
-    """
-    cmd = "gluster volume set all cluster.enable-shared-storage enable"
-    return g.run(mnode, cmd)
-
-
 def georep_createpem(mnode):
     """ Creates a common pem pub file on all the nodes in the master and
         is used to implement the passwordless SSH connection
