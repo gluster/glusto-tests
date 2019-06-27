@@ -157,9 +157,13 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
         g.log.info('glusterd is running after changing log_level to debug.')
 
         # Issue some gluster commands
-        ret = get_volume_info(self.mnode)
-        self.assertIsNotNone(ret, "Failed to get volume info")
-        g.log.info("Successfully got volume info.")
+        count = 0
+        while count < 9:
+            ret = get_volume_info(self.mnode)
+            self.assertIsNotNone(ret, "Failed to get volume info")
+            sleep(2)
+            count += 1
+        g.log.info("Successfully got volume info 9 times.")
 
         # Check glusterd logs for debug messages
         glusterd_log_file = "/var/log/glusterfs/glusterd.log"
