@@ -24,58 +24,50 @@ from glustolibs.gluster.glusterfind_ops import (gfind_create, gfind_delete)
 @runs_on([['distributed-replicated', 'replicated', 'distributed',
            'dispersed', 'distributed-dispersed'],
           ['glusterfs']])
-class GlusterFindCreateCLI(GlusterBaseClass):
+class TestGlusterFindCreateCLI(GlusterBaseClass):
     """
     GlusterFindCreateCLI contains tests which verifies the glusterfind create
     command functionality.
     """
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """
-        setup volume and initialize necessary variables which is used in tests
+        setup volume for test case
         """
 
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        GlusterBaseClass.setUp.im_func(self)
 
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup %s", cls.volname)
-        ret = cls.setup_volume()
+        g.log.info("Starting to Setup %s", self.volname)
+        ret = self.setup_volume()
         if not ret:
-            raise ExecutionError("Failed to Setup_Volume %s" % cls.volname)
-        g.log.info("Successful in Setup Volume %s", cls.volname)
+            raise ExecutionError("Failed to Setup_Volume %s" % self.volname)
+        g.log.info("Successful in Setup Volume %s", self.volname)
 
     def tearDown(self):
         """
         tearDown for every test
+        Clean up the volume
         """
 
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
-
-        sesslist = ['validsession', 'validoptsession']
-        for sess in sesslist:
+        # Deleting the sessions created
+        sessionlist = ['validsession', 'validoptsession']
+        for sess in sessionlist:
             ret, _, _ = gfind_delete(self.mnode, self.volname, sess)
             if ret != 0:
                 raise ExecutionError("Failed to delete session '%s'" % sess)
             g.log.info("Successfully deleted session '%s'", sess)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume
-        """
-
         # stopping the volume
         g.log.info("Starting to Cleanup Volume")
-        ret = cls.cleanup_volume()
+        ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Cleanup Volume")
         g.log.info("Successful in Cleanup Volume")
 
-        # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Calling GlusterBaseClass tearDown
+        GlusterBaseClass.tearDown.im_func(self)
 
     def test_gfind_create_cli(self):
         """
@@ -95,42 +87,42 @@ class GlusterFindCreateCLI(GlusterBaseClass):
 
         # pylint: disable=too-many-statements
         # Create a session with valid inputs for required parameters
-        sess1 = 'validsession'
+        session1 = 'validsession'
         g.log.info("Creating a session for the volume %s with valid values"
                    "for the required parameters", self.volname)
-        ret, _, _ = gfind_create(self.mnode, self.volname, sess1)
+        ret, _, _ = gfind_create(self.mnode, self.volname, session1)
         self.assertEqual(ret, 0, ("Unexpected: Creation of a session for the "
                                   "volume %s failed", self.volname))
         g.log.info("Successful in validating the glusterfind create command "
                    "with valid values for required parameters")
 
         # Create a session with invalid inputs for required parameters
-        sess2 = 'invalidsession'
+        session2 = 'invalidsession'
         g.log.info("Creating a session with invalid values for the "
                    "required parameters")
-        ret, _, _ = gfind_create(self.mnode, 'invalidvolumename', sess2)
+        ret, _, _ = gfind_create(self.mnode, 'invalidvolumename', session2)
         self.assertNotEqual(ret, 0, ("Unexpected: Creation of a session is "
                                      "Successful with invalid values"))
         g.log.info("Successful in validating the glusterfind create command "
                    "with invalid values for required parameters")
 
         # Create a session with valid inputs for optional parameters
-        sess3 = 'validoptsession'
+        session3 = 'validoptsession'
         g.log.info("Creating a session for the volume %s with valid values"
                    "for the optional parameters", self.volname)
-        ret, _, _ = gfind_create(self.mnode, self.volname, sess3, force=True,
-                                 resetsesstime=True, debug=True)
+        ret, _, _ = gfind_create(self.mnode, self.volname, session3,
+                                 force=True, resetsesstime=True, debug=True)
         self.assertEqual(ret, 0, ("Unexpected: Creation of a session for the "
                                   "volume %s failed", self.volname))
         g.log.info("Successful in validating the glusterfind create command "
                    "with valid values for optional parameters")
 
         # Create a session with invalid inputs for optional parameters
-        sess4 = 'invalidoptsession'
+        session4 = 'invalidoptsession'
         g.log.info("Creating a session with invalid values for the "
                    "optional parameters")
         cmd = ("glusterfind create %s %s --debg --frce --resetsessiontime"
-               % (sess4, self.volname))
+               % (session4, self.volname))
         ret, _, _ = g.run(self.mnode, cmd)
         self.assertNotEqual(ret, 0, ("Unexpected: Creation of a session is "
                                      "Successful with invalid values"))
