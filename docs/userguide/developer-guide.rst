@@ -75,7 +75,7 @@ Best Practices
     class GlusterTestClass(GlusterBaseClass):
         @classmethod
         def setUpClass(cls):
-            GlusterBaseClass.setUpClass.im_func(self)
+            GlusterBaseClass.setUpClass.im_func(cls)
             # Your code here
             # Remove this function if you don't have set up steps to do
 
@@ -103,7 +103,7 @@ Best Practices
 
         @classmethod
         def tearDownClass(cls):
-            GlusterBaseClass.tearDownClass.im_func(self)
+            GlusterBaseClass.tearDownClass.im_func(cls)
             # Your code here
             # Remove this function if you don't have set up steps to do
 
