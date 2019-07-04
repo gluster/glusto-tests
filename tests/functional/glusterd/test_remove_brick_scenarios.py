@@ -14,6 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from multiprocessing.pool import ThreadPool
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
@@ -93,10 +94,21 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
         g.log.info("Successfully got the list of bricks of volume")
 
         # Running IO.
-        command = ('for number in `seq 1 100000`;do touch ' +
-                   self.mounts[0].mountpoint + '/test_file$number; done')
-        ret, _, _ = g.run(self.mounts[0].client_system, command)
-        self.assertEqual(ret, 0, "File creation: failed.")
+        pool = ThreadPool(5)
+        # Build a command per each thread
+        # e.g. "seq 1 20000 ... touch" , "seq 20001 40000 ... touch" etc
+        cmds = ["seq {} {} | sed 's|^|{}/test_file|' | xargs touch".
+                format(i, i + 19999, self.mounts[0].mountpoint)
+                for i in range(1, 100000, 20000)]
+        # Run all commands in parallel (each thread returns a tuple from g.run)
+        ret = pool.map(
+            lambda command: g.run(self.mounts[0].client_system, command), cmds)
+        # ret -> list of tuples [(return_code, stdout, stderr),...]
+        pool.close()
+        pool.join()
+        # Verify all commands' exit code is 0 (first element of each tuple)
+        for thread_return in ret:
+            self.assertEqual(thread_return[0], 0, "File creation failed.")
         g.log.info("Files create on mount point.")
 
         # Removing bricks from volume.
@@ -111,7 +123,7 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
         ret, _, _ = remove_brick(self.mnode, self.volname,
                                  remove_brick_list_other_pair, 'stop')
         self.assertEqual(ret, 1, "Successfully stopped remove brick operation "
-                         "on other pair of bricks.")
+                                 "on other pair of bricks.")
         g.log.info("Failed to stop remove brick operation on"
                    " other pair of bricks.")
 
@@ -122,13 +134,13 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
         g.log.info("EXPECTED: Failed to get status on other pair of bricks.")
 
         # Stopping remove operation for non-existent bricks.
-        remove_brick_list_non_existent = [bricks_list[0]+'non-existent',
-                                          bricks_list[1]+'non-existent',
-                                          bricks_list[2]+'non-existent']
+        remove_brick_list_non_existent = [bricks_list[0] + 'non-existent',
+                                          bricks_list[1] + 'non-existent',
+                                          bricks_list[2] + 'non-existent']
         ret, _, _ = remove_brick(self.mnode, self.volname,
                                  remove_brick_list_non_existent, 'stop')
         self.assertEqual(ret, 1, "Error: Successfully stopped remove brick"
-                         " operation on non-existent bricks.")
+                                 " operation on non-existent bricks.")
         g.log.info("EXPECTED: Failed to stop remove brick operation"
                    " on non existent bricks.")
 
@@ -168,21 +180,21 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
         dir_name = ''
         for counter in range(0, 10):
             ret = mkdir(self.mounts[0].client_system,
-                        self.mounts[0].mountpoint+"/dir1"+str(counter),
+                        self.mounts[0].mountpoint + "/dir1" + str(counter),
                         parents=True)
             if ret:
-                dir_name = "/dir1"+str(counter)
+                dir_name = "/dir1" + str(counter)
                 break
         self.assertTrue(ret, ("Failed to create directory dir1."))
         g.log.info("Directory dir1 created successfully.")
 
         # Checking value of attribute for dht.
         brick_server, brick_dir = bricks_list[0].split(':')
-        folder_name = brick_dir+dir_name
+        dir_name = brick_dir + dir_name
         g.log.info("Check trusted.glusterfs.dht on host  %s for directory %s",
-                   brick_server, folder_name)
-        ret = get_fattr(brick_server, folder_name, 'trusted.glusterfs.dht')
+                   brick_server, dir_name)
+        ret = get_fattr(brick_server, dir_name, 'trusted.glusterfs.dht')
         self.assertTrue(ret, ("Failed to get trusted.glusterfs.dht for %s"
-                              % folder_name))
+                              % dir_name))
         g.log.info("Get trusted.glusterfs.dht xattr for %s successfully",
-                   folder_name)
+                   dir_name)
