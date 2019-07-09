@@ -204,3 +204,6 @@ Default log location is: `/tmp/glustomain.log`
 Note: When using `glusto` via the Python Interactive Interpreter,
 the default log location is `/tmp/glusto.log`.
 
+License
+-------
+[GPLv3](https://github.com/gluster/glusto-tests/blob/master/LICENSE)
