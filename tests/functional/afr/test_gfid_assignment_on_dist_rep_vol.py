@@ -29,6 +29,7 @@ from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.glusterfile import get_fattr
+from glustolibs.gluster.volume_ops import set_volume_options
 
 
 @runs_on([['distributed-replicated'],
@@ -100,6 +101,15 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
         - Do lookup from the mount.
         - Check whether all the bricks have the same gfid assigned.
         """
+        # Enable client side healing
+        g.log.info("Enable client side healing options")
+        options = {"metadata-self-heal": "on",
+                   "entry-self-heal": "on",
+                   "data-self-heal": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
 
         # Create a directory on the mount
         g.log.info("Creating a directory")
