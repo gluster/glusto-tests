@@ -237,6 +237,16 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, 'Unable to mount %s' % self.volname)
 
+        # Enable client side healing
+        g.log.info("Enable client side healing options")
+        options = {"metadata-self-heal": "on",
+                   "entry-self-heal": "on",
+                   "data-self-heal": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
         # Trigger heal from mount point
         g.log.info("Triggering heal for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
