@@ -137,3 +137,21 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
             _rc = False
 
     return _rc
+
+
+def get_brick_processes_count(mnode):
+    """
+    Get the brick process count for a given node.
+
+    Args:
+        mnode (str): Node on which brick process has to be counted.
+
+    Returns:
+        int: Number of brick processes running on the node.
+        None: If the command fails to execute.
+    """
+    ret, out, _ = g.run(mnode, "pidof glusterfsd")
+    if not ret:
+        return len(out.split(" "))
+    else:
+        return None
