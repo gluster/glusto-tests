@@ -13,18 +13,11 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-"""
-Description:
-    Test Cases in this module tests the
-    snapshot scheduler behavior when shared volume is mounted/not
-    mounted. scheduler command such as initialise scheduler,
-    enable scheduler, status of scheduler.
-"""
-import time
+
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
-                                                   runs_on)
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import get_volume_options
 from glustolibs.gluster.snap_scheduler import (scheduler_init,
                                                scheduler_enable,
@@ -32,7 +25,6 @@ from glustolibs.gluster.snap_scheduler import (scheduler_init,
                                                scheduler_disable)
 from glustolibs.gluster.shared_storage_ops import (enable_shared_storage,
                                                    is_shared_volume_mounted,
-                                                   is_shared_volume_unmounted,
                                                    disable_shared_storage)
 
 
@@ -40,90 +32,119 @@ from glustolibs.gluster.shared_storage_ops import (enable_shared_storage,
            'distributed', 'distributed-dispersed'],
           ['glusterfs']])
 class SnapshotSchedulerStatus(GlusterBaseClass):
+    """
+    SnapshotSchedulerStatus includes tests which verify the snap_scheduler
+    functionality WRT the status and shared storage
+    """
 
     def setUp(self):
+        """
+        setup volume for the test
+        """
 
         # SettingUp volume and Mounting the volume
         GlusterBaseClass.setUp.im_func(self)
-        g.log.info("Starting to SetUp and Mount Volume")
-        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        g.log.info("Starting to SetUp Volume")
+        ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
         g.log.info("Volume %s has been setup successfully", self.volname)
 
     def tearDown(self):
+        """
+        tearDown for every test
+        """
+
+        # Check if shared storage is enabled
+        # Disable if true
+        g.log.info("Checking if shared storage is mounted")
+        ret = is_shared_volume_mounted(self.mnode)
+        if ret:
+            g.log.info("Disabling shared storage")
+            ret = disable_shared_storage(self.mnode)
+            if not ret:
+                raise ExecutionError("Failed to disable shared storage")
+            g.log.info("Successfully disabled shared storage")
 
         # Unmount and cleanup-volume
-        g.log.info("Starting to Unmount and cleanup-volume")
-        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        g.log.info("Starting to cleanup-volume")
+        ret = self.cleanup_volume()
         if not ret:
-            raise ExecutionError("Failed to Unmount and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+            raise ExecutionError("Failed to Cleanup Volume %s" % self.volname)
+        g.log.info("Successful in Cleanup Volume")
+
+        # Calling GlusterBaseClass tearDown
+        GlusterBaseClass.tearDown.im_func(self)
 
     def test_snap_scheduler_status(self):
         # pylint: disable=too-many-statements
         """
-        Steps:
-        1. create volumes
-        2. initialise snap scheduler without
-           enabling shared storage should fail
-        3. enable shared storage
-        4. initialise snap scheduler
-        5. check snapshot scheduler status
+        Validating the snapshot scheduler behavior when shared storage
+        volume is mounted/not mounted.
+
+        * Initialise snap_scheduler without enabling shared storage
+        * Enable shared storage
+        * Initialise snap_scheduler on all nodes
+        * Check snap_scheduler status
         """
-        # Validate shared storage is enabled
-        g.log.info("Starting to validate shared storage volume")
+
+        # Validate shared storage is disabled
+        g.log.info("Validating shared storage is disabled")
         volinfo = get_volume_options(self.mnode, self.volname,
-                                     option=("cluster.enable"
-                                             "-shared-storage"))
+                                     option=("cluster.enable-shared-storage"))
         if volinfo["cluster.enable-shared-storage"] == "disable":
             # Initialise snapshot scheduler
             g.log.info("Initialising snapshot scheduler on all nodes")
             ret = scheduler_init(self.servers)
             self.assertFalse(ret, "Unexpected: Successfully initialized "
                              "scheduler on all nodes")
-            g.log.info("As Expected, Failed to initialize scheduler on "
+            g.log.info("Expected: Failed to initialize snap_scheduler on "
                        "all nodes")
         self.assertEqual(volinfo["cluster.enable-shared-storage"],
                          "disable", "Unexpected: Shared storage "
                          "is enabled on cluster")
 
-        # Enable Shared storage
+        # Enable shared storage
         g.log.info("enabling shared storage")
         ret = enable_shared_storage(self.mnode)
         self.assertTrue(ret, "Failed to enable shared storage")
         g.log.info("Successfully enabled shared storage")
 
-        # Validate shared storage mounted
-        g.log.info("validate shared storage mounted")
-        ret = is_shared_volume_mounted(self.mnode)
-        self.assertTrue(ret, "Failed to mount shared volume")
-        g.log.info("Successfully mounted shared volume")
+        # Validate shared storage volume is mounted
+        g.log.info("Validating if shared storage volume is mounted")
+        count = 0
+        while count < 5:
+            ret = is_shared_volume_mounted(self.mnode)
+            if ret:
+                break
+            sleep(2)
+            count += 1
+        self.assertTrue(ret, "Failed to validate if shared volume is mounted")
+        g.log.info("Successfully validated shared volume is mounted")
 
         # Validate shared storage volume is enabled
-        g.log.info("validate shared storage volume")
+        g.log.info("Validate shared storage is enabled")
         volinfo = get_volume_options(self.mnode, self.volname,
-                                     option=("cluster.enable"
-                                             "-shared-storage"))
+                                     option=("cluster.enable-shared-storage"))
         self.assertIsNotNone(volinfo, "Failed to validate volume option")
         self.assertEqual(volinfo["cluster.enable-shared-storage"], "enable",
-                         "Failed to enable shared storage volume")
-        g.log.info("Shared storage enabled successfully")
+                         "Failed to validate if shared storage is enabled")
+        g.log.info("Successfully validated shared storage is enabled")
 
-        # Initialise snap scheduler
+        # Initialise snap_scheduler on all nodes
         g.log.info("Initialising snapshot scheduler on all nodes")
         count = 0
         while count < 40:
             ret = scheduler_init(self.servers)
             if ret:
                 break
-            time.sleep(2)
+            sleep(2)
             count += 1
         self.assertTrue(ret, "Failed to initialize scheduler on all nodes")
         g.log.info("Successfully initialized scheduler on all nodes")
 
-        # Enable snap scheduler
-        g.log.info("Enabling snap scheduler")
+        # Enable snap_scheduler
+        g.log.info("Enabling snap_scheduler")
         ret, _, _ = scheduler_enable(self.mnode)
         self.assertEqual(ret, 0, "Failed to enable scheduler on %s node" %
                          self.mnode)
@@ -139,10 +160,10 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
                     self.assertEqual(status.strip().split(":")[2], ' Enabled',
                                      "Failed to check status of scheduler")
                     break
-                time.sleep(2)
+                sleep(2)
                 count += 1
             self.assertEqual(ret, 0, "Failed to check status of scheduler"
-                             " on nodes %s" % server)
+                             " on node %s" % server)
             g.log.info("Successfully checked scheduler status on %s nodes",
                        server)
 
@@ -153,14 +174,19 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
                          "snapshot scheduler")
         g.log.info("Successfully disabled snapshot scheduler")
 
-        # disable shared storage
-        g.log.info("starting to disable shared storage")
-        ret = disable_shared_storage(self.mnode)
-        self.assertTrue(ret, "Failed to disable shared storage")
-        g.log.info("Successfully disabled shared storage")
-
-        # Validate shared volume unmounted
-        g.log.info("Validate shared volume unmounted")
-        ret = is_shared_volume_unmounted(self.mnode)
-        self.assertTrue(ret, "Failed to unmount shared storage")
-        g.log.info("Successfully unmounted shared storage")
+        # Check snapshot scheduler status
+        g.log.info("checking status of snapshot scheduler")
+        for server in self.servers:
+            count = 0
+            while count < 40:
+                ret, status, _ = scheduler_status(server)
+                if not ret:
+                    self.assertEqual(status.strip().split(":")[2], ' Disabled',
+                                     "Failed to check status of scheduler")
+                    break
+                sleep(2)
+                count += 1
+            self.assertEqual(ret, 0, "Failed to check status of scheduler"
+                             " on node %s" % server)
+            g.log.info("Successfully checked scheduler status on %s nodes",
+                       server)
