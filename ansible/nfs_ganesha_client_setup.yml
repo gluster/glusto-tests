@@ -5,5 +5,5 @@
   tasks:
    - name: Setup Clients to run NFS-Ganesha tests.
      yum:
-	name: ['wget', 'iozone', 'perl-Test-Harness', 'libacl*', 'gcc']
+	name: ['wget', 'iozone', 'perl-Test-Harness', 'libacl*', 'gcc', 'git', 'make', 'time']
 	state: latest

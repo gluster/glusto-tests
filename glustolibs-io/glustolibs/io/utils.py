@@ -928,3 +928,47 @@ def run_crefi(client, mountpoint, number, breadth, depth, thread=5,
         g.log.error("Failed to run crefi on %s." % client)
         return False
     return True
+
+
+def run_cthon(mnode, volname, clients, dir_name):
+    """This function runs the cthon test suite.
+
+    Args:
+        mnode (str) : IP of the server exporting the gluster volume.
+        volname (str) : The volume name.
+        clients (list) : List of client machines where
+                         the test needs to be run.
+        dir_name (str) : Directory where the repo
+                         is cloned.
+
+    Returns:
+        bool : True if the cthon test passes successfully
+            False otherwise.
+    """
+    param_list = ['-b', '-g', '-s', '-l']
+    vers_list = ['4.0', '4.1']
+
+    for client in clients:
+        g.log.info("Running tests on client %s" % client)
+        for vers in vers_list:
+            g.log.info("Running tests on client version %s" % vers)
+            for param in param_list:
+                # Initialising the test_type that will be running
+                if param == '-b':
+                    test_type = "Basic"
+                elif param == '-g':
+                    test_type = "General"
+                elif param == '-s':
+                    test_type = "Special"
+                else:
+                    test_type = "Lock"
+                g.log.info("Running %s test" % test_type)
+                cmd = ("cd /root/%s; ./server %s -o vers=%s -p %s -N "
+                       "1 %s;" % (dir_name, param, vers, volname, mnode))
+                ret, _, _ = g.run(client, cmd)
+                if ret:
+                    g.log.error("Error with %s test" % test_type)
+                    return False
+                else:
+                    g.log.info("%s test successfully passed" % test_type)
+    return True
