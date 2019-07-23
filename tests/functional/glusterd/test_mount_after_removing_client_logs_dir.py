@@ -123,3 +123,63 @@ class TestRemoveCientLogDirAndMount(GlusterBaseClass):
                                '/var/log/glusterfs/')
         self.assertIsNotNone(ret, 'Log files were not regenerated.')
         g.log.info("Log files were properly regenearted.")
+
+    def test_mount_remove_client_logs_dir_remount(self):
+
+        # pylint: disable=too-many-statements
+        """
+        1. Create all types of volumes and start them.
+        2. Mount all volumes on clients.
+        3. Delete /var/log/glusterfs folder on client.
+        4. Run IO on all the mount points.
+        5. Unmount and remount all volumes.
+        6. Check if logs are regenerated or not.
+        """
+
+        # Mounting the volume.
+        ret, _, _ = mount_volume(self.volname, mtype=self.mount_type,
+                                 mpoint=self.mounts[0].mountpoint,
+                                 mserver=self.mnode,
+                                 mclient=self.mounts[0].client_system)
+        self.assertEqual(ret, 0, ("Volume %s is not mounted.") % self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
+
+        # Removing dir /var/log/glusterfs on client.
+        cmd = 'mv /var/log/glusterfs /root/'
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Unable to remove /var/log/glusterfs dir.")
+        g.log.info("Successfully removed /var/log/glusterfs on client: %s",
+                   self.mounts[0])
+
+        # Running IO on the mount point.
+        # Creating a dir on the mount point.
+        ret = mkdir(self.mounts[0].client_system,
+                    self.mounts[0].mountpoint+"/dir")
+        self.assertTrue(ret, "Failed to create dir.")
+        g.log.info("dir created successfully for %s", self.mounts[0])
+
+        # Creating a file on the mount point.
+        cmd = ('touch  %s/file' % self.mounts[0].mountpoint)
+        ret, _, _ = g.run(self.mounts[0].client_system, cmd)
+        self.assertEqual(ret, 0, "Failed to create file.")
+        g.log.info("file created successfully for %s", self.mounts[0])
+
+        # Unmounting and remounting volume.
+        ret, _, _ = umount_volume(mclient=self.mounts[0].client_system,
+                                  mpoint=self.mounts[0].mountpoint)
+        self.assertEqual(ret, 0,
+                         ("Volume %s is not unmounted.") % self.volname)
+        g.log.info("Volume unmounted successfully : %s", self.volname)
+
+        ret, _, _ = mount_volume(self.volname, mtype=self.mount_type,
+                                 mpoint=self.mounts[0].mountpoint,
+                                 mserver=self.mnode,
+                                 mclient=self.mounts[0].client_system)
+        self.assertEqual(ret, 0, ("Volume %s is not mounted.") % self.volname)
+        g.log.info("Volume mounted successfully : %s", self.volname)
+
+        # Checking if logs are regenerated or not.
+        ret = get_dir_contents(self.mounts[0].client_system,
+                               '/var/log/glusterfs/')
+        self.assertIsNotNone(ret, 'Log files were not regenerated.')
+        g.log.info("Log files were properly regenearted.")
