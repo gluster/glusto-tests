@@ -47,7 +47,7 @@ def enable_shared_storage(mnode):
 
 def disable_shared_storage(mnode):
     """
-    Enables the shared storage
+    Disables the shared storage
 
     Args:
         mnode (str) : Node on which command is to be executed
@@ -61,19 +61,19 @@ def disable_shared_storage(mnode):
     if not ret:
         g.log.error("Failed to disable shared storage")
         return False
-    g.log.info("Successfully disabled shared storage option")
+    g.log.info("Successfully disabled shared storage")
     return True
 
 
 def is_shared_volume_mounted(mnode):
     """
-    Checks shared volume mounted after enabling it
+    Checks if shared storage volume is mounted
 
     Args:
         mnode (str) : Node on which command is to be executed
 
     Returns:
-        bool : True if successfully mounted shared volume.
+        bool : True if shared storage volume is mounted.
                False otherwise.
     """
     halt = 20
@@ -82,38 +82,12 @@ def is_shared_volume_mounted(mnode):
     while counter < halt:
         _, out, _ = g.run(mnode, "df -h")
         if path in out:
-            g.log.info("Shared volume mounted successfully")
+            g.log.info("Shared storage volume is mounted")
             return True
         else:
             sleep(2)
             counter = counter + 2
-    g.log.error("Shared volume not mounted")
-    return False
-
-
-def is_shared_volume_unmounted(mnode):
-    """
-    Checks shared volume unmounted after disabling it
-
-    Args:
-        mnode (str) : Node on which command is to be executed
-
-    Returns:
-        bool : True if successfully unmounted shared volume.
-               False otherwise.
-    """
-    halt = 20
-    counter = 0
-    path = "/run/gluster/shared_storage"
-    while counter < halt:
-        _, out, _ = g.run(mnode, "df -h")
-        if path not in out:
-            g.log.info("Shared volume unmounted successfully")
-            return True
-        else:
-            sleep(2)
-            counter = counter + 2
-    g.log.error("Shared volume not unmounted")
+    g.log.info("Shared storage volume not mounted")
     return False
 
 
