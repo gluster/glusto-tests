@@ -36,6 +36,7 @@ from glustolibs.gluster.heal_ops import (
 from glustolibs.gluster.heal_libs import (
     monitor_heal_completion)
 from glustolibs.gluster.heal_ops import get_heal_info
+from glustolibs.gluster.glusterfile import set_file_permissions
 
 
 def ec_check_heal_comp(self):
@@ -112,14 +113,18 @@ class EcClientHealHangTest(GlusterBaseClass):
         ret = are_bricks_online(self.mnode, self.volname, bricks_list)
         self.assertTrue(ret, "All bricks are not online")
 
-        # Start client side heal by reading/writing files.
+        # Start client side heal by reading/writing files and directories
         appendcmd = ("cd %s; mkdir test; cd test; for i in `seq 1 100` ;"
                      "do dd if=/dev/urandom of=file$i bs=1M "
                      "count=1 oflag=append conv=notrunc;done" % mountpoint)
 
         readcmd = ("cd %s; mkdir test; cd test; for i in `seq 1 100` ;"
-                   "do dd if=file$i of=/dev/zero bs=1M "
+                   "do dd if=file$i of=/dev/null bs=1M "
                    "count=5;done" % mountpoint)
+        ret = set_file_permissions(self.mounts[0].client_system,
+                                   "%s/test" % mountpoint, 777)
+        self.assertTrue(ret, "Failed to set permission for directory")
+        g.log.info("Successfully set permissions for directory")
 
         ret, _, err = g.run(self.mounts[0].client_system, appendcmd)
         self.assertEqual(ret, 0, err)
