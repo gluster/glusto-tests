@@ -594,6 +594,41 @@ def set_volume_options(mnode, volname, options):
     return _rc
 
 
+def reset_volume_option(mnode, volname, option, force=False):
+    """Resets the volume option
+
+    Args:
+        mnode (str): Node on which cmd has to be executed
+        volname (str): volume name
+        option (str): volume option
+
+    Kwargs:
+        force (bool): If this option is set to True, then reset volume
+            will get executed with force option. If it is set to False,
+            then reset volume will get executed without force option
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    Example:
+        reset_volume_option("abc.xyz.com", "testvol", "option")
+    """
+    if force:
+        cmd = ("gluster volume reset %s %s force --mode=script"
+               % (volname, option))
+    else:
+        cmd = "gluster volume reset %s %s --mode=script" % (volname, option)
+    return g.run(mnode, cmd)
+
+
 def volume_info(mnode, volname='all'):
     """Executes gluster volume info cli command
 
