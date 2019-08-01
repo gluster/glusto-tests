@@ -27,11 +27,13 @@ import random
 import string
 import datetime
 from multiprocessing import Process
+from multiprocessing.pool import ThreadPool
 import subprocess
 from docx import Document
 import contextlib
 import platform
 import shutil
+import numpy as np
 
 if platform.system() == "Windows":
     path_sep = "\\"
@@ -256,6 +258,48 @@ def create_deep_dirs_with_files(args):
     return int(rc)
 
 
+def _create_file(file_abs_path, file_type, file_size):
+    rc = 0
+
+    if file_type == 'txt':
+        file_abs_path += ".txt"
+
+        with open(file_abs_path, "w+") as new_file:
+            try:
+                new_file.write(''.join(
+                    np.random.choice(list(string.printable), file_size)))
+                new_file.flush()
+                new_file.close()
+            except IOError as err:
+                print("Unable to write to file '%s' : %s" %
+                      (file_abs_path, err.strerror))
+                rc = 1
+
+    elif file_type == 'docx':
+        file_abs_path += ".docx"
+        try:
+            document = Document()
+            str_to_write = list(string.ascii_letters + string.digits)
+            file_str = ''.join(np.random.choice(str_to_write, file_size))
+            document.add_paragraph(file_str)
+            document.save(file_abs_path)
+        except Exception as err:
+            print("Unable to write to file '%s' : %s" %
+                  (file_abs_path, err.strerror))
+            rc = 1
+
+    elif file_type == 'empty_file':
+        try:
+            with open(file_abs_path, "w+") as new_file:
+                new_file.close()
+        except IOError as err:
+            print("Unable to write to file '%s' : %s" %
+                  (file_abs_path, err.strerror))
+            rc = 1
+
+    return rc
+
+
 def _create_files(dir_path, num_of_files, fixed_file_size=None,
                   base_file_name='testfile', file_types='txt'):
     rc = 0
@@ -272,54 +316,30 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
     if rc != 0:
         return rc
 
-    for count in range(num_of_files):
-        fname = base_file_name + str(count)
-        fname_abs_path = os.path.join(dir_path, fname)
-        if fixed_file_size is None:
-            file_size = (
-                file_sizes_dict[random.choice(list(file_sizes_dict.keys()))])
-        else:
-            try:
-                file_size = file_sizes_dict[fixed_file_size]
-            except KeyError as e:
-                print ("File sizes can be [1k, 10k, 512k, 1M]")
-                return 1
+    fname_abs_path = os.path.join(dir_path, base_file_name)
+    if fixed_file_size is None:
+        # this generator yields file tuples: (file name, file type, file size)
+        files = ((fname_abs_path + str(num),
+                  random.choice(file_types_list),
+                  random.choice(file_sizes_dict.values()))
+                 for num in xrange(num_of_files))
+    else:
+        try:
+            files = ((fname_abs_path + str(num),
+                      random.choice(file_types_list),
+                      file_sizes_dict[fixed_file_size])
+                     for num in xrange(num_of_files))
+        except KeyError:
+            print("File sizes can be [1k, 10k, 512k, 1M]")
+            return 1
 
-        type = random.choice(file_types_list)
-        if type == 'txt':
-            fname_abs_path = fname_abs_path + ".txt"
+    # Thread per filetype (for now)
+    pool = ThreadPool(len(file_types_list))
+    ret = pool.map(lambda file_tuple: _create_file(*file_tuple), files)
+    pool.close()
+    pool.join()
+    rc = 1 if any(ret) else 0
 
-            with open(fname_abs_path, "w+") as fd:
-                try:
-                    fd.write(''.join(random.choice(string.printable) for x in
-                                     range(file_size)))
-                    fd.flush()
-                    fd.close()
-                except IOError as e:
-                    print ("Unable to write to file '%s' : %s" %
-                           (fname_abs_path, e.strerror))
-                    rc = 1
-        elif type == 'docx':
-            fname_abs_path = fname_abs_path + ".docx"
-            try:
-                document = Document()
-                str_to_write = string.ascii_letters + string.digits
-                file_str = (''.join(random.choice(str_to_write)
-                                    for x in range(file_size)))
-                document.add_paragraph(file_str)
-                document.save(fname_abs_path)
-            except Exception as e:
-                print ("Unable to write to file '%s' : %s" %
-                       (fname_abs_path, e.strerror))
-                rc = 1
-        elif type == 'empty_file':
-            try:
-                with open(fname_abs_path, "w+") as fd:
-                    fd.close()
-            except IOError as e:
-                print ("Unable to write to file '%s' : %s" %
-                       (fname_abs_path, e.strerror))
-                rc = 1
     return rc
 
 
