@@ -56,7 +56,7 @@ def is_brick_mux_enabled(mnode):
     elif get_brick_mux_status(mnode) in negative_states:
         return False
     else:
-        raise ValueError('Brick mux status % is incorrect',
+        raise ValueError('Brick mux status %s is incorrect',
                          get_brick_mux_status(mnode))
 
 
