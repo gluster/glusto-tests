@@ -18,12 +18,14 @@
         Test Cases in this module tests the client side quorum.
 """
 
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import (
     set_volume_options, get_subvols)
 from glustolibs.misc.misc_libs import upload_scripts
+from glustolibs.gluster.volume_ops import reset_volume_option
 from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            bring_bricks_online)
 from glustolibs.io.utils import (validate_io_procs,
@@ -72,6 +74,19 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         """
         tearDown for every test
         """
+
+        # Reset the volume options set inside the test
+        g.log.info("Reset the volume options")
+        vol_options = ['cluster.self-heal-daemon', 'cluster.quorum-type',
+                       'cluster.quorum-count']
+        for opt in vol_options:
+            ret, _, _ = reset_volume_option(self.mnode, self.volname, opt)
+            if ret != 0:
+                raise ExecutionError("Failed to reset the volume option %s"
+                                     % opt)
+            sleep(2)
+        g.log.info("Successfully reset the volume options")
+
         # stopping the volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
@@ -216,8 +231,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         offline_brick2_from_replicasets = []
         for i in range(0, num_subvols):
             subvol_brick_list = subvols_dict['volume_subvols'][i]
-            g.log.info("sub-volume %s brick list : %s",
-                       i, subvol_brick_list)
+            g.log.info("sub-volume %s brick list : %s", i, subvol_brick_list)
             brick_to_bring_offline2 = subvol_brick_list[1]
             g.log.info("Going to bring down the brick process "
                        "for %s", brick_to_bring_offline2)
@@ -346,8 +360,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("bringing up the brick : %s online",
                    offline_brick1_from_replicasets)
         ret = bring_bricks_online(
-            self.mnode, self.volname,
-            offline_brick1_from_replicasets,
+            self.mnode, self.volname, offline_brick1_from_replicasets,
             bring_bricks_online_methods='glusterd_restart')
         self.assertTrue(ret, ("Failed to brought the brick %s online"
                               % offline_brick1_from_replicasets))
@@ -388,8 +401,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("bringing up the brick : %s online",
                    offline_brick2_from_replicasets)
         ret = bring_bricks_online(
-            self.mnode, self.volname,
-            offline_brick2_from_replicasets,
+            self.mnode, self.volname, offline_brick2_from_replicasets,
             bring_bricks_online_methods='glusterd_restart')
         self.assertTrue(ret, ("Failed to brought the brick %s online"
                               % offline_brick2_from_replicasets))
