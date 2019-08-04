@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2019  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,11 +18,13 @@
         Test Cases in this module tests the client side quorum.
 """
 
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.volume_libs import (
-    set_volume_options, get_subvols)
+from glustolibs.gluster.volume_ops import (set_volume_options,
+                                           reset_volume_option)
+from glustolibs.gluster.volume_libs import get_subvols
 from glustolibs.misc.misc_libs import upload_scripts
 
 
@@ -70,6 +72,17 @@ class ClientSideQuorumTests(GlusterBaseClass):
         """
         tearDown for every test
         """
+
+        # Reset the volume options
+        g.log.info("Resetting the volume options")
+        options = ['cluster.quorum-type', 'cluster.quorum-count']
+        for opt in options:
+            ret, _, _ = reset_volume_option(self.mnode, self.volname, opt)
+            if ret != 0:
+                raise ExecutionError("Failed to reset the volume option %s"
+                                     % opt)
+            sleep(2)
+        g.log.info("Successfully reset the volume options")
 
         # stopping the volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
