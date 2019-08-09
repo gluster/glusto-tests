@@ -18,12 +18,13 @@ from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_init import (start_glusterd, stop_glusterd)
-from glustolibs.gluster.volume_ops import get_volume_info
+from glustolibs.gluster.gluster_init import (start_glusterd, stop_glusterd,
+                                             restart_glusterd)
 from glustolibs.gluster.gluster_init import is_glusterd_running
 from glustolibs.gluster.glusterfile import (move_file,
                                             find_and_replace_in_file,
                                             check_if_pattern_in_file)
+from glustolibs.misc.misc_libs import daemon_reload
 
 
 class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
@@ -71,6 +72,12 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Reverting glusterd log failed.")
         g.log.info("Reverting of glusterd log successful.")
+
+        # Daemon should be reloaded as unit file is changed
+        ret = daemon_reload(self.mnode)
+        if not ret:
+            raise ExecutionError("Unable to reload the daemon")
+        g.log.info("Daemon reloaded successfully")
 
         # Restart glusterd
         ret = start_glusterd(self.mnode)
@@ -139,13 +146,17 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
         self.assertTrue(ret, "Renaming the glusterd log is failed")
         g.log.info("Successfully renamed glusterd.log file.")
 
+        # Daemon reloading as the unit file of the daemon changed
+        ret = daemon_reload(self.mnode)
+        self.assertTrue(ret, "Daemon reloaded successfully")
+
         # Start glusterd
         ret = start_glusterd(self.mnode)
         self.assertTrue(ret, "Failed to start glusterd on %s"
                         % self.mnode)
         g.log.info('Successfully to started glusterd.')
 
-        # Check if glusterd is runnibg or not.
+        # Check if glusterd is running or not.
         count = 0
         while count < 60:
             ret = is_glusterd_running(self.mnode)
@@ -156,14 +167,21 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
         self.assertEqual(ret, 0, "glusterd is not running on %s" % self.mnode)
         g.log.info('glusterd is running after changing log_level to debug.')
 
-        # Issue some gluster commands
+        # Instead of executing commands in loop, if glusterd is restarted in
+        # one of the nodes in the cluster the handshake messages
+        # will be in debug mode.
+        ret = restart_glusterd(self.servers[1])
+        self.assertTrue(ret, "restarted successfully")
+
         count = 0
-        while count < 9:
-            ret = get_volume_info(self.mnode)
-            self.assertIsNotNone(ret, "Failed to get volume info")
+        while count < 60:
+            ret = is_glusterd_running(self.mnode)
+            if ret:
+                break
             sleep(2)
             count += 1
-        g.log.info("Successfully got volume info 9 times.")
+        self.assertEqual(ret, 0, "glusterd is not running on %s" % self.mnode)
+        g.log.info('glusterd is running after changing log_level to debug.')
 
         # Check glusterd logs for debug messages
         glusterd_log_file = "/var/log/glusterfs/glusterd.log"

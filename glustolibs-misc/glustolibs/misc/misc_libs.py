@@ -17,6 +17,7 @@
 """ Description: Helper module for misc libs. """
 
 from glusto.core import Glusto as g
+from glustolibs.gluster.lib_utils import is_rhel7
 import os
 import sys
 import time
@@ -563,3 +564,29 @@ def drop_caches(hosts):
             _rc = False
 
     return _rc
+
+
+def daemon_reload(node):
+    """
+    Reloads the Daemons when unit files are changed
+
+    Args:
+        node : Node on which daemon has to be reloaded
+
+    Returns:
+        bool : True, On successful daemon reload
+               False, Otherwise
+    """
+    if is_rhel7([node]):
+        cmd = "systemctl daemon-reload"
+        ret, _, _ = g.run(node, cmd)
+        if ret != 0:
+            g.log.error("Failed to reload the daemon")
+            return False
+    else:
+        cmd = 'service glusterd reload'
+        ret, _, _ = g.run(node, cmd)
+        if ret != 0:
+            g.log.error("Failed to reload the daemon")
+            return False
+    return True
