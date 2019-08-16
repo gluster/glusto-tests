@@ -71,6 +71,13 @@ Pre-requisites to run glusto-tests:
 - Gluster client packages should be installed on Clients
 - Setup passwordless ssh from the glusto-tests management node to all.
 - Install glusto-tests dependencies on servers and clients.
+- Crefi should be installed on all the clients.
+
+  ```
+  $ pip install crefi
+  $ pip install pyxattr
+  ```
+
 - Setup bricks on all servers:
   - To create bricks refer to [doc](https://gluster.readthedocs.io/en/latest/Administrator%20Guide/formatting-and-mounting-bricks/) **OR** Run gdeploy as shown below.
 	1. Edit the `gdeploy_sample_config.conf` present in `examples` as shown below and also configure passwordless ssh to all servers:
@@ -97,7 +104,7 @@ Pre-requisites to run glusto-tests:
     ```
     gdeploy -c gdeploy_sample_config.conf
     ```
-Note:
+**Note:**
 
 	- To run cifs protocol:
 		1.CIFS packages need to be installed on the server
