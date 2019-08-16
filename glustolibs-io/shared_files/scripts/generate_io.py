@@ -169,8 +169,7 @@ def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
     else:
         print("Timeout %s seconds reached before filling directory with "
               "given percentage %s" % (str(timeout), str(percent_to_fill)))
-        return True
-    return False
+        return False
 
 
 def run_check_if_percent_to_fill_or_timeout_is_met(dirname,
