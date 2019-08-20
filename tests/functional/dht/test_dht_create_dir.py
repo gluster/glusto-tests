@@ -131,7 +131,7 @@ class TestDhtClass(GlusterBaseClass):
                 # , and the brick path
                 brick_tuple = brick.partition(':')
                 brick_path = brick_tuple[2]
-                gfid = get_fattr(brick_tuple[0], m_point + '/direc',
+                gfid = get_fattr(brick_tuple[0], brick_path + '/' + direc,
                                  'trusted.gfid')
                 list_of_gfid.append(gfid)
             flag = True
@@ -149,7 +149,8 @@ class TestDhtClass(GlusterBaseClass):
             list_of_xattrs = get_fattr_list(self.mounts[0].client_system,
                                             self.mounts[0].mountpoint
                                             + '/' + direc)
-            del list_of_xattrs['security.selinux']
+            if 'security.selinux' in list_of_xattrs:
+                del list_of_xattrs['security.selinux']
             self.assertFalse(list_of_xattrs, "one or more xattr being "
                                              "displayed on mount point")
         g.log.info("Verified : mount point not displaying important "
