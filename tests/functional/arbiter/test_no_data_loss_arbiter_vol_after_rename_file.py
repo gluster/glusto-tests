@@ -250,14 +250,13 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         # Trigger heal from mount point
         g.log.info("Triggering heal for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = ("python %s read %s/%s"
-                   % (self.script_upload_path,
-                      self.mounts[0].mountpoint,
+        command = ("cd %s/%s ; find . | xargs getfattr -d -m . -e hex"
+                   % (self.mounts[0].mountpoint,
                       test_dir))
 
         ret, _, err = g.run(self.mounts[0].client_system, command)
-        self.assertFalse(ret, 'Failed to start "find . | xargs stat" '
-                              'on %s'
+        self.assertFalse(ret, 'Failed to trigger heal using '
+                              '"find . | xargs getfattr -d -m . -e hex" on %s'
                          % self.mounts[0].client_system)
 
         # Monitor heal completion
@@ -285,10 +284,10 @@ class ArbiterSelfHealTests(GlusterBaseClass):
             self.assertFalse(ret, err)
             g.log.info('md5sum for the node: %s', md5sum_node)
 
-            # comparing md5sum_node result with mountpoint
+            # Comparing md5sum_node result with mountpoint
             g.log.info('Comparing md5sum result with mountpoint...')
-            self.assertEqual(md5sum, md5sum_node, 'File contents are not equal'
+            self.assertEqual(md5sum, md5sum_node, 'md5sums are not equal'
                                                   ' on %s and %s'
                              % (self.mounts[0].mountpoint, brick))
-            g.log.info('File contents are equal on %s and %s',
+            g.log.info('md5sums are equal on %s and %s',
                        self.mounts[0].mountpoint, brick)
