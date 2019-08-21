@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -128,6 +128,78 @@ class EcValidateVolumeCreate(GlusterBaseClass):
         # Setup input parameters
         self.volume['voltype']['redundancy_count'] = 6
         self.volume['voltype']['disperse_count'] = 6
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
+        g.log.info("Successfully verified invalid input parameters")
+
+    def test_invalid_usecase_five(self):
+        # Setup input parameters
+        self.volume['voltype']['disperse_data_count'] = 6
+        self.volume['voltype']['disperse_count'] = 6
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
+        g.log.info("Successfully verified invalid input parameters")
+
+    def test_invalid_usecase_six(self):
+        # Setup input parameters
+        self.volume['voltype']['disperse_data_count'] = 4
+        self.volume['voltype']['disperse_count'] = 4
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
+        g.log.info("Successfully verified invalid input parameters")
+
+    def test_invalid_usecase_seven(self):
+        # Setup input parameters
+        self.volume['voltype']['redundancy_count'] = -2
+        self.volume['voltype']['disperse_count'] = 6
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
+        g.log.info("Successfully verified invalid input parameters")
+
+    def test_invalid_usecase_eight(self):
+        # Setup input parameters
+        self.volume['voltype']['redundancy_count'] = -2
+        self.volume['voltype']['disperse_count'] = -4
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
+        g.log.info("Successfully verified invalid input parameters")
+
+    def test_invalid_usecase_nine(self):
+        # Setup input parameters
+        self.volume['voltype']['redundancy_count'] = 2
+        self.volume['voltype']['disperse_count'] = -4
+
+        # Setup Volume and Mount Volume
+        g.log.info("Starting to Setup Volume and Mount Volume")
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        self.assertFalse(ret, ("Volume Setup and Mount succeeded for volume "
+                               "%s", self.volname))
+        g.log.info("Successfully verified invalid input parameters")
+
+    def test_invalid_usecase_ten(self):
+        # Setup input parameters
+        self.volume['voltype']['redundancy_count'] = 2
+        self.volume['voltype']['disperse_count'] = 0
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
