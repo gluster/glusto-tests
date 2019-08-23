@@ -20,18 +20,16 @@
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_init import restart_glusterd
-from glustolibs.gluster.geo_rep_ops import (georep_groupadd,
-                                            georep_geoaccount,
-                                            georep_mountbroker_setup,
-                                            georep_mountbroker_adduser,
+from glustolibs.gluster.geo_rep_ops import (georep_mountbroker_setup,
+                                            georep_mountbroker_add_user,
                                             georep_mountbroker_status,
-                                            georep_geoaccount_setpasswd,
-                                            georep_ssh_keygen,
-                                            georep_ssh_copyid,
-                                            georep_createpem, georep_create,
-                                            georep_set_pemkeys,
+                                            georep_create_pem,
+                                            georep_create,
+                                            georep_set_pem_keys,
                                             georep_config_set)
 from glustolibs.gluster.shared_storage_ops import enable_shared_storage
+from glustolibs.gluster.lib_utils import (group_add, ssh_copy_id,
+                                          ssh_keygen, add_user, set_passwd)
 
 
 def georep_root_prerequisites(mnode, snode, user, passwd):
@@ -63,13 +61,13 @@ def georep_root_prerequisites(mnode, snode, user, passwd):
     g.log.debug("Creating a common pem pub file on all the nodes in "
                 "the master to establish passwordless ssh connection "
                 "to the slave ")
-    ret = georep_ssh_keygen(mnode)
+    ret = ssh_keygen(mnode)
     if not ret:
         g.log.error("Failed to create a common pem pub file")
         return False
 
     g.log.debug("Establishing passwordless ssh between master and slave")
-    ret = georep_ssh_copyid(mnode, snode, user, passwd)
+    ret = ssh_copy_id(mnode, snode, user, passwd)
     if not ret:
         g.log.error("Failed to establish ssh connection")
         return False
@@ -99,7 +97,7 @@ def georep_create_root_session(mnode, snode, mastervol, slavevol,
               any failures in the middle
     """
     g.log.debug("Creating a common pem file on %s", mnode)
-    ret, _, _ = georep_createpem(mnode)
+    ret, _, _ = georep_create_pem(mnode)
     if not ret:
         g.log.error("Failed to create a common pem file on all the nodes "
                     "belonging to the cluster %s ", mnode)
@@ -147,14 +145,19 @@ def georep_nonroot_prerequisites(mnode, snodes, group, user, mntbroker_dir,
         return False
 
     g.log.debug("Create new group: %s on all slave nodes", group)
-    if not georep_groupadd(snodes, group):
+    if not group_add(snodes, group):
         g.log.error("Creating group: %s on all slave nodes failed", group)
         return False
 
     g.log.debug("Create user: %s in group: %s on all slave nodes", user, group)
-    if not georep_geoaccount(snodes, group, user):
+    if not add_user(snodes, user, group):
         g.log.error("Creating user: %s in group: %s on all slave nodes "
                     "failed", user, group)
+        return False
+
+    g.log.debug("Set passwd for user account on slave")
+    if not set_passwd(snodes, group, user, "geopasswd"):
+        g.log.error("Setting password failed on slaves")
         return False
 
     g.log.debug("Setting up mount broker root directory: %s node: %s",
@@ -167,7 +170,7 @@ def georep_nonroot_prerequisites(mnode, snodes, group, user, mntbroker_dir,
 
     g.log.debug("Add volume: %s and user: %s to mountbroker service",
                 slavevol, user)
-    ret, _, _ = georep_mountbroker_adduser(snodes[0], slavevol, user)
+    ret, _, _ = georep_mountbroker_add_user(snodes[0], slavevol, user)
     if ret:
         g.log.error("Add volume: %s and user: %s to mountbroker "
                     "service failed", slavevol, user)
@@ -188,17 +191,12 @@ def georep_nonroot_prerequisites(mnode, snodes, group, user, mntbroker_dir,
         g.log.error("Restarting glusterd failed")
         return False
 
-    g.log.debug("Set passwd for user account on slave")
-    if not georep_geoaccount_setpasswd(snodes, group, user, "geopasswd"):
-        g.log.error("Setting password failed on slaves")
-        return False
-
     g.log.debug("Setup passwordless SSH between %s and %s", mnode, snodes[0])
-    if not georep_ssh_keygen(mnode):
+    if not ssh_keygen(mnode):
         g.log.error("ssh keygen is failed on %s", mnode)
         return False
 
-    if not georep_ssh_copyid(mnode, snodes[0], user, "geopasswd"):
+    if not ssh_copy_id(mnode, snodes[0], user, "geopasswd"):
         g.log.error("ssh copy-id is failed from %s to %s", mnode, snodes[0])
         return False
 
@@ -225,7 +223,7 @@ def georep_create_nonroot_session(mnode, mastervol, snode, slavevol, user,
     """
 
     g.log.debug("Create geo-rep pem keys")
-    ret, _, _ = georep_createpem(mnode)
+    ret, _, _ = georep_create_pem(mnode)
     if ret:
         g.log.error("Failed to create pem keys")
         return False
@@ -238,7 +236,7 @@ def georep_create_nonroot_session(mnode, mastervol, snode, slavevol, user,
         return False
 
     g.log.debug("Copy geo-rep pem keys onto all slave nodes")
-    ret, _, _ = georep_set_pemkeys(snode, user, mastervol, slavevol)
+    ret, _, _ = georep_set_pem_keys(snode, user, mastervol, slavevol)
     if ret:
         g.log.error("Failed to copy geo-rep pem keys onto all slave nodes")
         return False
