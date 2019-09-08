@@ -72,6 +72,7 @@ class TestChangeReservcelimit(GlusterBaseClass):
             if ret:
                 break
             sleep(3)
+            count += 1
 
         # Unmounting and cleaning volume
         ret, _, _ = umount_volume(mclient=self.mounts[0].client_system,

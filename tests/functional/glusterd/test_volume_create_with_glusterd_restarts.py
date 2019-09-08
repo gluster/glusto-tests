@@ -36,6 +36,7 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
             if ret:
                 break
             sleep(3)
+            count += 1
 
         # clean up volumes
         ret = cleanup_volume(self.mnode, self.volname)
@@ -90,6 +91,7 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
             if ret:
                 break
             sleep(3)
+            count += 1
         self.assertTrue(ret, "Peers are not in connected state.")
         g.log.info("Peers are in connected state.")
 
@@ -114,5 +116,6 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
             if ret:
                 break
             sleep(3)
+            count += 1
         self.assertTrue(ret, "Peers are not in connected state.")
         g.log.info("Peers are in connected state.")
