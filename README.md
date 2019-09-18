@@ -51,12 +51,13 @@ How to install gdeploy:
 
 To install glusto-tests dependencies:
 --------------------------------------------------
-- `python-docx` needs to be installed when we run IO's and validates on client node.
+- `python-docx` and `numpy` has to be installed to run IO and validate it on client node.
     - To install run :
 
 			    # curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
 			    # python get-pip.py
 			    # pip install --pre python-docx
+			    # pip install numpy
 
 - `arequal` needs to be installed on all servers and clients.
 	- To install download the below repo into /etc/yum.repos.d/
