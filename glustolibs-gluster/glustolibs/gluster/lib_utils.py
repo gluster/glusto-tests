@@ -1105,3 +1105,81 @@ def set_passwd(servers, username, passwd):
                         username, server)
             return False
     return True
+
+
+def is_user_exists(servers, username):
+    """
+    Checks if user is present on the given servers or not.
+
+    Args:
+        servers(str|list): list of nodes on which you need to
+                           check if the user is present or not.
+        username(str): username of user whose presence has to be checked.
+
+    Returns:
+        bool: True if user is present on all nodes else False.
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "id %s" % username
+    results = g.run_parallel(servers, cmd)
+
+    for server, (ret_value, _, _) in results.items():
+        if not ret_value:
+            g.log.error("User %s doesn't exists on server %s.",
+                        (username, server))
+            return False
+    return True
+
+
+def is_group_exists(servers, group):
+    """
+    Checks if group is present on the given servers.
+
+    Args:
+        servers(str|list): list of nodes on which you need to
+                           check if group is present or not.
+        group(str): groupname of group whose presence has
+                    to be checked.
+
+    Returns:
+        bool: True if group is present on all nodes else False.
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "grep -q %s /etc/group" % group
+    results = g.run_parallel(servers, cmd)
+
+    for server, (ret_value, _, _) in results.items():
+        if not ret_value:
+            g.log.error("Group %s doesn't exists on server %s.",
+                        (group, server))
+            return False
+    return True
+
+
+def is_passwordless_ssh_configured(fromnode, tonode, username):
+    """
+    Checks if passwordless ssh is configured between nodes or not.
+
+    Args:
+        fromnode: Server from which passwordless ssh has to be
+                  configured.
+        tonode: Server to which passwordless ssh has to be
+                configured.
+        username: username of user to be used for checking
+                  passwordless ssh.
+    Returns:
+        bool: True if configured else false.
+    """
+    cmd = ("ssh %s@%s hostname" % (username, tonode))
+    ret, out, _ = g.run(fromnode, cmd)
+    _, hostname, _ = g.run(tonode, "hostname")
+    if ret or hostname not in out:
+        g.log.error("Passwordless ssh not configured "
+                    "from server %s to server %s using user %s.",
+                    (fromnode, tonode, username))
+        return False
+    return True
