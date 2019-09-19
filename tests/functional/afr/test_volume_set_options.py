@@ -14,7 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
@@ -33,8 +33,8 @@ from glustolibs.io.utils import (validate_io_procs,
                                  wait_for_io_to_complete)
 
 
-@runs_on([['distributed-replicated'],
-          ['glusterfs', 'nfs', 'cifs']])
+@runs_on([['replicated', 'distributed-replicated'],
+          ['glusterfs']])
 class VolumeSetDataSelfHealTests(GlusterBaseClass):
     def setUp(self):
         """
@@ -166,7 +166,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         num_subvols = len(subvols_dict['volume_subvols'])
         g.log.info("Number of subvolumes in volume: %s", num_subvols)
 
-        # Get arequals and compare
+        # Get arequals for bricks in each subvol and compare with first brick
         for i in range(0, num_subvols):
             # Get arequal for first brick
             subvol_brick_list = subvols_dict['volume_subvols'][i]
@@ -189,14 +189,13 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                                  % brick)
                 g.log.info('Getting arequal for %s is successful', brick)
                 brick_total = brick_arequal.splitlines()[-1].split(':')[-1]
-
                 self.assertEqual(first_brick_total, brick_total,
                                  'Arequals for subvol and %s are not equal'
                                  % brick)
                 g.log.info('Arequals for subvol and %s are equal', brick)
         g.log.info('All arequals are equal for distributed-replicated')
 
-        # Select bricks to bring offline
+        # Select bricks to bring offline, 1st brick only
         bricks_to_bring_offline = [get_all_bricks(self.mnode, self.volname)[0]]
 
         # Get files/dir size
@@ -204,19 +203,15 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         node, brick_path = bricks_to_bring_offline[0].split(':')
         # Get files/dir list
         command = 'cd %s ; ls' % brick_path
-        ret, file_list, _ = g.run(node, command)
+        ret, _, _ = g.run(node, command)
         self.assertFalse(ret, 'Failed to ls files on %s' % node)
-        brick_file_dir_list = file_list.splitlines()
-        # Get files/dir size before bringing brick offline
-        g.log.info('Getting file/dir size on brick to be offline')
-        brick_file_dir_dict_before_offline = {}
-        for file_dir in brick_file_dir_list:
-            command = 'cd %s ; du -h %s' % (brick_path, file_dir)
-            ret, file_info, _ = g.run(node, command)
-            self.assertFalse(ret, 'Failed to get file size on %s' % node)
-            file_size = file_info.split('\t')[0]
-            brick_file_dir_dict_before_offline[file_dir] = file_size
-
+        # Get arequal of brick before making offline
+        # Get arequals for first subvol and compare
+        command = ('arequal-checksum -p %s '
+                   '-i .glusterfs -i .landfill -i .trashcan'
+                   % brick_path)
+        ret, arequal, _ = g.run(node, command)
+        arequal_before_brick_offline = arequal.splitlines()[-1].split(':')[-1]
         # Bring brick 1 offline
         g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
         ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)
@@ -237,7 +232,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # changing files
             g.log.info('Creating dirs and files...')
-            command = ('cd test_data_self_heal ; '
+            command = ('cd %s; cd test_data_self_heal ; '
                        'for i in `seq 1 100` ; '
                        'do dd if=/dev/urandom of=file.$i bs=512K count=$i ; '
                        'done ;'
@@ -273,8 +268,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        % mount_obj.mountpoint)
             ret, _, _ = g.run(mount_obj.client_system, command)
             self.assertFalse(ret, 'Failed to start "find . | xargs stat" '
-                                  'on %s'
-                             % mount_obj.client_system)
+                             'on %s ' % mount_obj.client_system)
 
         # Check arequals
         g.log.info("Starting to get sub-volumes for volume %s", self.volname)
@@ -290,6 +284,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         ret, arequal, _ = g.run(node, command)
         first_brick_total = arequal.splitlines()[-1].split(':')[-1]
 
+        # Get arequals for all bricks in subvol 0
         for brick in subvols[0]:
             g.log.info('Getting arequal on bricks %s...', brick)
             node, brick_path = brick.split(':')
@@ -302,6 +297,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
             g.log.info('Getting arequal for %s is successful', brick)
             brick_total = arequal.splitlines()[-1].split(':')[-1]
 
+            # Validate that the down brick had different arequal
             if brick != first_brick:
                 self.assertNotEqual(first_brick_total, brick_total,
                                     'Arequals for mountpoint and %s '
@@ -346,39 +342,57 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         g.log.info('All arequals are equal for distributed-replicated')
 
         # Get files/dir size after bringing brick online
-        g.log.info('Getting file/dir size on brick after bringing online')
-        brick_file_dir_dict_after_online = {}
-        for file_dir in brick_file_dir_list:
-            command = 'cd %s ; du -h %s' % (brick_path, file_dir)
-            ret, file_info, _ = g.run(node, command)
-            self.assertFalse(ret, 'Failed to get file size on %s' % node)
-            file_size = file_info.split('\t')[0]
-            brick_file_dir_dict_after_online[file_dir] = file_size
-
+        g.log.info('Getting arequal size on brick after bringing online')
+        node, brick_path = bricks_to_bring_offline[0].split(':')
+        # Get files/dir list
+        command = 'cd %s ; ls' % brick_path
+        ret, _, _ = g.run(node, command)
+        self.assertFalse(ret, 'Failed to ls files on %s' % node)
+        # Get arequal of brick to be offline
+        # Get arequals for first subvol and compare
+        command = ('arequal-checksum -p %s '
+                   '-i .glusterfs -i .landfill -i .trashcan'
+                   % brick_path)
+        ret, arequal, _ = g.run(node, command)
+        arequal_after_brick_offline = arequal.splitlines()[-1].split(':')[-1]
         # Compare dicts with file size
-        g.log.info('Compare file/dir size on brick before bringing offline and'
+        g.log.info('Compare arequal size on brick before bringing offline and'
                    ' after bringing online')
-        self.assertFalse(cmp(brick_file_dir_dict_before_offline,
-                             brick_file_dir_dict_after_online),
-                         'file/dir size on brick before bringing offline and '
+        self.assertFalse(cmp(arequal_before_brick_offline,
+                             arequal_after_brick_offline),
+                         'arequal size on brick before bringing offline and '
                          'after bringing online are not equal')
-        g.log.info('file/dir size on brick before bringing offline and '
+        g.log.info('arequal size on brick  before bringing offline and '
                    'after bringing online are equal')
 
         # Setting options
+        time_delay = 5
         options = {"data-self-heal": "on"}
         g.log.info('Setting options %s...', options)
         ret = set_volume_options(self.mnode, self.volname, options)
         self.assertTrue(ret, 'Failed to set options %s' % options)
         g.log.info("Option 'data-self-heal' is set to 'on' successfully")
 
+        g.log.info('Droping client cache')
+        command = 'echo 3 > /proc/sys/vm/drop_caches'
+        ret, _, _ = g.run(mount_obj.client_system, command)
+        self.assertFalse(ret, 'Failed to drop cache, comamnd failed')
+        g.log.info('Successfully cleared client cache')
+
         # Start heal from mount point
         g.log.info('Starting heal from mount point...')
         for mount_obj in self.mounts:
             g.log.info("Start heal for %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
-            command = ('cd %s/test_data_self_heal ; '
-                       ' find . | xargs md5sum'
+            command = ('cd %s/test_data_self_heal ;'
+                       'for i in `ls -1`; do md5sum $i; sleep 1; done;'
+                       % mount_obj.mountpoint)
+            _, _, _ = g.run(mount_obj.client_system, command)
+            sleep(time_delay)
+            g.log.info('Execuing cat on mountpoint')
+            command = ('cd %s/test_data_self_heal ;'
+                       'for i in `ls -1`; do cat $i > /dev/null 2>&1; '
+                       ' sleep 1; done;'
                        % mount_obj.mountpoint)
             _, _, _ = g.run(mount_obj.client_system, command)
 
