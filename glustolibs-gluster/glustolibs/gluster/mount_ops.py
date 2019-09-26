@@ -261,7 +261,7 @@ def is_mounted(volname, mpoint, mserver, mclient, mtype, user='root'):
             return True
         return False
     else:
-        ret, _, _ = g.run(mclient, "mount | grep %s | grep %s | grep \"%s\""
+        ret, _, _ = g.run(mclient, "mount | egrep '%s | %s' | grep \"%s\""
                           % (volname, mpoint, mserver), user)
         if ret == 0:
             g.log.debug("Volume %s is mounted at %s:%s" % (volname, mclient,
