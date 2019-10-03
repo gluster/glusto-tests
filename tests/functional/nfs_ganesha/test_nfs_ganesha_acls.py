@@ -22,7 +22,7 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on
 from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaVolumeBaseClass
-from glustolibs.gluster.nfs_ganesha_ops import enable_acl, disable_acl
+from glustolibs.gluster.nfs_ganesha_ops import set_acl
 from glustolibs.gluster.exceptions import ExecutionError
 import time
 import re
@@ -41,7 +41,8 @@ class TestNfsGaneshaAcls(NfsGaneshaVolumeBaseClass):
         NfsGaneshaVolumeBaseClass.setUpClass.im_func(cls)
 
     def setUp(self):
-        ret = enable_acl(self.servers[0], self.volname)
+        ret = set_acl(self.mnode, self.volname, acl=True,
+                      do_refresh_config=True)
         if not ret:
             raise ExecutionError("Failed to enable ACL on the nfs "
                                  "ganesha cluster")
@@ -104,7 +105,8 @@ class TestNfsGaneshaAcls(NfsGaneshaVolumeBaseClass):
                              "acl test" % dirname)
 
     def tearDown(self):
-        ret = disable_acl(self.servers[0], self.volname)
+        ret = set_acl(self.mnode, self.volname, acl=False,
+                      do_refresh_config=True)
         if not ret:
             raise ExecutionError("Failed to disable ACL on nfs "
                                  "ganesha cluster")
