@@ -20,9 +20,13 @@
 """
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import runs_on
-from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaVolumeBaseClass
-from glustolibs.gluster.nfs_ganesha_ops import set_acl
+from glustolibs.gluster.nfs_ganesha_ops import (
+        set_acl,
+        unexport_nfs_ganesha_volume)
+from glustolibs.gluster.nfs_ganesha_libs import (
+        NfsGaneshaClusterSetupClass,
+        wait_for_nfs_ganesha_volume_to_get_unexported)
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 import time
 import re
@@ -31,21 +35,44 @@ import re
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaAcls(NfsGaneshaVolumeBaseClass):
+class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
     """
         Tests to verify Nfs Ganesha v4 ACL stability
     """
 
     @classmethod
     def setUpClass(cls):
-        NfsGaneshaVolumeBaseClass.setUpClass.im_func(cls)
+        """
+        Setup nfs-ganesha if not exists.
+        """
+        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
+
+        # Setup nfs-ganesha
+        ret = cls.setup_nfs_ganesha()
+        if not ret:
+            raise ExecutionError("Failed to setuo nfs-ganesha cluster")
+        g.log.info("nfs-ganesha cluster is healthy")
 
     def setUp(self):
-        ret = set_acl(self.mnode, self.volname, acl=True,
-                      do_refresh_config=True)
+        """
+        Setup Volume
+        """
+        GlusterBaseClass.setUp.im_func(self)
+
+        # Setup and mount volume
+        g.log.info("Starting to setip and mount volume %s", self.volname)
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to setup and mount volume %s"
+                                 % self.volname)
+        g.log.info("Successful in setup and mount volume %s", self.volname)
+
+        # Enable ACL
+        ret = set_acl(self.mnode, self.volname)
         if not ret:
             raise ExecutionError("Failed to enable ACL on the nfs "
                                  "ganesha cluster")
+        g.log.info("Successfully enabled ACL")
 
     def test_nfsv4_acls(self):
         # pylint: disable=too-many-locals
@@ -105,12 +132,27 @@ class TestNfsGaneshaAcls(NfsGaneshaVolumeBaseClass):
                              "acl test" % dirname)
 
     def tearDown(self):
+
+        # Disable ACL
         ret = set_acl(self.mnode, self.volname, acl=False,
                       do_refresh_config=True)
         if not ret:
             raise ExecutionError("Failed to disable ACL on nfs "
                                  "ganesha cluster")
+        # Unexport volume
+        unexport_nfs_ganesha_volume(self.mnode, self.volname)
+        ret = wait_for_nfs_ganesha_volume_to_get_unexported(self.mnode,
+                                                            self.volname)
+        if not ret:
+            raise ExecutionError("Volume %s is not unexported." % self.volname)
+
+        # Unmount and cleanup Volume
+        ret = self.unmount_volume_and_cleanup_volume(self.mounts)
+        if ret:
+            g.log.info("Successfull unmount and cleanup of volume")
+        else:
+            raise ExecutionError("Failed to unmount and cleanup volume")
 
     @classmethod
     def tearDownClass(cls):
-        NfsGaneshaVolumeBaseClass.tearDownClass.im_func(cls)
+        NfsGaneshaClusterSetupClass.tearDownClass.im_func(cls)
