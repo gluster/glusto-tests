@@ -34,7 +34,7 @@ def is_root(path):
     Returns:
         True if path is '/' , False otherwise
     """
-    if os.path.realpath(os.path.abspath(path)) is '/':
+    if os.path.realpath(os.path.abspath(path)) == '/':
         print ("Directory '%s' is the root of filesystem. "
                "Not performing any operations on the root of filesystem" %
                os.path.abspath(path))
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                         dest='log_level', action="store",
                         default="INFO")
 
-    parser.add_argument('dir', metavar='DIR', type=str,
+    parser.add_argument('--dir', metavar='DIR', type=str,
                         help="Directory on which operations has "
                         "to be performed")
 

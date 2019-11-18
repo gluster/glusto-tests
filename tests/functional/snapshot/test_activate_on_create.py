@@ -54,9 +54,11 @@ class TestActivateOnCreate(GlusterBaseClass):
         tearDown for every test
         """
         ret, _, _ = snap_delete_all(self.mnode)
-        self.assertEqual(ret, 0, "Snapshot Delete Failed")
+        if ret != 0:
+            raise ExecutionError("Snapshot Delete Failed")
         ret, _, _ = set_snap_config(self.mnode, self.option_disable)
-        self.assertEqual(ret, 0, "Failed to execute set_snap_config")
+        if ret != 0:
+            raise ExecutionError("Failed to execute set_snap_config")
         ret = get_snap_config(self.mnode, self.volname)
         if ret is None:
             raise ExecutionError("Failed to execute get_snap_config")
@@ -84,91 +86,100 @@ class TestActivateOnCreate(GlusterBaseClass):
         GlusterBaseClass.tearDownClass.im_func(cls)
 
     def test_activate_on_create(self):
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches, too-many-statements
         """
         Verifying Snapshot activate on create
+
+        * Create a default snapshot
+        * Enable activate-on-create snapshot config option
+        * Create more snapshots
+            * Validate snapshot info after snapshot create. It should be in
+              started state.
+            * Validate snapshot status after snapshot create. It should be in
+              started state.
+        * Validate the default snapshot info and status. It should be in
+          stopped state
         """
+
         # Create Default Snapshot
         g.log.info("Starting to Create Snapshot one")
         snap_default = "snap_%s" % self.volname
-        ret, _, _ = snap_create(self.mnode, self.volname,
-                                snap_default)
-        self.assertEqual(ret, 0, "Snapshot Creation failed"
-                         " for %s" % snap_default)
-        g.log.info("Snapshot %s of volume %s created"
-                   " successfully", snap_default, self.volname)
+        ret, _, _ = snap_create(self.mnode, self.volname, snap_default)
+        self.assertEqual(ret, 0, ("Snapshot Creation failed for %s",
+                                  snap_default))
+        g.log.info("Successfully created Snapshot %s of volume %s",
+                   snap_default, self.volname)
 
         # Enable activate_on_create snapshot
+        g.log.info("Enabling snapshot activate-on-create config option")
         ret, _, _ = set_snap_config(self.mnode, self.option_enable)
         self.assertEqual(ret, 0, "Failed to execute set_snap_config")
+        g.log.info("Validating the value of activate-on-create")
         ret = get_snap_config(self.mnode, self.volname)
-        if ret is None:
-            raise ExecutionError("Failed to execute get_snap_config")
-        if 'enable' not in ret['systemConfig']['activateOnCreate']:
-            raise ExecutionError("Failed to enable activate-on-create")
-        g.log.info("set_snap_config Success to enable "
-                   "activate-on-create")
-        # Create Snapshot Snapshots
-        g.log.info("Starting to Create Snapshot two")
+        self.assertIsNotNone(ret, ("Failed to execute get_snap_config"))
+        self.assertIn('enable', (ret['systemConfig']['activateOnCreate']),
+                      ("Failed to validate activate-on-create value as "
+                       "'enabled'"))
+        g.log.info("Successfully enabled activate-on-create")
+
+        # Create Snapshots after enabling activate-on-create
+        g.log.info("Starting to Create Snapshots")
         for snap_count in range(1, 5):
             snap_name = "snap_%s" % snap_count
-            ret, _, _ = snap_create(self.mnode, self.volname,
-                                    snap_name)
-            self.assertEqual(ret, 0, "Snapshot Creation failed"
-                             " for %s" % snap_name)
-            g.log.info("Snapshot %s of volume %s created"
-                       " successfully", snap_name, self.volname)
+            ret, _, _ = snap_create(self.mnode, self.volname, snap_name)
+            self.assertEqual(ret, 0, ("Snapshot Creation failed for %s",
+                                      snap_name))
+            g.log.info("Successfully created Snapshot %s of volume %s",
+                       snap_name, self.volname)
 
             # Validate Snapshot Info After Snapshot Create
+            g.log.info("Validating 'snapshot info' after enabling "
+                       "activate-on-create")
             ret = get_snap_info_by_snapname(self.mnode, snap_name)
-            if ret is None:
-                raise ExecutionError("Failed to Fetch Snapshot"
-                                     "info after activate "
-                                     "for %s" % snap_name)
-            g.log.info("Snapshot info Success "
-                       "for %s", ret['snapVolume']['status'])
-            if ret['snapVolume']['status'] != 'Started':
-                raise ExecutionError("Activated Snapshot is in Stopped "
-                                     "State %s"
-                                     % (ret['snapVolume']['status']))
-            g.log.info("%s Activated By "
-                       "Default- %s state", snap_name,
-                       (ret['snapVolume']['status']))
+            self.assertIsNotNone(ret, ("Failed to Fetch Snapshot info after "
+                                       "activation for %s", snap_name))
+            g.log.info("Snapshot info Success for %s",
+                       ret['snapVolume']['status'])
+            self.assertEqual(ret['snapVolume']['status'], 'Started',
+                             ("Activated Snapshot is in Stopped State %s",
+                              (ret['snapVolume']['status'])))
+            g.log.info("Snapshot %s is Activated By Default - %s state",
+                       snap_name, (ret['snapVolume']['status']))
 
             # Validate Snaphot Status After Snapshot Create
+            g.log.info("Validating 'snapshot status' after enabling "
+                       "activate-on-create")
             ret = get_snap_status_by_snapname(self.mnode, snap_name)
-            if ret is None:
-                raise ExecutionError("Failed to Fetch Snapshot"
-                                     "status for %s" % snap_name)
-            g.log.error("Snapshot Status Success for %s", snap_name)
+            self.assertIsNotNone("Failed to Fetch Snapshot status for %s",
+                                 snap_name)
+            g.log.info("Snapshot Status Success for %s", snap_name)
             for brick in ret['volume']['brick']:
-                if brick['pid'] == 'N/A':
-                    raise ExecutionError("Brick Path %s  Not Available "
-                                         "for Activated Snapshot %s"
-                                         % (brick['path'], snap_name))
-            g.log.info("snap_2 Snapshot Brick Path Available as Expected")
+                self.assertNotEqual(brick['pid'], 'N/A',
+                                    ("Brick Path %s  Not Available for "
+                                     "Activated Snapshot %s",
+                                     (brick['path'], snap_name)))
+            g.log.info("Success: Snapshot Brick Path Available")
 
-        # Validate Deactivated Snapshot Info
+        # Validate Snapshot Info for the 'default' snapshot
         # Expected to be Stopped
+        g.log.info("Validating 'snapshot info' of the 'default' snapshot")
         ret = get_snap_info_by_snapname(self.mnode, snap_default)
-        if ret is None:
-            raise ExecutionError("Failed to Fetch Snapshot"
-                                 " info for %s" % snap_default)
+        self.assertIsNotNone(ret, ("Failed to Fetch Snapshot info for %s",
+                                   snap_default))
         g.log.info("Snapshot info Success for %s", ret['snapVolume']['status'])
-        if ret['snapVolume']['status'] != 'Stopped':
-            raise ExecutionError("Snapshot Status is not in Stopped State")
+        self.assertEqual(ret['snapVolume']['status'], 'Stopped',
+                         ("Snapshot Status is not in Stopped State"))
         g.log.info("Snapshot %s is in Stopped state as it "
                    "is not Activated", snap_default)
 
-        # Validate Deactivated Snapshot status
-        # Expected tobe NA
+        # Validate Snapshot Status for the 'default' snapshot
+        # Expected to be N/A
+        g.log.info("Validating 'snapshot status' of the 'default' snapshot")
         ret = get_snap_status_by_snapname(self.mnode, snap_default)
-        if ret is None:
-            raise ExecutionError("Failed to Fetch Snapshot"
-                                 "status for %s" % snap_default)
+        self.assertIsNotNone(ret, ("Failed to Fetch Snapshot status for %s",
+                                   snap_default))
         g.log.info("Snapshot Status Success for %s", snap_default)
         for brick in ret['volume']['brick']:
-            if brick['pid'] != 'N/A':
-                raise ExecutionError("Brick Pid available for %s"
-                                     % brick['path'])
-        g.log.info("Deactivated Snapshot Brick PID N/A as Expected")
+            self.assertEqual(brick['pid'], 'N/A',
+                             ("Brick Pid available for %s", brick['path']))
+        g.log.info("Success: Snapshot %s Brick PID is 'N/A'", snap_default)

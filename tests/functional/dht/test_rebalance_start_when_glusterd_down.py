@@ -1,4 +1,4 @@
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import random
+from random import choice
 from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
@@ -29,6 +29,7 @@ from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.gluster_init import (
     stop_glusterd, restart_glusterd,
     is_glusterd_running)
+from glustolibs.gluster.brick_libs import get_all_bricks
 
 
 @runs_on([['distributed'],
@@ -104,13 +105,24 @@ class RebalanceValidation(GlusterBaseClass):
         self.assertTrue(ret, ("Volume %s: Expand failed", self.volname))
         g.log.info("Volume %s: Expand success", self.volname)
 
+        # Get all servers IP addresses which are part of volume
+        ret = get_all_bricks(self.mnode, self.volname)
+        list_of_servers_used = []
+        for brick in ret:
+            list_of_servers_used.append(brick.split(":")[0])
+        self.assertTrue(ret, ("Failed to get server IP list for volume %s",
+                              self.volname))
+        g.log.info("Succesfully got server IP list for volume %s",
+                   self.volname)
+
         # Form a new list of servers without mnode in it to prevent mnode
         # from glusterd failure
-        nodes = self.servers[:]
-        nodes.remove(self.mnode)
+        for element in list_of_servers_used:
+            if element == self.mnode:
+                list_of_servers_used.remove(element)
 
         # Stop glusterd on a server
-        self.random_server = random.choice(nodes)
+        self.random_server = choice(list_of_servers_used)
         g.log.info("Stop glusterd on server %s", self.random_server)
         ret = stop_glusterd(self.random_server)
         self.assertTrue(ret, ("Server %s: Failed to stop glusterd",
@@ -128,8 +140,18 @@ class RebalanceValidation(GlusterBaseClass):
         ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
         self.assertFalse(ret, ("Volume %s: Rebalance is completed",
                                self.volname))
-        g.log.info("Rebalance failed on one or more nodes. Check rebalance "
-                   "status for more details")
+        g.log.info("Expected: Rebalance failed on one or more nodes."
+                   " Check rebalance status for more details")
+        error_msg1 = "\"fix layout on / failed\""
+        error_msg2 = "\"Transport endpoint is not connected\""
+        ret, _, _ = g.run(self.mnode, "grep -w %s /var/log/glusterfs/"
+                          "%s-rebalance.log| grep -w %s"
+                          % (error_msg1, self.volname, error_msg2))
+        self.assertEqual(ret, 0, ("Unexpected : Rebalance failed on volume %s"
+                                  "not because of glusterd down on a node",
+                                  self.volname))
+        g.log.info("\n\nRebalance failed on volume %s due to glusterd down on"
+                   "one of the nodes\n\n", self.volname)
 
     def tearDown(self):
 

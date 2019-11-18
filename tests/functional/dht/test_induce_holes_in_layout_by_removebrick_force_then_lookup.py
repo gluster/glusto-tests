@@ -111,8 +111,8 @@ class RebalanceValidation(GlusterBaseClass):
 
         # DHT Layout validation
         g.log.debug("Verifying hash layout values %s:%s",
-                    self.clients[0], self.mounts[0].mountpoint)
-        ret = validate_files_in_dir(self.clients[0], self.mounts[0].mountpoint,
+                    self.mnode, mount_point + dirpath)
+        ret = validate_files_in_dir(self.mnode, mount_point + dirpath,
                                     test_type=LAYOUT_IS_COMPLETE,
                                     file_type=FILETYPE_DIRS)
         self.assertTrue(ret, "LAYOUT_IS_COMPLETE: FAILED")

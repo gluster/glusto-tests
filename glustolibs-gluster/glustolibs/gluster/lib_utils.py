@@ -397,7 +397,8 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
     for key, value in list(dict1.items()):
         if key in dict2:
             unused_bricks = list(set(value) - set(dict2[key]))
-            servers_unused_bricks_dict[key] = unused_bricks
+            if unused_bricks:
+                servers_unused_bricks_dict[key] = unused_bricks
         else:
             servers_unused_bricks_dict[key] = value
 
@@ -778,10 +779,11 @@ def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
 
 
 def is_core_file_created(nodes, testrun_timestamp,
-                         paths=['/', '/var/log/core', '/tmp']):
+                         paths=['/', '/var/log/core',
+                                '/tmp', '/var/crash', '~/']):
     '''
-    Listing directories and files in "/", /var/log/core, /tmp
-    directory for checking if the core file created or not
+    Listing directories and files in "/", /var/log/core, /tmp,
+    "/var/crash", "~/" directory for checking if the core file created or not
 
     Args:
 
@@ -794,7 +796,7 @@ def is_core_file_created(nodes, testrun_timestamp,
         of test case 'date +%s'
     paths(list):
         By default core file will be verified in "/","/tmp",
-        "/var/log/core"
+        "/var/log/core", "/var/crash", "~/"
        If test case need to verify core file in specific path,
        need to pass path from test method
     '''
@@ -804,8 +806,16 @@ def is_core_file_created(nodes, testrun_timestamp,
         cmd = ' '.join(['cd', path, '&&', 'ls', 'core*'])
         cmd_list.append(cmd)
 
-    # Checks for core file in "/", "/var/log/core", "/tmp" directory
+    # Checks for core file in "/", "/var/log/core", "/tmp" "/var/crash",
+    # "~/" directory
     for node in nodes:
+        ret, logfiles, err = g.run(node, 'grep -r "time of crash" '
+                                         '/var/log/glusterfs/')
+        if ret == 0:
+            g.log.error(" Seems like there was a crash, kindly check "
+                        "the logfiles, even if you don't see a core file")
+            for logfile in logfiles.strip('\n').split('\n'):
+                g.log.error("Core was found in %s " % logfile.split(':')[0])
         for cmd in cmd_list:
             ret, out, _ = g.run(node, cmd)
             g.log.info("storing all files and directory names into list")
@@ -823,7 +833,8 @@ def is_core_file_created(nodes, testrun_timestamp,
                     file_timestamp = file_timestamp.strip()
                     if(file_timestamp > testrun_timestamp):
                         count += 1
-                        g.log.error("New core file created %s " % file1)
+                        g.log.error("New core file was created and found  "
+                                    "at %s " % file1)
                     else:
                         g.log.info("Old core file Found")
     # return the status of core file
@@ -943,30 +954,47 @@ def get_size_of_mountpoint(node, mount_point):
     return out
 
 
-def add_user(host, uname):
+def add_user(servers, username, group=None):
     """
-        Add user with default home directory
-    Args:
-        host (str): hostname/ip of the system
-        uname (str): username
-    Returns always True
-    """
+    Add user with default home directory
 
-    command = "useradd -m %s -d /home/%s" % (uname, uname)
-    ret, _, err = g.run(host, command)
-    if 'already exists' in err:
-        g.log.warn("User %s is already exists", uname)
+    Args:
+        servers(list|str): hostname/ip of the system
+        username(str): username of the user to be created.
+    Kwargs:
+        group(str): Group name to which user is to be
+                        added.(Default:None)
+
+    Returns:
+        bool : True if user add is successful on all servers.
+            False otherwise.
+    """
+    # Checking if group is given or not.
+    if not group:
+        cmd = "useradd -m %s -d /home/%s" % (username, username)
     else:
-        g.log.info("User %s is created successfully", uname)
+        cmd = "useradd -G %s %s" % (group, username)
+
+    if servers != list:
+        servers = [servers]
+
+    results = g.run_parallel(servers, cmd)
+    for server, ret_value in list(results.items()):
+        retcode, _, err = ret_value
+        if retcode != 0 and "already exists" not in err:
+            g.log.error("Unable to add user on %s", server)
+            return False
     return True
 
 
 def del_user(host, uname):
     """
-        Delete user with home directory
+    Delete user with home directory
+
     Args:
         host (str): hostname/ip of the system
         uname (str): username
+
     Return always True
     """
     command = "userdel -r %s" % (uname)
@@ -975,4 +1003,105 @@ def del_user(host, uname):
         g.log.warn("User %s is already deleted", uname)
     else:
         g.log.info("User %s successfully deleted", uname)
+    return True
+
+
+def group_add(servers, groupname):
+    """
+    Creates a group in all the servers.
+
+    Args:
+        servers(list|str): Nodes on which cmd is to be executed.
+        groupname(str): Name of the group to be created.
+
+    Returns:
+        bool: True if add group is successful on all servers.
+            False otherwise.
+
+    """
+    if servers != list:
+        servers = [servers]
+
+    cmd = "groupadd %s" % groupname
+    results = g.run_parallel(servers, cmd)
+
+    for server, ret_value in list(results.items()):
+        retcode, _, err = ret_value
+        if retcode != 0 and "already exists" not in err:
+            g.log.error("Unable to add group %s on server %s",
+                        groupname, server)
+            return False
+    return True
+
+
+def ssh_keygen(mnode):
+    """
+    Creates a pair of ssh private and public key if not present
+
+    Args:
+        mnode (str): Node on which cmd is to be executed
+    Returns:
+        bool : True if ssh-keygen is successful on all servers.
+            False otherwise. It also returns True if ssh key
+            is already present
+
+    """
+    cmd = 'echo -e "n" | ssh-keygen -f ~/.ssh/id_rsa -q -N ""'
+    ret, out, _ = g.run(mnode, cmd)
+    if ret and "already exists" not in out:
+        return False
+    return True
+
+
+def ssh_copy_id(mnode, tonode, passwd, username="root"):
+    """
+    Copies the default ssh public key onto tonode's
+    authorized_keys file.
+
+    Args:
+        mnode (str): Node on which cmd is to be executed
+        tonode (str): Node to which ssh key is to be copied
+        passwd (str): passwd of the user of tonode
+    Kwargs:
+         username (str): username of tonode(Default:root)
+
+    Returns:
+        bool: True if ssh-copy-id is successful to tonode.
+            False otherwise. It also returns True if ssh key
+            is already present
+
+    """
+    cmd = ('sshpass -p "%s" ssh-copy-id -o StrictHostKeyChecking=no %s@%s' %
+           (passwd, username, tonode))
+    ret, _, _ = g.run(mnode, cmd)
+    if ret:
+        return False
+    return True
+
+
+def set_passwd(servers, username, passwd):
+    """
+    Sets password for a given username.
+
+    Args:
+        servers(list|str): list of nodes on which cmd is to be executed.
+        username(str): username of user for which password is to be set.
+        passwd(str): Password to be set.
+
+    Returns:
+        bool : True if password set is successful on all servers.
+            False otherwise.
+
+    """
+    if servers != list:
+        servers = [servers]
+    cmd = "echo %s:%s | chpasswd" % (username, passwd)
+    results = g.run_parallel(servers, cmd)
+
+    for server, ret_value in list(results.items()):
+        retcode, _, _ = ret_value
+        if retcode != 0:
+            g.log.error("Unable to set passwd for user %s on %s",
+                        username, server)
+            return False
     return True

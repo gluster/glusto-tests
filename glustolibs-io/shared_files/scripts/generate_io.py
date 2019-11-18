@@ -169,8 +169,7 @@ def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
     else:
         print("Timeout %s seconds reached before filling directory with "
               "given percentage %s" % (str(timeout), str(percent_to_fill)))
-        return True
-    return False
+        return False
 
 
 def run_check_if_percent_to_fill_or_timeout_is_met(dirname,
@@ -275,21 +274,21 @@ def start_populate_data(mount_point, io_dict,
     proc_queue = []
 
     for each_io in io_dict.keys():
-            q = multiprocessing.Queue()
-            proc_queue.append(q)
-            workload_type = io_dict[each_io]['workload_type']
-            proc = multiprocessing.Process(target=(io_dict[each_io]
-                                                   ['function_addr']),
-                                           args=(q,
-                                                 (io_dict[each_io]
-                                                  ['script_path']),
-                                                 dirname,
-                                                 (io_dict[each_io]['job_files']
-                                                  [workload_type]),
-                                                 io_dict[each_io]['log_file']))
-            proc_list.append(proc)
-            time.sleep(5)
-            proc.start()
+        q = multiprocessing.Queue()
+        proc_queue.append(q)
+        workload_type = io_dict[each_io]['workload_type']
+        proc = multiprocessing.Process(target=(io_dict[each_io]
+                                               ['function_addr']),
+                                       args=(q,
+                                             (io_dict[each_io]
+                                              ['script_path']),
+                                             dirname,
+                                             (io_dict[each_io]['job_files']
+                                              [workload_type]),
+                                             io_dict[each_io]['log_file']))
+        proc_list.append(proc)
+        time.sleep(5)
+        proc.start()
 
     p = multiprocessing.Process(
         target=run_check_if_percent_to_fill_or_timeout_is_met,

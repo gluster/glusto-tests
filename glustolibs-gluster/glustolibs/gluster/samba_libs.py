@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,8 @@
 """
     Description: Library for samba operations.
 """
-
+import re
+import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.volume_libs import is_volume_exported
 from glustolibs.gluster.mount_ops import GlusterMount
@@ -47,7 +48,6 @@ def start_smb_service(mnode):
         g.log.error("Unable to start the smb service")
         return False
     g.log.info("Successfully started smb service")
-
     return True
 
 
@@ -115,7 +115,6 @@ def stop_smb_service(mnode):
         g.log.error("Unable to stop the smb service")
         return False
     g.log.info("Successfully stopped smb service")
-
     return True
 
 
@@ -141,7 +140,6 @@ def list_smb_shares(mnode):
         for line in out:
             if 'gluster-' in line:
                 smb_shares_list.append(line.split(" ")[0].strip())
-
     return smb_shares_list
 
 
@@ -244,6 +242,14 @@ def share_volume_over_smb(mnode, volname, smb_users_info):
     """
     g.log.info("Start sharing the volume over SMB")
 
+    # Set volume option 'user.cifs' to 'on'.
+    cmd = "gluster volume set %s user.cifs on" % volname
+    ret, _, _ = g.run(mnode, cmd)
+    if ret != 0:
+        g.log.error("Failed to set the volume option user.cifs on")
+        return False
+    g.log.info("Successfully set 'user.cifs' to 'on' on %s", volname)
+
     # Set volume option 'stat-prefetch' to 'on'.
     cmd = "gluster volume set %s stat-prefetch on" % volname
     ret, _, _ = g.run(mnode, cmd)
@@ -297,5 +303,412 @@ def share_volume_over_smb(mnode, volname, smb_users_info):
         g.log.info("Volume %s is not exported as 'cifs/smb' share", volname)
         return False
     g.log.info("Volume %s is exported as 'cifs/smb' share", volname)
+    return True
 
+
+def is_ctdb_service_running(mnode):
+    """Check if ctdb services is running on node
+
+    Args:
+        mnode (str): Node on which ctdb service status has to be verified.
+
+    Returns:
+        bool: True if ctdb service is running. False otherwise.
+    """
+    g.log.info("Check if CTDB service is running on %s", mnode)
+    ret, out, _ = g.run(mnode, "service ctdb status")
+    if "Active: active (running)" in out:
+        return True
+    return False
+
+
+def stop_ctdb_service(mnode):
+    """Stop ctdb service on the specified node.
+
+    Args:
+        mnode (str): Node on which ctdb service has to be stopped.
+
+    Returns:
+        bool: True on successfully stopping ctdb service. False otherwise.
+    """
+    g.log.info("Stopping CTDB Service on %s", mnode)
+    # Stop ctdb service
+    ret, _, _ = g.run(mnode, "service ctdb stop")
+    if ret != 0:
+        g.log.error("Unable to stop the ctdb service")
+        return False
+    g.log.info("Successfully stopped ctdb service")
+    return True
+
+
+def start_ctdb_service(mnode):
+    """Start ctdb service on the specified node.
+
+    Args:
+        mnode (str): Node on which ctdb service has to be started
+
+    Returns:
+        bool: True on successfully starting ctdb service. False otherwise.
+    """
+    g.log.info("Starting CTDB Service on %s", mnode)
+
+    # Start ctdb service
+    ret, _, _ = g.run(mnode, "service ctdb start")
+    if ret != 0:
+        g.log.error("Unable to start the ctdb service")
+        return False
+    g.log.info("Successfully started ctdb service")
+
+    return True
+
+
+def start_nmb_service(mnode):
+    """Start nmb service on the specified node.
+
+    Args:
+        mnode (str): Node on which nmb service has to be started
+
+    Returns:
+        bool: True on successfully starting nmb service. False otherwise.
+    """
+    g.log.info("Starting nmb Service on %s", mnode)
+
+    # Start nmb service
+    ret, _, _ = g.run(mnode, "service nmb start")
+    if ret != 0:
+        g.log.error("Unable to start the nmb service")
+        return False
+    g.log.info("Successfully started nmb service")
+
+    return True
+
+
+def is_nmb_service_running(mnode):
+    """Check if nmb service is running on node
+
+    Args:
+        mnode (str): Node on which nmb service status has to be verified.
+
+    Returns:
+        bool: True if nmb service is running. False otherwise.
+    """
+    g.log.info("Check if nmb service is running on %s", mnode)
+    ret, out, _ = g.run(mnode, "service nmb status")
+    if "Active: active (running)" in out:
+        return True
+    return False
+
+
+def start_winbind_service(mnode):
+    """Start winbind service on the specified node.
+
+    Args:
+        mnode (str): Node on which winbind service has to be started
+
+    Returns:
+        bool: True on successfully starting winbind service. False otherwise.
+    """
+    g.log.info("Starting winbind Service on %s", mnode)
+
+    # Start winbind service
+    ret, _, _ = g.run(mnode, "service winbind start")
+    if ret != 0:
+        g.log.error("Unable to start the winbind service")
+        return False
+    g.log.info("Successfully started winbind service")
+    return True
+
+
+def is_winbind_service_running(mnode):
+    """Check if winbind service is running on node
+
+    Args:
+        mnode (str): Node on which winbind service status has to be verified.
+
+    Returns:
+        bool: True if winbind service is running. False otherwise.
+    """
+    g.log.info("Check if winbind service is running on %s", mnode)
+    ret, out, _ = g.run(mnode, "service winbind status")
+    if "Active: active (running)" in out:
+        return True
+    return False
+
+
+def samba_ad(all_servers, netbios_name, domain_name, ad_admin_user,
+             ad_admin_passwd, idmap_range=None):
+    """Active Directory Integration
+
+    Args:
+        all_servers [list]: List of all servers where AD needs to be setup.
+        netbios_name (str): Provide netbios name
+        domain_name (str): Provide domain name
+        ad_admin_user (str): Provide admin user
+        ad_admin_passwd (str): Provide admin password
+        idmap_range (str): Provide idmap range
+
+    Returns:
+        bool: True on successfully setting up AD. False otherwise.
+    """
+    g.log.info("Setting up AD Integration on %s", all_servers)
+    mnode = all_servers[0]
+    if netbios_name == '':
+        g.log.error("netbios name is missing")
+        return False
+    # Validate netbios name
+    if len(netbios_name) < 1 or len(netbios_name) > 15:
+        g.log.error("The NetBIOS name must be 1 to 15 characters in length.")
+        return False
+    validate_netbios_name = re.compile(r"(^[A-Za-z\d_!@#$%^()\-'"
+                                       r"{}\.~]{1,15}$)")
+    isnetbiosname = validate_netbios_name.match(netbios_name)
+    if isnetbiosname is None:
+        g.log.error("The NetBIOS name entered is invalid.")
+        return False
+
+    if domain_name == '':
+        g.log.error("domain name is missing")
+        return False
+    validate_domain_name = re.compile(r"^(?=.{1,253}$)(?!.*\.\..*)(?!\..*)"
+                                      r"([a-zA-Z0-9-]{,63}\.)"
+                                      r"{,127}[a-zA-Z0-9-]{1,63}$")
+    isdomain = validate_domain_name.match(domain_name)
+    if isdomain is None:
+        g.log.error("The AD domain name string is invalid")
+        return False
+    # ad_workgroup should be in capital letters
+    ad_workgroup = domain_name.split(".")[0].upper()
+
+    if idmap_range is None:
+        idmap_range = '1000000-1999999'
+    else:
+        try:
+            idmap_range_start = int(idmap_range.split("-")[0])
+            idmap_range_end = int(idmap_range.split("-")[1])
+        except Exception as e:
+            g.log.error("Invalid format.Use \'m-n\' for the range %s", str(e))
+            return False
+        if int(idmap_range_start) < 10000:
+            g.log.error("Please select a starting value 10000 or above")
+            return False
+        # Maximum UIDs is 2^32
+        elif int(idmap_range_end) > 4294967296:
+            g.log.error("Please select an ending value 4294967296 or below")
+            return False
+
+    # Run the below in all servers
+    for node in all_servers:
+        smb_conf_file = "/etc/samba/smb.conf"
+        add_netbios_name = r"sed -i '/^\[global\]/a netbios name = %s' %s"
+        ret, _, err = g.run(node, add_netbios_name
+                            % (netbios_name, smb_conf_file))
+        if ret != 0:
+            g.log.error("Failed to set netbios name parameters in smb.conf "
+                        "file due to %s", str(err))
+            return False
+        add_realm = r"sed -i '/^\[global\]/a realm = %s' %s"
+        ret, _, err = g.run(node, add_realm % (domain_name, smb_conf_file))
+        if ret != 0:
+            g.log.error("Failed to set realm parameters in smb.conf file "
+                        "due to %s", str(err))
+            return False
+        add_idmap_range = (r"sed -i '/^\[global\]/a idmap config \* : "
+                           "range = %s' %s")
+        ret, _, err = g.run(node, add_idmap_range
+                            % (idmap_range, smb_conf_file))
+        if ret != 0:
+            g.log.error("Failed to set idmap range parameters in smb.conf "
+                        "file due to %s", str(err))
+            return False
+        add_idmap_bcknd = (r"sed -i '/^\[global\]/a idmap config \* : "
+                           "backend = tdb' %s")
+        ret, _, err = g.run(node, add_idmap_bcknd % smb_conf_file)
+        if ret != 0:
+            g.log.error("Failed to set idmap bcknd parameters in smb.conf "
+                        "file due to %s", str(err))
+            return False
+        add_workgroup = ("sed -i '/^\\tworkgroup = "
+                         "MYGROUP/c\\\tworkgroup = %s' %s")
+        ret, _, err = g.run(node, add_workgroup
+                            % (ad_workgroup, smb_conf_file))
+        if ret != 0:
+            g.log.error("Failed to set workgroup parameters in smb.conf file "
+                        " due to %s", str(add_workgroup))
+            return False
+        add_security = "sed -i '/^\\tsecurity = user/c\\\tsecurity = ads' %s"
+        ret, _, err = g.run(node, add_security % smb_conf_file)
+        if ret != 0:
+            g.log.error("Failed to set security parameters in smb.conf "
+                        "file due to %s", str(err))
+            return False
+
+    # Verifying the Samba AD Configuration running testparm
+    smb_ad_list = ["netbios name = "+netbios_name,
+                   "workgroup = "+ad_workgroup,
+                   "realm = " + domain_name.upper(), "security = ADS",
+                   "idmap config * : backend = tdb", "idmap config * "
+                   ": range = "+str(idmap_range)]
+    testparm_cmd = "echo -e "+'"'+"\n"+'"'+" | testparm -v"
+    ret, out, _ = g.run(node, testparm_cmd)
+    if ret != 0:
+        g.log.error("Testparm Command Failed to Execute")
+    g.log.info("Testparm Command Execute Success")
+    for smb_options in smb_ad_list:
+        smb_options = smb_options.strip()
+        if smb_options not in str(out).strip():
+            g.log.info("Option %s entry present not in testparm" % smb_options)
+            return False
+    g.log.info("All required samba ad options set in smb.conf")
+
+    if ad_admin_user == '':
+        ad_admin_user = 'Administrator'
+
+    # nsswitch Configuration
+    # Run these in all servers
+    for node in all_servers:
+        winbind_passwd = ("sed -i '/^passwd:     files sss/cpasswd:     "
+                          "files winbind' /etc/nsswitch.conf")
+        ret, _, err = g.run(node, winbind_passwd)
+        g.log.info("MASTER %s" % str(ret))
+        if ret != 0:
+            g.log.error("Failed to set winbind passwd  parameters in "
+                        "nsswitch.conf file due to %s", str(err))
+            return False
+        winbind_group = ("sed -i '/^group:      files sss/cgroup:      "
+                         "files winbind' /etc/nsswitch.conf")
+        ret, _, err = g.run(node, winbind_group)
+        if ret != 0:
+            g.log.error("Failed to set winbind group parameters "
+                        "in nsswitch.conf file due to %s", str(err))
+            return False
+
+        # Disable samba & winbind scripts
+        samba_script = "/etc/ctdb/events.d/50.samba"
+        winbind_script = "/etc/ctdb/events.d/49.winbind"
+        ret, _, err = g.run(node, "chmod -x " + samba_script)
+        if ret != 0:
+            g.log.error("Failed to disable samba script as %s", str(err))
+            return False
+        ret, _, err = g.run(node, "chmod -x " + winbind_script)
+        if ret != 0:
+            g.log.error("Failed to disable winbind script as %s", str(err))
+            return False
+        # stop ctdb if already running
+        ret = is_ctdb_service_running(node)
+        if ret:
+            ret = stop_ctdb_service(node)
+            if not ret:
+                return ret
+        ret = start_ctdb_service(node)
+        ret = is_ctdb_service_running(node)
+        if ret:
+            ret = is_smb_service_running(node)
+            if ret:
+                g.log.error("Samba services still running even after "
+                            "samba script is disable")
+                return False
+            ret = is_winbind_service_running(node)
+            if ret:
+                g.log.error("Winbind services still running even after "
+                            "winbind script is disable")
+                return False
+
+    # Join Active Directory Domain
+    # One node only
+    net_join_cmd = "net ads join -U "
+    success_out = ("Joined '" + netbios_name +
+                   "' to dns domain '" + domain_name + "'")
+    ret, out, err = g.run(mnode, net_join_cmd + ad_admin_user +
+                          "%" + ad_admin_passwd)
+    if success_out not in str(out).strip():
+        g.log.error("net ads join failed %s", str(err))
+        return False
+    g.log.info("Net ads join success")
+
+    # RUN THESE IN ALL NODES
+    for node in all_servers:
+        ret = start_nmb_service(node)
+        ret = is_nmb_service_running(node)
+        if not ret:
+            g.log.error("Failed to start nmb service")
+            return False
+        ret, _, err = g.run(node, "chmod +x " + samba_script)
+        if ret != 0:
+            g.log.error("Failed to enable samba script as %s", str(err))
+            return False
+        ret, _, err = g.run(node, "chmod +x " + winbind_script)
+        if ret != 0:
+            g.log.error("Failed to enable winbind script as %s", str(err))
+            return False
+        ret = stop_ctdb_service(node)
+        if not ret:
+            return False
+        ret = start_ctdb_service(node)
+        ret = is_ctdb_service_running(node)
+        if ret:
+            count = 0
+            while count < 95:
+                ret = is_smb_service_running(node)
+                if ret:
+                    break
+                time.sleep(2)
+                count += 1
+            if not ret:
+                g.log.error("Samba services not started running even "
+                            "after samba "
+                            "script is enabled")
+                return False
+            ret = start_winbind_service(node)
+            ret = is_winbind_service_running(node)
+            if not ret:
+                g.log.error("Winbind services not running even after winbind "
+                            "script is enabled")
+                return False
+
+    # Verify/Test Active Directory and Services
+    ret, out, err = g.run(mnode, "net ads testjoin")
+    if "Join is OK" not in str(out).strip():
+        g.log.error("net ads join validation failed %s", str(err))
+        return False
+    # Verify if winbind is operating correctly by executing the following steps
+    ret, out, err = g.run(mnode, "wbinfo -t")
+    if "succeeded" not in str(out):
+        g.log.error("wbinfo -t command failed, ad setup is not correct %s",
+                    str(err))
+        return False
+
+    # Execute the following command to resolve the given name to a Windows SID
+    sid_cmd = ("wbinfo --name-to-sid '" + ad_workgroup +
+               "\\" + ad_admin_user + "'")
+    ret, out, err = g.run(mnode, sid_cmd)
+    if "-500 SID_USER" not in str(out):
+        g.log.error("Failed to execute wbinfo --name-to-sid command %s",
+                    str(err))
+        return False
+    sid = str(out).split('SID')[0].strip()
+
+    # Execute the following command to verify authentication:
+    wbinfo_auth_cmd = ("wbinfo -a '" + ad_workgroup + "\\" + ad_admin_user +
+                       "%" + ad_admin_passwd + "'")
+    ret, out, err = g.run(mnode, wbinfo_auth_cmd)
+    if "password authentication succeeded" not in str(out).strip():
+        g.log.error("winbind does nothave authentication to acess "
+                    "ad server %s", str(err))
+        return False
+
+    # Execute the following command to verify if the id-mapping is
+    # working properly
+    idmap_range_start = str(idmap_range.split("-")[0])
+    id_map_cmd = "wbinfo --sid-to-uid " + sid
+    ret, out, err = g.run(mnode, id_map_cmd)
+    if str(out).strip() != str(idmap_range_start):
+        g.log.error("id mapping is not correct %s", str(err))
+        return False
+    # getent password validation
+    getent_cmd = "getent passwd '" + ad_workgroup + "\\" + ad_admin_user + "'"
+    getent_expected = "/home/" + ad_workgroup + "/" + ad_admin_user.lower()
+    ret, out, err = g.run(mnode, getent_cmd)
+    if getent_expected not in str(out).strip():
+        g.log.error("winbind Name Service Switch failed %s", str(err))
+        return False
     return True

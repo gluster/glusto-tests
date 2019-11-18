@@ -313,7 +313,7 @@ def wait_for_self_heal_daemons_to_be_online(mnode, volname, timeout=300):
 
     if not flag:
         g.log.error("All self-heal-daemons of the volume '%s' are not online "
-                    "even after %d minutes", (volname, timeout/60.0))
+                    "even after %d minutes" % (volname, timeout/60.0))
         return False
     else:
         g.log.info("All self-heal-daemons of the volume '%s' are online ",

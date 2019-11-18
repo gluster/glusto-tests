@@ -443,6 +443,16 @@ class GlusterBaseClass(unittest.TestCase):
         else:
             raise ConfigError("'servers' not defined in the global config")
 
+        # Get all slaves
+        cls.slaves = None
+        if 'slaves' in g.config and g.config['slaves']:
+            cls.slaves = g.config['slaves']
+            # Set mnode_slave : Node on which slave commands are executed
+            cls.mnode_slave = cls.slaves[0]
+            # Slave IP's
+            cls.slaves_ip = []
+            cls.slaves_ip = cls.get_ip_from_hostname(cls.slaves)
+
         # Get all clients
         cls.all_clients = None
         if 'clients' in g.config and g.config['clients']:
@@ -458,6 +468,10 @@ class GlusterBaseClass(unittest.TestCase):
         else:
             raise ConfigError("'servers_info' not defined in the global "
                               "config")
+        # Get all slaves info
+        cls.all_slaves_info = None
+        if 'slaves_info' in g.config and g.config['slaves_info']:
+            cls.all_slaves_info = g.config['slaves_info']
 
         # All clients_info
         cls.all_clients_info = None
@@ -1202,83 +1216,83 @@ class GlusterBlockBaseClass(GlusterBaseClass):
         """
         # Get gluster block info from config file
         if g.config.get('gluster_block_args_info'):
-                cls.gluster_block_args_info = {}
-                blocks_count = 0
-                each_block_info = g.config['gluster_block_args_info']
+            cls.gluster_block_args_info = {}
+            blocks_count = 0
+            each_block_info = g.config['gluster_block_args_info']
             # for i, each_block_info in enumerate(
             # g.config['gluster_block_args_info']):
             # volname
-                block_on_volume = cls.volname
-                if each_block_info.get('volname'):
-                    block_on_volume = each_block_info['volname']
+            block_on_volume = cls.volname
+            if each_block_info.get('volname'):
+                block_on_volume = each_block_info['volname']
 
-                # Block name
-                block_base_name = "gluster_block"
-                if each_block_info.get('blockname'):
-                    block_base_name = each_block_info['blockname']
+            # Block name
+            block_base_name = "gluster_block"
+            if each_block_info.get('blockname'):
+                block_base_name = each_block_info['blockname']
 
-                # servers
-                block_servers = cls.servers
-                if each_block_info.get('servers'):
-                    block_servers = each_block_info['servers']
-                    if not filter(None, block_servers):
-                        block_servers = cls.servers
+            # servers
+            block_servers = cls.servers
+            if each_block_info.get('servers'):
+                block_servers = each_block_info['servers']
+                if not filter(None, block_servers):
+                    block_servers = cls.servers
 
-                # Block size
-                block_size = "1GiB"
-                if each_block_info.get('size'):
-                    block_size = each_block_info['size']
+            # Block size
+            block_size = "1GiB"
+            if each_block_info.get('size'):
+                block_size = each_block_info['size']
 
-                # HA
-                block_ha = 3
-                if each_block_info.get('ha'):
-                    block_ha = each_block_info['ha']
+            # HA
+            block_ha = 3
+            if each_block_info.get('ha'):
+                block_ha = each_block_info['ha']
 
-                # auth
-                block_auth = None
-                if each_block_info.get('auth'):
-                    block_auth = each_block_info['auth']
+            # auth
+            block_auth = None
+            if each_block_info.get('auth'):
+                block_auth = each_block_info['auth']
 
-                # prealloc
-                block_prealloc = None
-                if each_block_info.get('prealloc'):
-                    block_prealloc = each_block_info['prealloc']
+            # prealloc
+            block_prealloc = None
+            if each_block_info.get('prealloc'):
+                block_prealloc = each_block_info['prealloc']
 
-                # ring-buffer
-                block_ring_buffer = None
-                if each_block_info.get('ring-buffer'):
-                    block_ring_buffer = each_block_info['ring-buffer']
+            # ring-buffer
+            block_ring_buffer = None
+            if each_block_info.get('ring-buffer'):
+                block_ring_buffer = each_block_info['ring-buffer']
 
-                # Number of blocks
-                num_of_blocks = 1
-                if each_block_info.get('num_of_blocks'):
-                    num_of_blocks = int(each_block_info['num_of_blocks'])
+            # Number of blocks
+            num_of_blocks = 1
+            if each_block_info.get('num_of_blocks'):
+                num_of_blocks = int(each_block_info['num_of_blocks'])
 
-                # for count in range(blocks_count,num_of_blocks +blocks_count):
-                for count in range(blocks_count, num_of_blocks):
-                    # blocks_count = int(count) + i
+            # for count in range(blocks_count,num_of_blocks +blocks_count):
+            for count in range(blocks_count, num_of_blocks):
+                # blocks_count = int(count) + i
 
-                    if block_ha:
-                        selected_block_servers = random.sample(block_servers,
-                                                               block_ha)
-                    else:
-                        selected_block_servers = random.choice(block_servers)
+                if block_ha:
+                    selected_block_servers = random.sample(block_servers,
+                                                           block_ha)
+                else:
+                    selected_block_servers = random.choice(block_servers)
 
-                    block_name = "_".join([block_base_name,
-                                           str(count + 1)])
+                block_name = "_".join([block_base_name,
+                                       str(count + 1)])
 
-                    cls.gluster_block_args_info[block_name] = (
-                        {'volname': block_on_volume,
-                         'blockname': block_name,
-                         'servers': cls.get_ip_from_hostname(
-                             selected_block_servers),
-                         'size': block_size,
-                         'ha': block_ha,
-                         'auth': block_auth,
-                         'prealloc': block_prealloc,
-                         'storage': None,
-                         'ring-buffer': block_ring_buffer}
-                        )
+                cls.gluster_block_args_info[block_name] = (
+                    {'volname': block_on_volume,
+                     'blockname': block_name,
+                     'servers': cls.get_ip_from_hostname(
+                         selected_block_servers),
+                     'size': block_size,
+                     'ha': block_ha,
+                     'auth': block_auth,
+                     'prealloc': block_prealloc,
+                     'storage': None,
+                     'ring-buffer': block_ring_buffer}
+                    )
 
         for key in cls.gluster_block_args_info.keys():
             value = cls.gluster_block_args_info[key]

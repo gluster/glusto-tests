@@ -14,6 +14,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
@@ -22,7 +23,8 @@ from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.volume_libs import (cleanup_volume)
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
                                          peer_probe_servers,
-                                         nodes_from_pool_list)
+                                         nodes_from_pool_list,
+                                         is_peer_connected)
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.exceptions import ExecutionError
@@ -104,6 +106,16 @@ class TestSpuriousRebalance(GlusterBaseClass):
                                       self.servers[0], self.servers[index]))
             g.log.info("peer probe is success from %s to "
                        "%s", self.servers[0], self.servers[index])
+        # Checking if peer is connected
+        counter = 0
+        while counter < 30:
+            ret = is_peer_connected(self.mnode, self.servers[:3])
+            counter += 1
+            if ret:
+                break
+            sleep(3)
+        self.assertTrue(ret, "Peer is not in connected state.")
+        g.log.info("Peers is in connected state.")
 
         self.volname = "testvol"
         bricks_list = form_bricks_list(self.mnode, self.volname, 3,

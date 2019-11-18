@@ -103,8 +103,8 @@ class SubdirWithReplaceBrick(GlusterBaseClass):
         g.log.info('Setting authentication on subdir25 and subdir15'
                    'for client %s and %s', self.clients[0], self.clients[1])
         ret = set_auth_allow(self.volname, self.mnode,
-                             {'/subdir25': [self.clients[0]],
-                              '/subdir15': [self.clients[1]]})
+                             {'/subdir25': [self.mounts[0].client_system],
+                              '/subdir15': [self.mounts[1].client_system]})
         self.assertTrue(ret,
                         'Failed to set Authentication on volume %s'
                         % self.volume)
@@ -216,10 +216,10 @@ class SubdirWithReplaceBrick(GlusterBaseClass):
         # Unmount the sub-directories
         # Test needs to continue if  unmount fail.Not asserting here.
         ret = self.unmount_volume(self.subdir_mounts)
-        if ret == 0:
+        if ret:
             g.log.info("Successfully unmounted all the subdirectories")
         else:
-            g.log.error(ret, "Failed to unmount sub-directories")
+            g.log.error("Failed to unmount sub-directories")
 
         # cleanup-volume
         ret = self.cleanup_volume()

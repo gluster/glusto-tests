@@ -154,6 +154,8 @@ class TestVolumeGet(GlusterBaseClass):
                                     "for existing volume %s with non-existing "
                                     "option" % self.volname)
         msg = 'Did you mean auth.allow or ...reject?'
+        if msg not in err:
+            msg = 'volume get option: failed: Did you mean ctime.noatime?'
         self.assertIn(msg, err, "No proper error message for existing "
                                 "volume %s with non-existing option"
                       % self.volname)

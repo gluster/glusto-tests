@@ -74,9 +74,9 @@ def peer_detach(mnode, server, force=False):
             of the command execution.
     """
     if force:
-        cmd = "gluster peer detach %s force" % server
+        cmd = "gluster peer detach %s force --mode=script" % server
     else:
-        cmd = "gluster peer detach %s" % server
+        cmd = "gluster peer detach %s --mode=script" % server
     return g.run(mnode, cmd)
 
 

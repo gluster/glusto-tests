@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import socket
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
@@ -25,6 +26,7 @@ from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.peer_ops import (peer_probe, peer_status, peer_detach,
                                          peer_probe_servers,
                                          peer_detach_servers,
+                                         is_peer_connected,
                                          nodes_from_pool_list)
 
 
@@ -128,6 +130,19 @@ class TestPeerStatus(GlusterBaseClass):
                                                         self.mnode, err)))
         g.log.info("Peer probe from %s to %s is success", self.mnode,
                    self.servers[2])
+
+        # Validate firts three peers are in connected state
+        # In jenkins The next step which is add-brick from thried node
+        # is failing with peer is not in cluster
+        count = 0
+        while count < 30:
+            ret = is_peer_connected(self.mnode, self.servers[0:3])
+            if ret:
+                g.log.info("Peers are in connected state")
+                break
+            sleep(3)
+            count = count + 1
+        self.assertTrue(ret, "Some peers are not in connected state")
 
         # add a brick from N3 to the volume
         num_bricks_to_add = 1

@@ -22,7 +22,7 @@
         remaining bricks when named lookup comes on those from the mount point.
 """
 
-import time
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -30,6 +30,7 @@ from glustolibs.gluster.heal_libs import is_heal_complete
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.glusterfile import get_fattr
+from glustolibs.gluster.volume_ops import set_volume_options
 
 
 @runs_on([['replicated'],
@@ -88,19 +89,41 @@ class AssignGfidOnLookup(GlusterBaseClass):
         bricks_list = get_all_bricks(self.mnode, self.volname)
         for brick in bricks_list:
             brick_node, brick_path = brick.split(":")
-
             ret = get_fattr(brick_node, '%s/%s' % (brick_path, dirname),
                             'trusted.gfid')
             self.assertIsNotNone(ret, "trusted.gfid is not present on %s/%s"
                                  % (brick_path, dirname))
             dir_gfids.setdefault(dirname, []).append(ret)
-
             for key in dir_gfids:
                 self.assertTrue(all(value == dir_gfids[key][0]
                                     for value in dir_gfids[key]),
                                 "gfid mismatch for %s" % dirname)
 
     def test_gfid_assignment_on_lookup(self):
+        '''
+        1) create replicate volume ( 1 * 3 )
+        2. Test the case with default afr options.
+        3. Test the case with volume option 'self-heal-daemon'
+        4) create dirs on bricks from backend. lets say dir1, dir2 and dir3
+        5) From mount point,
+            echo "hi" >dir1 ->must fail
+            touch dir2 --> must pass
+            mkdir dir3 ->must fail
+        6) From mount point,
+            ls -l  and find, must list both dir1 and dir2 and dir3
+        7) check on all backend bricks, dir1, dir2 and dir3 should be created
+        8) heal info should show zero, and also gfid and other attributes
+         must exist
+        '''
+        g.log.info("Enable client side healing options")
+        options = {"metadata-self-heal": "on",
+                   "entry-self-heal": "on",
+                   "data-self-heal": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
+
         g.log.info("Creating directories on the backend.")
         bricks_list = get_all_bricks(self.mnode, self.volname)
         i = 0
@@ -112,7 +135,7 @@ class AssignGfidOnLookup(GlusterBaseClass):
         g.log.info("Created directories on the backend.")
 
         # To circumvent is_fresh_file() check in glusterfs code.
-        time.sleep(2)
+        sleep(2)
 
         # Do named lookup on directories from mount
         ret, _, err = g.run(self.clients[0], "echo Hi >  %s/dir1"
@@ -139,8 +162,22 @@ class AssignGfidOnLookup(GlusterBaseClass):
                             "supposed to.")
         g.log.info("Creation of directory \"dir3\" failed as expected")
 
+        g.log.info("Do a named lookup on dirs")
+        for number in range(1, 4):
+            ret, _, _ = g.run(self.clients[0], "ls %s/dir%s"
+                              % (self.mounts[0].mountpoint, number))
+            ret, _, _ = g.run(self.clients[0], "find %s/dir%s"
+                              % (self.mounts[0].mountpoint, number))
+        g.log.info("Named lookup Successful")
+
         # Check if heal is completed
-        ret = is_heal_complete(self.mnode, self.volname)
+        counter = 0
+        while True:
+            ret = is_heal_complete(self.mnode, self.volname)
+            if ret or counter > 30:
+                break
+            counter += 1
+            sleep(2)
         self.assertTrue(ret, 'Heal is not complete')
         g.log.info('Heal is completed successfully')
 

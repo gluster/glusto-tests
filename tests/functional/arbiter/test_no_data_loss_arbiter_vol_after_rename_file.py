@@ -91,7 +91,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
     def test_no_data_loss_arbiter_vol_after_rename_file(self):
         """
         - Create a 1x(2+1) arbiter replicate volume
-        - Turn off self-heal daemon
+        - Turn off Clients side healing option
         - Create a directory 'test_dir'
         - Bring down the 1-st data brick
         - Create a file under 'test_dir'
@@ -99,6 +99,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         - Bring up the 1-st data brick
         - Rename file under 'test_dir'
         - Bring up the 2-nd data brick
+        - Turn on Clients side healing option
         - Trigger heal
         - Check if no pending heals
         - Check if md5sum on mountpoint is the same for md5sum_node on nodes
@@ -107,7 +108,9 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         test_dir = 'test_dir'
 
         # Setting options
-        options = {"self-heal-daemon": "off"}
+        options = {"cluster.metadata-self-heal": "off",
+                   "cluster.entry-self-heal": "off",
+                   "cluster.data-self-heal": "off"}
         g.log.info('Setting options %s for volume %s...',
                    options, self.volname)
         ret = set_volume_options(self.mnode, self.volname, options)
@@ -115,11 +118,11 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                         % (options, self.volname))
         g.log.info("Successfully set %s for volume %s",
                    options, self.volname)
-
-        # Check if options are set to off
         options_dict = get_volume_options(self.mnode, self.volname)
-        self.assertEqual(options_dict['cluster.self-heal-daemon'], 'off',
-                         'Option self-heal-daemon is not set to off')
+        # validating  options are off
+        for opt in options:
+            self.assertEqual(options_dict[opt], 'off',
+                             'options are  not set to off')
         g.log.info('Option are set to off for volume %s: %s',
                    options, self.volname)
 
@@ -217,7 +220,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                       self.mounts[0].mountpoint,
                       test_dir))
         ret, _, err = g.run(self.mounts[0].client_system, command)
-        self.assertFalse(ret, err)
+        self.assertEqual(ret, 0, err)
         g.log.info("Renaming file for %s:%s is successful",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
 
@@ -237,17 +240,25 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, 'Unable to mount %s' % self.volname)
 
+        # Enable client side healing
+        g.log.info("Enable client side healing options")
+        options = {"metadata-self-heal": "on",
+                   "entry-self-heal": "on",
+                   "data-self-heal": "on"}
+        ret = set_volume_options(self.mnode, self.volname, options)
+        self.assertTrue(ret, 'Failed to set options %s' % options)
+        g.log.info("Successfully set %s for volume %s",
+                   options, self.volname)
         # Trigger heal from mount point
         g.log.info("Triggering heal for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = ("python %s read %s/%s"
-                   % (self.script_upload_path,
-                      self.mounts[0].mountpoint,
+        command = ("cd %s/%s ; find . | xargs getfattr -d -m . -e hex"
+                   % (self.mounts[0].mountpoint,
                       test_dir))
 
         ret, _, err = g.run(self.mounts[0].client_system, command)
-        self.assertFalse(ret, 'Failed to start "find . | xargs stat" '
-                              'on %s'
+        self.assertFalse(ret, 'Failed to trigger heal using '
+                              '"find . | xargs getfattr -d -m . -e hex" on %s'
                          % self.mounts[0].client_system)
 
         # Monitor heal completion
@@ -275,10 +286,10 @@ class ArbiterSelfHealTests(GlusterBaseClass):
             self.assertFalse(ret, err)
             g.log.info('md5sum for the node: %s', md5sum_node)
 
-            # comparing md5sum_node result with mountpoint
+            # Comparing md5sum_node result with mountpoint
             g.log.info('Comparing md5sum result with mountpoint...')
-            self.assertEqual(md5sum, md5sum_node, 'File contents are not equal'
+            self.assertEqual(md5sum, md5sum_node, 'md5sums are not equal'
                                                   ' on %s and %s'
                              % (self.mounts[0].mountpoint, brick))
-            g.log.info('File contents are equal on %s and %s',
+            g.log.info('md5sums are equal on %s and %s',
                        self.mounts[0].mountpoint, brick)

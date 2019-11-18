@@ -22,7 +22,6 @@
 
 import pytest
 from glusto.core import Glusto as g
-from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_init import is_glusterd_running
@@ -193,111 +192,6 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         ret = get_mounts_stat(self.mounts)
         self.assertTrue(ret, "Stat failed on some of the clients")
         g.log.info("Successfully got stat of all files/dirs created")
-
-        # UnMount Volume
-        g.log.info("Starting to Unmount Volume %s", self.volname)
-        ret = self.unmount_volume(self.mounts)
-        self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
-        g.log.info("Successfully Unmounted Volume %s", self.volname)
-
-    def _check_any_stale_space_present(self):
-        # Get all bricks
-        directories = []
-        brick_list = get_all_bricks(self.mnode, self.volname)
-        self.assertIsNotNone(brick_list, ("Failed to get the brick list"
-                                          "of volume %s" % self.volname))
-        # Run ls .glusterfs/ inside all the bricks
-        for brick in brick_list:
-            brick_node, brick_path = brick.split(":")
-            cmd1 = ("cd %s; ls .glusterfs/" % brick_path)
-            ret, list_dir, _ = g.run(brick_node, cmd1)
-            self.assertEqual(ret, 0, ("Failed to run cmd on node"
-                                      "%s" % brick_node))
-            g.log.info("Succeful in ruuning cmd and the output"
-                       "is %s", list_dir)
-            directories.append(list_dir)
-        return directories
-
-    @pytest.mark.bvt_vvt
-    def test_volume_sanity(self):
-        """
-        This test verifies that files/directories creation or
-        deletion doesn't leave behind any stale spaces
-        """
-        self.all_mounts_procs = []
-        # Mount Volume
-        g.log.info("Starting to Mount Volume %s", self.volname)
-        ret = self.mount_volume(self.mounts)
-        self.assertTrue(ret, ("Failed to Mount Volume %s" % self.volname))
-        g.log.info("Successful in Mounting Volume %s", self.volname)
-
-        # Get the list of directories under .glusterfs before
-        # creating any files
-        before_creating_files = self._check_any_stale_space_present()
-
-        # Creating files on client side
-        for mount_object in self.mounts:
-            g.log.info("Generating data for %s:%s",
-                       mount_object.client_system, mount_object.mountpoint)
-            # Create files
-            g.log.info('Creating files...')
-            command = ("python %s create_files -f 100 --fixed-file-size 1k %s"
-                       % (self.script_upload_path, mount_object.mountpoint))
-
-            proc = g.run_async(mount_object.client_system, command,
-                               user=mount_object.user)
-            self.all_mounts_procs.append(proc)
-
-        # Creating directories in the mount point
-        for mount_object in self.mounts:
-            g.log.info("Creating Directories on %s:%s",
-                       mount_object.client_system, mount_object.mountpoint)
-            cmd = ("python %s create_deep_dir -d 0 -l 10 %s"
-                   % (self.script_upload_path, mount_object.mountpoint))
-
-            proc = g.run_async(mount_object.client_system, cmd,
-                               user=mount_object.user)
-            self.all_mounts_procs.append(proc)
-
-        # Creating hard links
-        for mount_object in self.mounts:
-            g.log.info("Creating hard links on %s:%s",
-                       mount_object.client_system, mount_object.mountpoint)
-            cmd = ("python %s create_hard_links --dest-dir %s %s"
-                   % (self.script_upload_path, mount_object.mountpoint,
-                      mount_object.mountpoint))
-            proc = g.run_async(mount_object.client_system, command,
-                               user=mount_object.user)
-            self.all_mounts_procs.append(proc)
-
-        # Get stat of all the files/dirs created.
-        g.log.info("Get stat of all the files/dirs created.")
-        ret = get_mounts_stat(self.mounts)
-        self.assertTrue(ret, "Stat failed on some of the clients")
-        g.log.info("Successfully got stat of all files/dirs created")
-
-        # Remove the files, directories and hard-links which created
-        for mount_object in self.mounts:
-            cmd = ("cd %s; rm -rf *" % mount_object.mountpoint)
-            g.log.info("Running cmd %s nodes %s",
-                       cmd, mount_object.client_system)
-            ret, _, _ = g.run(mount_object.client_system, cmd)
-            self.assertEqual(ret, 0, "Failed to delete the files/dir on"
-                             " %s" % mount_object.client_system)
-        g.log.info("Succesfully deleted all the files")
-
-        # Get the list of directories under .glusterfs after
-        # deleting files on client side
-        after_del_files = self._check_any_stale_space_present()
-
-        # Compare the output before and after running io's
-        self.assertListEqual(before_creating_files, after_del_files,
-                             "Both list are not equal.\n Before creating"
-                             " file:%s\n After deleting file: "
-                             "%s" % (before_creating_files, after_del_files))
-        g.log.info("Both list are equal. Before creating file:%s "
-                   "After deleting file :%s", before_creating_files,
-                   after_del_files)
 
         # UnMount Volume
         g.log.info("Starting to Unmount Volume %s", self.volname)

@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2019  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ class TestDhtClass(GlusterBaseClass):
         g.log.info("Starting to clean up Volume %s", cls.volname)
         ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
         if not ret:
-            raise ExecutionError("Failed to create volume")
+            raise ExecutionError("Failed to clean-up volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
         GlusterBaseClass.tearDownClass.im_func(cls)
@@ -120,8 +120,8 @@ class TestDhtClass(GlusterBaseClass):
         self.assertTrue(flag, "Layout has some holes or overlaps")
         g.log.info("Layout is completely set")
 
-        g.log.info("checking if xattrs of directories are displayed on "
-                   "mount point")
+        g.log.info("Checking if gfid xattr of directories is displayed and"
+                   "is same on all the bricks on the server node")
         brick_list = get_all_bricks(self.mnode, self.volname)
         for direc in list_of_all_dirs:
             list_of_gfid = []
@@ -131,7 +131,7 @@ class TestDhtClass(GlusterBaseClass):
                 # , and the brick path
                 brick_tuple = brick.partition(':')
                 brick_path = brick_tuple[2]
-                gfid = get_fattr(brick_tuple[0], m_point + '/direc',
+                gfid = get_fattr(brick_tuple[0], brick_path + '/' + direc,
                                  'trusted.gfid')
                 list_of_gfid.append(gfid)
             flag = True
@@ -149,7 +149,8 @@ class TestDhtClass(GlusterBaseClass):
             list_of_xattrs = get_fattr_list(self.mounts[0].client_system,
                                             self.mounts[0].mountpoint
                                             + '/' + direc)
-            del list_of_xattrs['security.selinux']
+            if 'security.selinux' in list_of_xattrs:
+                del list_of_xattrs['security.selinux']
             self.assertFalse(list_of_xattrs, "one or more xattr being "
                                              "displayed on mount point")
         g.log.info("Verified : mount point not displaying important "

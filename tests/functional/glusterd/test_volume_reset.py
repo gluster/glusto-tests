@@ -23,6 +23,7 @@ from glustolibs.gluster.volume_libs import cleanup_volume
 from glustolibs.gluster.bitrot_ops import (enable_bitrot, is_bitd_running,
                                            is_scrub_process_running)
 from glustolibs.gluster.uss_ops import enable_uss, is_snapd_running
+from glustolibs.gluster.brick_libs import get_all_bricks
 
 
 @runs_on([['distributed', 'replicated', 'distributed-replicated',
@@ -78,6 +79,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
             raise ExecutionError("Failed Cleanup the Volume %s" % cls.volname)
 
     def test_bitd_scrubd_snapd_after_volume_reset(self):
+        # pylint: disable=too-many-statements
         '''
         -> Create volume
         -> Enable BitD, Scrub and Uss on volume
@@ -107,7 +109,12 @@ class GlusterdVolumeReset(GlusterBaseClass):
         # Checks bitd, snapd, scrub daemons running or not
         g.log.info("checking snapshot, scrub and bitrot\
         daemons running or not")
-        for mnode in self.servers:
+        node_list = []
+        list_of_bricks = get_all_bricks(self.mnode, self.volname)
+        for brick in list_of_bricks:
+            node, _ = brick.split(r':')
+            node_list.append(node)
+        for mnode in node_list:
             ret = is_bitd_running(mnode, self.volname)
             self.assertTrue(ret, "Bitrot Daemon not running on %s server:"
                             % mnode)
@@ -130,7 +137,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
         # bitd and scrub daemons will be in running state.
         g.log.info("checking snapshot, scrub and bitrot daemons\
         running or not after volume reset")
-        for mnode in self.servers:
+        for mnode in node_list:
             ret = is_bitd_running(mnode, self.volname)
             self.assertTrue(ret, "Bitrot Daemon\
             not running on %s server:" % mnode)
@@ -164,7 +171,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
         # all three daemons will get die
         g.log.info("checking snapshot, scrub and bitrot daemons\
         running or not after volume reset with force")
-        for mnode in self.servers:
+        for mnode in node_list:
             ret = is_bitd_running(mnode, self.volname)
             self.assertFalse(ret, "Bitrot Daemon should not be\
             running on %s server after volume reset with force:" % mnode)

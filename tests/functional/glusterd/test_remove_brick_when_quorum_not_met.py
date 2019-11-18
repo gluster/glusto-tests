@@ -58,6 +58,13 @@ class TestRemoveBrickWhenQuorumNotMet(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Servers are not in connected state")
 
+        # Setting quorum ratio to 51%
+        ret = set_volume_options(self.mnode, 'all',
+                                 {'cluster.server-quorum-ratio': '51%'})
+        if not ret:
+            raise ExecutionError("Failed to set server quorum ratio on %s"
+                                 % self.volname)
+
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:

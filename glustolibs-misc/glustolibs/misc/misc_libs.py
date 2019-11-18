@@ -17,6 +17,7 @@
 """ Description: Helper module for misc libs. """
 
 from glusto.core import Glusto as g
+from glustolibs.gluster.lib_utils import is_rhel7
 import os
 import sys
 import time
@@ -563,3 +564,64 @@ def drop_caches(hosts):
             _rc = False
 
     return _rc
+
+
+def daemon_reload(node):
+    """
+    Reloads the Daemons when unit files are changed
+
+    Args:
+        node : Node on which daemon has to be reloaded
+
+    Returns:
+        bool : True, On successful daemon reload
+               False, Otherwise
+    """
+    if is_rhel7([node]):
+        cmd = "systemctl daemon-reload"
+        ret, _, _ = g.run(node, cmd)
+        if ret != 0:
+            g.log.error("Failed to reload the daemon")
+            return False
+    else:
+        cmd = 'service glusterd reload'
+        ret, _, _ = g.run(node, cmd)
+        if ret != 0:
+            g.log.error("Failed to reload the daemon")
+            return False
+    return True
+
+
+def git_clone_and_compile(hosts, link, dir_name,
+                          compile_option='False'):
+    """This function clones a repo and depending
+       on kwargs compiles it.
+    Args:
+        hosts (list|str): List of hosts where the repo needs to be cloned.
+        link (str): Link to the repo that needs to be cloned.
+        dir_name (str): Directory where the repo is to be cloned.
+
+    Kwargs:
+        compile_option (bool): If this option is set to True
+            then the cloned repo will be compiled otherwise
+            the repo is only cloned on the hosts.
+
+    Returns:
+       bool : True on successfull cloning (and compilation)
+            False otherwise.
+    """
+    if isinstance(hosts, str):
+        hosts = [hosts]
+
+    cmd = ("cd /root; git clone %s %s;" % (link, dir_name))
+    if compile_option:
+        cmd = cmd + (("cd /root/%s; make") % dir_name)
+
+    for host in hosts:
+        ret, _, _ = g.run(host, cmd)
+        if ret:
+            g.log.error("Cloning/Compiling repo failed on %s" % host)
+            return False
+        else:
+            g.log.info("Successfully cloned/compiled repo on %s" % host)
+    return True

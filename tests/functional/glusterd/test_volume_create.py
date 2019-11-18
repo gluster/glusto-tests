@@ -197,7 +197,11 @@ class TestVolumeCreate(GlusterBaseClass):
         self.assertTrue(ret, "Peer probe is failed")
         g.log.info("Peer probe to all the servers is success")
 
-        random_server = self.servers[random.randint(1, len(self.servers) - 1)]
+        # Taking random node from the first four nodes as the
+        # volume getting created is using first four nodes
+        # Excluding servers[0] as it is mnode
+        first_four_servers = self.servers[:4]
+        random_server = random.choice(first_four_servers[1:])
         ret = stop_glusterd(random_server)
         self.assertTrue(ret, "Glusterd is stopped successfully")
 
@@ -205,6 +209,6 @@ class TestVolumeCreate(GlusterBaseClass):
         ret = setup_volume(self.mnode, self.all_servers_info, self.volume)
         self.assertFalse(ret, "Expected: It should fail to create a volume "
                          "when one of the node is down. Actual: Successfully "
-                         "created the volume with bbrick whose node is down")
+                         "created the volume with brick whose node is down")
 
         g.log.info("Failed to create the volume with brick whose node is down")

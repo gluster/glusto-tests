@@ -82,6 +82,24 @@ def rmdir(host, fqpath, force=False):
     return False
 
 
+def get_dir_contents(host, path):
+    """Get the files and directories present in a given directory.
+
+    Args:
+        host (str): The hostname/ip of the remote system.
+        path (str): The path to the directory.
+
+    Returns:
+        file_dir_list (list): List of files and directories on path.
+        None: In case of error or failure.
+    """
+    ret, out, _ = g.run(host, ' ls '+path)
+    if ret != 0:
+        return None
+    file_dir_list = filter(None, out.split("\n"))
+    return file_dir_list
+
+
 class GlusterDir(GlusterFile):
     """Class to handle directories specific to Gluster (client and backend)"""
     def mkdir(self, parents=False, mode=None):

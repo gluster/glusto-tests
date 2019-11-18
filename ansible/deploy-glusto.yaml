@@ -1,6 +1,7 @@
 ---
-- hosts: gluster_hosts
+- hosts: glusto_hosts
   gather_facts: no
+  remote_user: root
 
   tasks:
   -  name: Add EPEL repository
@@ -8,33 +9,21 @@
        name: epel
        description: EPEL YUM repo
        mirrorlist: https://mirrors.fedoraproject.org/mirrorlist?repo=epel-7&arch=$basearch
-       enabled: no
-       gpgcheck: no
 
   - name: Install required packages
     yum:
-      name: "{{ item }}"
-      state: present
-      disablerepo: "epel"
-    with_items:
-      - git
-      - yum-plugin-copr
+      name: ['git', 'yum-plugin-copr','python-pip','gcc','python-devel']
+      state: latest
 
   - name: Install EPEL required packages
     yum:
-      name: "{{ item }}"
+      name: "python-pip"
       state: present
-      enablerepo: "epel"
-    with_items:
-      - python-pip
 
   - name: upgrade setuptools
     pip:
-      name: "{{ item }}"
+      name: ['setuptools','six']
       extra_args: --upgrade
-    with_items:
-      - setuptools
-      - six
 
   - name: enable copr repo
     shell: yum copr enable sac/gdeploy -y
@@ -44,22 +33,17 @@
       name: gdeploy
       state: latest
 
-  - name: clone glusto, glusto-tests
+  - name: Install Glusto
+    pip: name=' git+git://github.com/loadtheaccumulator/glusto.git' editable=false
+
+  - name: Clone the glusto-tests repo.
     git:
-      repo: "{{ item.repo }}"
-      dest: "{{ item.dest }}"
-      depth: 1
-    with_items:
-      - {repo: "http://review.gluster.org/glusto-tests", dest: "~/glusto-tests" }
-      - {repo: "https://github.com/loadtheaccumulator/glusto.git", dest: "~/glusto" }
+        repo: git://review.gluster.org/glusto-tests.git
+        dest: /root/glusto-tests
 
-  - name: setup glusto-test
-    shell: python setup.py install
-    args:
-      chdir: "{{ item }}"
+  - name: Install glustolibs
+    command: "python setup.py develop chdir=/root/glusto-tests/{{item}}"
     with_items:
-      - ~/glusto
-      - ~/glusto-tests/glustolibs-gluster/
-      - ~/glusto-tests/glustolibs-io/
-      - ~/glusto-tests/glustolibs-misc/
-
+    - glustolibs-gluster
+    - glustolibs-io
+    - glustolibs-misc

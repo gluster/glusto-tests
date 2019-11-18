@@ -175,9 +175,18 @@ class RemoveBrickValidation(GlusterBaseClass):
         g.log.info(out)
 
         # Expanding volume while volume shrink is in-progress
-        g.log.info("Volume %s: Expand volume while volume shrink in-progress")
+        g.log.info("Volume %s: Expand volume while volume shrink in-progress",
+                   self.volname)
         _, _, err = add_brick(self.mnode, self.volname, self.add_brick_list)
         self.assertIn("rebalance is in progress", err, "Successfully added"
                       "bricks to the volume <NOT EXPECTED>")
         g.log.info("Volume %s: Failed to add-bricks while volume shrink "
                    "in-progress <EXPECTED>", self.volname)
+
+        # cleanup add-bricks list
+        for brick in self.add_brick_list:
+            brick_node, brick_path = brick.split(":")
+            ret, _, _ = g.run(brick_node, ("rm -rf %s", brick_path))
+            if ret != 0:
+                g.log.error("Failed to clean %s:%s", brick_node, brick_path)
+        g.log.info("Successfully cleaned backend add-brick bricks list")

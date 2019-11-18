@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,30 +21,7 @@
 from glusto.core import Glusto as g
 
 
-def create_shared_storage(mnode):
-    """Create shared volume which is necessary for the setup of
-       a geo-rep session
-
-    Args:
-        mnode(str): Node on which command is to be executed
-
-    Returns:
-        tuple: Tuple containing three elements (ret, out, err).
-            The first element 'ret' is of type 'int' and is the return value
-            of command execution.
-
-            The second element 'out' is of type 'str' and is the stdout value
-            of the command execution.
-
-            The third element 'err' is of type 'str' and is the stderr value
-            of the command execution.
-
-    """
-    cmd = "gluster volume set all cluster.enable-shared-storage enable"
-    return g.run(mnode, cmd)
-
-
-def georep_createpem(mnode):
+def georep_create_pem(mnode):
     """ Creates a common pem pub file on all the nodes in the master and
         is used to implement the passwordless SSH connection
     Args:
@@ -65,134 +42,30 @@ def georep_createpem(mnode):
     return g.run(mnode, cmd)
 
 
-def georep_ssh_keygen(mnode):
-    """ Creates a pair of ssh private and public key if not present
+def georep_set_pem_keys(mnode, useraccount, mastervol, slavevol):
+    """ Sets geo-rep pem keys
 
     Args:
-        mnode (str): Node on which cmd is to be executed
-    Returns:
-        bool : True if ssh-keygen is successful on all servers.
-            False otherwise. It also returns True if ssh key
-            is already present
-
-    """
-    cmd = 'echo -e "n" | ssh-keygen -f ~/.ssh/id_rsa -q -N ""'
-    ret, out, _ = g.run(mnode, cmd)
-    if ret and "already exists" not in out:
-        return False
-    return True
-
-
-def georep_ssh_copyid(mnode, tonode, user, passwd):
-    """ Copies the default ssh public key onto tonode's
-        authorized_keys file
-
-    Args:
-        mnode (str): Node on which cmd is to be executed
-        tonode (str): Node to which ssh key is to be copied
-        user (str): user of tonode
-        passwd (str): passwd of the user of tonode
-    Returns:
-        bool : True if ssh-copy-id is successful to tonode.
-            False otherwise. It also returns True if ssh key
-            is already present
-
-    """
-    cmd = ('sshpass -p "%s" ssh-copy-id -o StrictHostKeyChecking=no %s@%s' %
-           (passwd, user, tonode))
-    ret, _, _ = g.run(mnode, cmd)
-    if ret:
-        return False
-    return True
-
-
-def georep_groupadd(servers, groupname):
-    """ Creates a group in all the slave nodes where a user will be added
-        to set up a non-root session
-
-    Args:
-        servers (list): list of nodes on which cmd is to be executed
-        groupname (str): Specifies a groupname
+        mnode (str): Node on which command is to be executed
+        useraccount (str) : User with which geo-rep is to be set up
+        mastervol (str) : The master volume
+        slavevol (str): The slave volume
 
     Returns:
-        bool : True if add group is successful on all servers.
-            False otherwise.
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
 
     """
-    cmd = "groupadd %s" % groupname
-    results = g.run_parallel(servers, cmd)
-
-    _rc = True
-    for server, ret_value in list(results.items()):
-        retcode, _, err = ret_value
-        if retcode != 0 and "already exists" not in err:
-            g.log.error("Unable to add group %s on server %s",
-                        groupname, server)
-            _rc = False
-    if not _rc:
-        return False
-
-    return True
-
-
-def georep_geoaccount(servers, groupname, groupaccount):
-    """ Creates a user account with which the geo-rep session can be securely
-        set up
-
-    Args:
-        servers (list): list of nodes on which cmd is to be executed
-        groupname (str): Specifies a groupname
-        groupaccount (str): Specifies the user account to set up geo-rep
-
-    Returns:
-        bool : True if user add is successful on all servers.
-            False otherwise.
-
-    """
-    cmd = "useradd -G %s %s" % (groupname, groupaccount)
-    results = g.run_parallel(servers, cmd)
-
-    _rc = True
-    for server, ret_value in list(results.items()):
-        retcode, _, err = ret_value
-        if retcode != 0 and "already exists" not in err:
-            g.log.error("Unable to add user on %s", server)
-            _rc = False
-    if not _rc:
-        return False
-
-    return True
-
-
-def georep_geoaccount_setpasswd(servers, groupname, groupaccount, passwd):
-    """ Creates a user account with which the geo-rep session can be securely
-        set up
-
-    Args:
-        servers (list): list of nodes on which cmd is to be executed
-        groupname (str): Specifies a groupname
-        groupaccount (str): Specifies the user account to set up geo-rep
-        passwd (str): Specifies password for they groupaccount
-
-    Returns:
-        bool : True if password set is successful on all servers.
-            False otherwise.
-
-    """
-    cmd = "echo %s:%s | chpasswd" % (groupaccount, passwd)
-    results = g.run_parallel(servers, cmd)
-
-    _rc = True
-    for server, ret_value in list(results.items()):
-        retcode, _, err = ret_value
-        if retcode != 0:
-            g.log.error("Unable to set passwd for user %s on %s",
-                        groupaccount, server)
-            _rc = False
-    if not _rc:
-        return False
-
-    return True
+    cmd = ("/usr/libexec/glusterfs/set_geo_rep_pem_keys.sh %s %s %s" %
+           (useraccount, mastervol, slavevol))
+    return g.run(mnode, cmd)
 
 
 def georep_mountbroker_setup(mnode, groupname, directory):
@@ -219,13 +92,13 @@ def georep_mountbroker_setup(mnode, groupname, directory):
     return g.run(mnode, cmd)
 
 
-def georep_mountbroker_adduser(mnode, slavevol, useraccount):
+def georep_mountbroker_add_user(mnode, slavevol, useraccount):
     """ Adds the volume and user to the mountbroker
 
     Args:
         mnode (str): Node on which command is to be executed
         slavevol (str) : The slave volume name
-        useraccount (str): The user with which geo-rep is to be set up
+        useraccount (str): The user with which geo-rep is to be setup
 
     Returns:
         tuple: Tuple containing three elements (ret, out, err).
@@ -266,14 +139,13 @@ def georep_mountbroker_status(mnode):
     return g.run(mnode, cmd)
 
 
-def georep_set_pemkeys(mnode, useraccount, mastervol, slavevol):
-    """ Sets geo-rep pem keys
+def georep_mountbroker_remove_user(mnode, slavevol, useraccount):
+    """ Remove the volume and user from the mountbroker
 
     Args:
         mnode (str): Node on which command is to be executed
-        useraccount (str) : User with which geo-rep is to be set up
-        mastervol (str) : The master volume
-        slavevol (str): The slave volume
+        slavevol (str) : The slave volume name
+        useraccount (str): The user with which geo-rep is to be setup
 
     Returns:
         tuple: Tuple containing three elements (ret, out, err).
@@ -287,8 +159,8 @@ def georep_set_pemkeys(mnode, useraccount, mastervol, slavevol):
             of the command execution.
 
     """
-    cmd = ("/usr/libexec/glusterfs/set_geo_rep_pem_keys.sh %s %s %s" %
-           (useraccount, mastervol, slavevol))
+    cmd = ("gluster-mountbroker remove --volume %s --user %s"
+           % (slavevol, useraccount))
     return g.run(mnode, cmd)
 
 
@@ -351,19 +223,13 @@ def georep_create(mnode, mastervol, slaveip, slavevol, user=None, force=False):
 
     """
     if user:
-        if force:
-            cmd = ("gluster volume geo-replication %s %s@%s::%s create "
-                   "push-pem force" % (mastervol, user, slaveip, slavevol))
-        else:
-            cmd = ("gluster volume geo-replication %s %s@%s::%s create "
-                   "push-pem" % (mastervol, user, slaveip, slavevol))
+        cmd = ("gluster volume geo-replication %s %s@%s::%s create "
+               "push-pem " % (mastervol, user, slaveip, slavevol))
     else:
-        if force:
-            cmd = ("gluster volume geo-replication %s %s::%s create "
-                   "push-pem force" % (mastervol, slaveip, slavevol))
-        else:
-            cmd = ("gluster volume geo-replication %s %s::%s create push-pem" %
-                   (mastervol, slaveip, slavevol))
+        cmd = ("gluster volume geo-replication %s %s::%s create push-pem" %
+               (mastervol, slaveip, slavevol))
+    if force:
+        cmd = (cmd + " force")
     return g.run(mnode, cmd)
 
 
@@ -454,19 +320,13 @@ def georep_start(mnode, mastervol, slaveip, slavevol, user=None, force=False):
 
     """
     if user:
-        if force:
-            cmd = ("gluster volume geo-replication %s %s@%s::%s start force" %
-                   (mastervol, user, slaveip, slavevol))
-        else:
-            cmd = ("gluster volume geo-replication %s %s@%s::%s start" %
-                   (mastervol, user, slaveip, slavevol))
+        cmd = ("gluster volume geo-replication %s %s@%s::%s start " %
+               (mastervol, user, slaveip, slavevol))
     else:
-        if force:
-            cmd = ("gluster volume geo-replication %s %s::%s start force" %
-                   (mastervol, slaveip, slavevol))
-        else:
-            cmd = ("gluster volume geo-replication %s %s::%s start" %
-                   (mastervol, slaveip, slavevol))
+        cmd = ("gluster volume geo-replication %s %s::%s start " %
+               (mastervol, slaveip, slavevol))
+    if force:
+        cmd = (cmd + "force")
     return g.run(mnode, cmd)
 
 
@@ -500,19 +360,13 @@ def georep_stop(mnode, mastervol, slaveip, slavevol, user=None, force=False):
 
     """
     if user:
-        if force:
-            cmd = ("gluster volume geo-replication %s %s@%s::%s stop force" %
-                   (mastervol, user, slaveip, slavevol))
-        else:
-            cmd = ("gluster volume geo-replication %s %s@%s::%s stop" %
-                   (mastervol, user, slaveip, slavevol))
+        cmd = ("gluster volume geo-replication %s %s@%s::%s stop " %
+               (mastervol, user, slaveip, slavevol))
     else:
-        if force:
-            cmd = ("gluster volume geo-replication %s %s::%s stop force" %
-                   (mastervol, slaveip, slavevol))
-        else:
-            cmd = ("gluster volume geo-replication %s %s::%s stop" %
-                   (mastervol, slaveip, slavevol))
+        cmd = ("gluster volume geo-replication %s %s::%s stop " %
+               (mastervol, slaveip, slavevol))
+    if force:
+        cmd = (cmd + "force")
     return g.run(mnode, cmd)
 
 

@@ -19,9 +19,10 @@ Description : Modules for enabling and disabling
 shared storoge
 """
 
-import time
+from time import sleep
 from glusto.core import Glusto as g
-from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.gluster.volume_ops import (set_volume_options,
+                                           get_volume_list)
 
 
 def enable_shared_storage(mnode):
@@ -84,7 +85,7 @@ def is_shared_volume_mounted(mnode):
             g.log.info("Shared volume mounted successfully")
             return True
         else:
-            time.sleep(2)
+            sleep(2)
             counter = counter + 2
     g.log.error("Shared volume not mounted")
     return False
@@ -110,7 +111,59 @@ def is_shared_volume_unmounted(mnode):
             g.log.info("Shared volume unmounted successfully")
             return True
         else:
-            time.sleep(2)
+            sleep(2)
             counter = counter + 2
     g.log.error("Shared volume not unmounted")
     return False
+
+
+def check_gluster_shared_volume(mnode, present=True):
+    """
+    Check gluster shared volume present or absent.
+
+    Args:
+        mnode (str) : Node on which command is to be executed
+        present (bool) : True if you want to check presence
+                         False if you want to check absence.
+
+    Returns:
+        bool : True if shared volume is present or absent.
+               False otherwise.
+    """
+    if present:
+        halt = 20
+        counter = 0
+        g.log.info("Wait for some seconds to create "
+                   "gluster_shared_storage volume.")
+
+        while counter < halt:
+            vol_list = get_volume_list(mnode)
+            if "gluster_shared_storage" in vol_list:
+                return True
+            else:
+                g.log.info("Wait for some seconds, since it takes "
+                           "time to create gluster_shared_storage "
+                           "volume.")
+                sleep(2)
+                counter = counter + 2
+
+        return False
+
+    else:
+        halt = 20
+        counter = 0
+        g.log.info("Wait for some seconds to delete "
+                   "gluster_shared_storage volume.")
+
+        while counter < halt:
+            vol_list = get_volume_list(mnode)
+            if "gluster_shared_storage" not in vol_list:
+                return True
+            else:
+                g.log.info("Wait for some seconds, since it takes "
+                           "time to delete gluster_shared_storage "
+                           "volume.")
+            sleep(2)
+            counter = counter + 2
+
+        return False

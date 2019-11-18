@@ -26,8 +26,7 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (set_volume_options, volume_start,
-                                           volume_create, get_volume_status,
-                                           volume_reset)
+                                           volume_create, get_volume_status)
 from glustolibs.gluster.gluster_init import (stop_glusterd,
                                              is_glusterd_running,
                                              start_glusterd)
@@ -61,11 +60,14 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Servers are not in peer probed state")
 
-        # reset quorum ratio to default
-        g.log.info("resetting quorum ratio")
-        ret, _, _ = volume_reset(self.mnode, 'all')
-        self.assertEqual(ret, 0, "Failed to reset quorum ratio")
-        g.log.info("Successfully resetted quorum ratio")
+        # Setting Quorum ratio to 51%
+        ret = set_volume_options(self.mnode, 'all',
+                                 {'cluster.server-quorum-ratio': '51%'})
+        if not ret:
+            raise ExecutionError("Failed to set server quorum ratio on %s"
+                                 % self.servers)
+        g.log.info("Able to set server quorum ratio successfully on %s",
+                   self.servers)
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
@@ -75,11 +77,13 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
 
         # Removing brick directories
         if not self.replace_brick_failed:
-            node, brick_path = self.random_brick.split(r':')
-            cmd = "rm -rf " + brick_path
-            ret, _, _ = g.run(node, cmd)
-            if ret:
-                raise ExecutionError("Failed to delete the brick dir's")
+            for brick in self.brick_list:
+                node, brick_path = brick.split(r':')
+                cmd = "rm -rf " + brick_path
+                ret, _, _ = g.run(node, cmd)
+                if ret:
+                    raise ExecutionError("Failed to delete the brick "
+                                         "dir's of deleted volume")
 
         # Calling GlusterBaseClass tearDown
         GlusterBaseClass.tearDown.im_func(self)
@@ -102,12 +106,12 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
 
         # Forming brick list, 6 bricks for creating volume, 7th brick for
         # performing replace brick operation
-        brick_list = form_bricks_list(self.mnode, self.volname, 7,
-                                      self.servers, self.all_servers_info)
+        self.brick_list = form_bricks_list(self.mnode, self.volname, 7,
+                                           self.servers, self.all_servers_info)
 
         # Create Volume
         ret, _, _ = volume_create(self.mnode, self.volname,
-                                  brick_list[0:6], replica_count=3)
+                                  self.brick_list[0:6], replica_count=3)
         self.assertEqual(ret, 0, "Failed to create volume %s" % self.volname)
         g.log.info("Volume created successfully %s", self.volname)
 
@@ -181,7 +185,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         # Performing replace brick commit force when quorum not met
         self.replace_brick_failed = False
         ret, _, _ = replace_brick(self.mnode, self.volname, self.random_brick,
-                                  brick_list[6])
+                                  self.brick_list[6])
         self.assertNotEqual(ret, 0, "Replace brick should fail when quorum is "
                                     "in not met condition but replace brick "
                                     "success on %s" % self.volname)
@@ -212,7 +216,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         count = 0
         while count < 100:
             ret = are_bricks_online(self.mnode, self.volname,
-                                    brick_list[0:6])
+                                    self.brick_list[0:6])
             if ret:
                 break
             sleep(2)
@@ -224,7 +228,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         # Comparing brick lists of before and after performing replace brick
         # operation
         after_brick_list = get_all_bricks(self.mnode, self.volname)
-        self.assertListEqual(after_brick_list, brick_list[0:6],
+        self.assertListEqual(after_brick_list, self.brick_list[0:6],
                              "Bricks are not same before and after performing "
                              "replace brick operation for volume %s"
                              % self.volname)
