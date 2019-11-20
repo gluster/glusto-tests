@@ -15,6 +15,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
 import subprocess
 import re
 import time
@@ -350,7 +351,7 @@ def call_get_disk_usage(args):
     disk_usage = get_disk_usage(args.dir)
     if disk_usage is None:
         return 1
-    print disk_usage
+    print(disk_usage)
     return 0
 
 
@@ -424,18 +425,18 @@ def call_start_populate_data(args):
     time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     log_file = filename + "_" + time_str + file_ext
 
-    print "GENERATE IO Log file: %s" % log_file
+    print("GENERATE IO Log file: %s" % log_file)
 
     if('io' in config_data and 'tools' in config_data['io']):
         config_data_io = dict(config_data['io']['tools'])
     else:
-        print "io tools info is not given in config file"
+        print("io tools info is not given in config file")
         return 1
 
     if('io' in config_data and 'scripts' in config_data['io']):
         config_data_io.update(config_data['io']['scripts'])
     else:
-        print "io scripts info is not given in config file"
+        print("io scripts info is not given in config file")
         return 1
 
     io_details = {}
@@ -447,18 +448,18 @@ def call_start_populate_data(args):
             config_data_io[io]['workload_type'] = workload_type
             io_details[io] = config_data_io[io]
         else:
-            print ("The IO tool/script - '%s' details not present in config "
-                   "file. Skipping the IO - '%s'" % (io, io))
+            print("The IO tool/script - '%s' details not present in config "
+                  "file. Skipping the IO - '%s'" % (io, io))
 
     if not io_details:
-        print "Config file doesn't have IO details for %s" % ','.join(io_list)
+        print("Config file doesn't have IO details for %s" % ','.join(io_list))
         return 1
 
     # Starts generating IO
     # If -t and -p bot are passed as options, runs all the io's as specified
     # until '-t' or '-p' is reached. i.e which ever reaches first.
     ret = start_populate_data(dirname, io_details, percent, timeout)
-    print "Disk Usage Details of %s: %s" % (dirname, get_disk_usage(dirname))
+    print("Disk Usage Details of %s: %s" % (dirname, get_disk_usage(dirname)))
 
     fd_list = []
     for io in io_details.keys():
@@ -482,7 +483,7 @@ def call_start_populate_data(args):
 
 
 if __name__ == "__main__":
-    print "Starting IO Generation..."
+    print("Starting IO Generation...")
     test_start_time = datetime.datetime.now().replace(microsecond=0)
 
     write_data_parser = argparse.ArgumentParser(prog="generate_io.py",
@@ -515,6 +516,6 @@ if __name__ == "__main__":
     args = write_data_parser.parse_args()
     rc = args.func(args)
     test_end_time = datetime.datetime.now().replace(microsecond=0)
-    print "Execution time: %s" % (test_end_time - test_start_time)
-    print "Ending IO Generation"
+    print("Execution time: %s" % (test_end_time - test_start_time))
+    print("Ending IO Generation")
     sys.exit(rc)

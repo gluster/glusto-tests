@@ -51,9 +51,9 @@ def is_root(path):
         True if path is '/' , False otherwise
     """
     if os.path.realpath(os.path.abspath(path)) == '/':
-        print ("Directory '%s' is the root of filesystem. "
-               "Not performing any operations on the root of filesystem" %
-               os.path.abspath(path))
+        print("Directory '%s' is the root of filesystem. "
+              "Not performing any operations on the root of filesystem" % (
+                  os.path.abspath(path)))
         return True
     else:
         return False
@@ -108,7 +108,7 @@ def create_dir(dir_path):
         try:
             os.makedirs(dir_abs_path)
         except (OSError, IOError):
-            print ("Unable to create dir: %s" % dir_abs_path)
+            print("Unable to create dir: %s" % dir_abs_path)
             return 1
     return 0
 
@@ -140,16 +140,16 @@ def create_dirs(dir_path, depth, num_of_dirs, num_of_files=0,
                               base_file_name, file_types)
         except (OSError, IOError) as e:
             if 'File exists' not in e.strerror:
-                print ("Unable to create dir '%s' : %s"
-                       % (dir_path, e.strerror))
+                print("Unable to create dir '%s' : %s" % (
+                    dir_path, e.strerror))
                 with open("/tmp/file_dir_ops_create_dirs_rc", "w") as fd:
                     try:
                         fd.write("1")
                         fd.flush()
                         fd.close()
                     except IOError as e:
-                        print ("Unable to write the rc to the "
-                               "/tmp/file_dir_ops_create_dirs_rc file")
+                        print("Unable to write the rc to the "
+                              "/tmp/file_dir_ops_create_dirs_rc file")
     if depth == 0:
         return 0
     for i in range(num_of_dirs):
@@ -387,7 +387,7 @@ def rename(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print ("Directory '%s' does not exist" % dir_path)
+        print("Directory '%s' does not exist" % dir_path)
         return 1
 
     rc = 0
@@ -401,7 +401,7 @@ def rename(args):
                 os.rename(old, new)
             except OSError:
                 rc = 1
-                print ("Unable to rename %s -> %s" % (old, new))
+                print("Unable to rename %s -> %s" % (old, new))
 
         # rename dirs
         if dirName != dir_path:
@@ -411,7 +411,7 @@ def rename(args):
                 os.rename(old, new)
             except OSError:
                 rc = 1
-                print ("Unable to rename %s -> %s" % (old, new))
+                print("Unable to rename %s -> %s" % (old, new))
     return rc
 
 
@@ -423,7 +423,7 @@ def ls(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print ("Directory '%s' does not exist" % dir_path)
+        print("Directory '%s' does not exist" % dir_path)
         return 1
 
     with open_file_to_write(log_file_name) as file_handle:
@@ -493,7 +493,7 @@ def get_path_stats(args):
 
     # Check if dir_path exists
     if not path_exists(path):
-        print ("PATH '%s' does not exist" % path)
+        print("PATH '%s' does not exist" % path)
         return 1
 
     file_stats = {}
@@ -551,7 +551,7 @@ def compress(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print ("Directory '%s' does not exist" % dir_path)
+        print("Directory '%s' does not exist" % dir_path)
         return 1
 
     # Create dir_path
@@ -653,7 +653,7 @@ def create_hard_links(args):
 
     # Check if src_dir exists
     if not path_exists(src_dir):
-        print ("Directory '%s' does not exist" % src_dir)
+        print("Directory '%s' does not exist" % src_dir)
         return 1
 
     # Create dir_path
@@ -734,7 +734,7 @@ def copy(args):
 
     # Check if src_dir exists
     if not path_exists(src_dir):
-        print ("Directory '%s' does not exist" % src_dir)
+        print("Directory '%s' does not exist" % src_dir)
         return 1
 
     # Create dest_dir
@@ -775,7 +775,7 @@ def delete(args):
 
     # Check if dir_path exists
     if not path_exists(dir_path):
-        print ("Directory '%s' does not exist" % dir_path)
+        print("Directory '%s' does not exist" % dir_path)
         return 1
 
     rc = 0
@@ -795,7 +795,7 @@ def delete(args):
 
 
 if __name__ == "__main__":
-    print ("Starting File/Dir Ops: %s" % _get_current_time())
+    print("Starting File/Dir Ops: %s" % _get_current_time())
     test_start_time = datetime.datetime.now().replace(microsecond=0)
 
     parser = argparse.ArgumentParser(
@@ -1067,6 +1067,6 @@ if __name__ == "__main__":
     rc = args.func(args)
 
     test_end_time = datetime.datetime.now().replace(microsecond=0)
-    print ("Execution time: %s" % (test_end_time - test_start_time))
-    print ("Ending File/Dir Ops %s" % _get_current_time())
+    print("Execution time: %s" % (test_end_time - test_start_time))
+    print("Ending File/Dir Ops %s" % _get_current_time())
     sys.exit(rc)

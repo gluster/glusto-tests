@@ -15,6 +15,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
 import argparse
 import random
 import os
@@ -35,9 +36,9 @@ def is_root(path):
         True if path is '/' , False otherwise
     """
     if os.path.realpath(os.path.abspath(path)) == '/':
-        print ("Directory '%s' is the root of filesystem. "
-               "Not performing any operations on the root of filesystem" %
-               os.path.abspath(path))
+        print("Directory '%s' is the root of filesystem. "
+              "Not performing any operations on the root of filesystem" % (
+                  os.path.abspath(path)))
         return True
     else:
         return False
@@ -72,7 +73,7 @@ def create_dir(dir_path):
         try:
             os.makedirs(dir_abs_path)
         except (OSError, IOError):
-            print "Unable to create dir: %s" % dir_abs_path
+            print("Unable to create dir: %s" % dir_abs_path)
             return 1
     return 0
 
@@ -90,8 +91,8 @@ def fd_write_file(filename, file_size, chunk_sizes_list, write_time,
         fd.write("0")
         fd.flush()
     except IOError as e:
-        print ("Unable to open file %s for writing : %s" % (filename,
-                                                            e.strerror))
+        print("Unable to open file %s for writing : %s" % (
+            filename, e.strerror))
         return 1
 
     while time_counter < write_time:
@@ -102,18 +103,18 @@ def fd_write_file(filename, file_size, chunk_sizes_list, write_time,
                                   range(current_chunk_size)))
             offset = random.randint(0, (actual_file_size - current_chunk_size))
             if log_level.upper() == 'DEBUG':
-                print ("\tFileName: %s, File Size: %s, "
-                       "Writing to offset: %s, "
-                       "Data Length: %d, Time Counter: %d" %
-                       (filename, actual_file_size, offset, len(write_data),
-                        time_counter))
+                print("\tFileName: %s, File Size: %s, "
+                      "Writing to offset: %s, "
+                      "Data Length: %d, Time Counter: %d" % (
+                          filename, actual_file_size, offset, len(write_data),
+                          time_counter))
             fd.seek(offset)
             fd.write(write_data)
             fd.seek(0)
             fd.flush()
         except IOError as e:
-            print ("Unable to write to file '%s' : %s at time count: %dS" %
-                   (filename, e.strerror, time_counter))
+            print("Unable to write to file '%s' : %s at time count: %dS" % (
+                filename, e.strerror, time_counter))
             rc = 1
 
         time.sleep(delay_between_writes)
@@ -240,15 +241,15 @@ if __name__ == "__main__":
 
     parser.set_defaults(func=fd_writes)
 
-    print "Starting Script: %s" % ' '.join(sys.argv)
-    print "StarTime :'%s' " % (datetime.datetime.now())
+    print("Starting Script: %s" % ' '.join(sys.argv))
+    print("StarTime :'%s' " % datetime.datetime.now())
 
     test_start_time = datetime.datetime.now().replace(microsecond=0)
     args = parser.parse_args()
     rc = args.func(args)
 
     test_end_time = datetime.datetime.now().replace(microsecond=0)
-    print "Execution time: %s" % (test_end_time - test_start_time)
-    print "EndTime :'%s' " % (datetime.datetime.now())
+    print("Execution time: %s" % (test_end_time - test_start_time))
+    print("EndTime :'%s' " % datetime.datetime.now())
 
     sys.exit(rc)
