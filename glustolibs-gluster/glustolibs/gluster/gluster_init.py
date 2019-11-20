@@ -40,7 +40,7 @@ def start_glusterd(servers):
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to start glusterd on server %s", server)
@@ -69,7 +69,7 @@ def stop_glusterd(servers):
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to stop glusterd on server %s", server)
@@ -98,7 +98,7 @@ def restart_glusterd(servers):
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to restart glusterd on server %s", server)
@@ -131,7 +131,7 @@ def is_glusterd_running(servers):
     cmd2_results = g.run_parallel(servers, cmd2)
 
     _rc = 0
-    for server, ret_values in cmd1_results.iteritems():
+    for server, ret_values in cmd1_results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("glusterd is not running on the server %s", server)

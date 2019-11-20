@@ -54,7 +54,7 @@ def quota_validate(mnode, volname, path, **kwargs):
         listinfo = quotalist[path]
 
     ret = True
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         if key and listinfo[key] != value:
             g.log.error("%s = %s does not match with expected value %s",
                         key, str(listinfo[key]), str(value))

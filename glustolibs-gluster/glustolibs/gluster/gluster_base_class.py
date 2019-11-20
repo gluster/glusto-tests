@@ -856,7 +856,7 @@ class GlusterBlockBaseClass(GlusterBaseClass):
 
         # Log the block_info_dict
         g.log.info("Logging Block Info:")
-        for key, value in cls.block_info_dict.iteritems():
+        for key, value in cls.block_info_dict.items():
             g.log.info("Glusto block info: %s\n %s" % (key, value))
 
         return True

@@ -557,7 +557,7 @@ def drop_caches(hosts):
     cmd = "echo 3 > /proc/sys/vm/drop_caches"
     results = g.run_parallel(hosts, cmd)
     _rc = True
-    for host, ret_values in results.iteritems():
+    for host, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to drop cache on host %s", host)

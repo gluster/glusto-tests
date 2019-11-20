@@ -339,8 +339,8 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
                       temp_dict))
 
         # create files on all volumes and check for result
-        for volname, file_and_mountpoint in \
-                file_to_delete_to_mountpoint_dict.iteritems():
+        for volname, file_and_mountpoint in (
+                file_to_delete_to_mountpoint_dict.items()):
             filename, mountpoint = file_and_mountpoint
 
             # check for ROFS error for read-only file system for
