@@ -34,8 +34,7 @@ from glustolibs.gluster.peer_ops import (peer_probe, peer_status, peer_detach,
 class TestPeerStatus(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Performing peer detach
         ret = peer_detach_servers(self.mnode, self.servers)
@@ -67,7 +66,7 @@ class TestPeerStatus(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_peer_probe_status(self):
 

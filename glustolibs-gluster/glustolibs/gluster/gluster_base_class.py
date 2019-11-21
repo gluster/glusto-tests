@@ -90,6 +90,32 @@ class GlusterBaseClass(unittest.TestCase):
     volume_type = None
     mount_type = None
 
+    @staticmethod
+    def get_super_method(obj, method_name):
+        """PY2/3 compatible method for getting proper parent's (super) methods.
+
+        Useful for test classes wrapped by 'runs_on' decorator which has
+        duplicated original test class [py3] as parent instead of the
+        base class as it is expected.
+
+        Example for calling 'setUp()' method of the base class from the
+        'setUp' method of a test class which was decorated with 'runs_on':
+
+        @runs_on([['distributed'], ['glusterfs']])
+        class TestDecoratedClass(GlusterBaseClass):
+            ...
+            def setUp(self):
+                self.get_super_method(self, 'setUp')()
+            ...
+
+        """
+        if (getattr(super(obj.__class__, obj), method_name) != getattr(
+                obj, method_name)):
+            return getattr(super(obj.__class__, obj), method_name)
+        # NOTE(vponomar): we always have here just one base as 'obj' is
+        # expected to be renamed copy of it's parent.
+        return getattr(super(obj.__class__.__bases__[0], obj), method_name)
+
     @classmethod
     def inject_msg_in_gluster_logs(cls, msg):
         """Inject all the gluster logs on servers, clients with msg
