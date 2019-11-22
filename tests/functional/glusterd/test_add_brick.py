@@ -33,7 +33,7 @@ class TestVolumeCreate(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # check whether peers are in connected state
         if not cls.validate_peers_are_connected():
@@ -57,7 +57,7 @@ class TestVolumeCreate(GlusterBaseClass):
             raise ExecutionError("Failed to delete the brick dirs.")
         g.log.info("Successfully cleaned all the brick dirs.")
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_brick_functionality(self):
 

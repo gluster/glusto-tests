@@ -19,30 +19,40 @@
         variables necessary for tests.
 """
 
-import unittest
-import os
-import random
-import copy
-import datetime
-import socket
+from copy import deepcopy
+from datetime import datetime
+from inspect import isclass
+from os.path import join as path_join
+from random import choice as random_choice
+from socket import (
+    gethostbyname,
+    gaierror,
+)
+from unittest import TestCase
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ConfigError
-from glustolibs.gluster.peer_ops import is_peer_connected, peer_status
-from glustolibs.gluster.volume_ops import set_volume_options
-from glustolibs.gluster.volume_libs import (setup_volume,
-                                            cleanup_volume,
-                                            log_volume_info_and_status)
-from glustolibs.gluster.volume_libs import (
-    wait_for_volume_process_to_be_online)
-from glustolibs.gluster.samba_libs import share_volume_over_smb
-from glustolibs.gluster.nfs_libs import export_volume_through_nfs
-from glustolibs.gluster.mount_ops import create_mount_objs
-from glustolibs.io.utils import log_mounts_info
 from glustolibs.gluster.lib_utils import inject_msg_in_logs
+from glustolibs.gluster.mount_ops import create_mount_objs
+from glustolibs.gluster.nfs_libs import export_volume_through_nfs
+from glustolibs.gluster.peer_ops import (
+    is_peer_connected,
+    peer_status,
+)
+from glustolibs.gluster.samba_libs import share_volume_over_smb
+from glustolibs.gluster.volume_libs import (
+    cleanup_volume,
+    log_volume_info_and_status,
+    setup_volume,
+    wait_for_volume_process_to_be_online,
+)
+from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.io.utils import log_mounts_info
 
 
 class runs_on(g.CarteTestClass):
-    """Decorator providing runs_on capability for standard unittest script"""
+    """Decorator providing runs_on capability for standard unittest script."""
 
     def __init__(self, value):
         # the names of the class attributes set by the runs_on decorator
@@ -56,16 +66,13 @@ class runs_on(g.CarteTestClass):
 
         # these are the volume and mount options to run and set in config
         # what do runs_on_volumes and runs_on_mounts need to be named????
-        run_on_volumes = self.available_options[0]
-        run_on_mounts = self.available_options[1]
-        if 'gluster' in g.config and g.config['gluster']:
-            if ('running_on_volumes' in g.config['gluster'] and
-                    g.config['gluster']['running_on_volumes']):
-                run_on_volumes = g.config['gluster']['running_on_volumes']
+        run_on_volumes, run_on_mounts = self.available_options[0:2]
+        if g.config.get('gluster', {}).get('running_on_volumes'):
+            run_on_volumes = g.config['gluster']['running_on_volumes']
 
-            if ('running_on_mounts' in g.config['gluster'] and
-                    g.config['gluster']['running_on_mounts']):
-                run_on_mounts = g.config['gluster']['running_on_mounts']
+        if g.config.get('gluster', {}).get('running_on_mounts'):
+            run_on_mounts = g.config['gluster']['running_on_mounts']
+
         # selections is the above info from the run that is intersected with
         # the limits from the test script
         self.selections = [run_on_volumes, run_on_mounts]
@@ -74,7 +81,7 @@ class runs_on(g.CarteTestClass):
         self.limits = value
 
 
-class GlusterBaseClass(unittest.TestCase):
+class GlusterBaseClass(TestCase):
     """GlusterBaseClass to be subclassed by Gluster Tests.
     This class reads the config for variable values that will be used in
     gluster tests. If variable values are not specified in the config file,
@@ -99,17 +106,22 @@ class GlusterBaseClass(unittest.TestCase):
         @runs_on([['distributed'], ['glusterfs']])
         class TestDecoratedClass(GlusterBaseClass):
             ...
+            @classmethod
+            def setUpClass(cls):
+                cls.get_super_method(cls, 'setUpClass')()
+            ...
             def setUp(self):
                 self.get_super_method(self, 'setUp')()
             ...
 
         """
-        if (getattr(super(obj.__class__, obj), method_name) != getattr(
+        current_type = obj if isclass(obj) else obj.__class__
+        if (getattr(super(current_type, obj), method_name) != getattr(
                 obj, method_name)):
-            return getattr(super(obj.__class__, obj), method_name)
+            return getattr(super(current_type, obj), method_name)
         # NOTE(vponomar): we always have here just one base as 'obj' is
         # expected to be renamed copy of it's parent.
-        return getattr(super(obj.__class__.__bases__[0], obj), method_name)
+        return getattr(super(current_type.__bases__[0], obj), method_name)
 
     @classmethod
     def inject_msg_in_gluster_logs(cls, msg):
@@ -154,8 +166,8 @@ class GlusterBaseClass(unittest.TestCase):
             nodes = [nodes]
         for node in nodes:
             try:
-                ip = socket.gethostbyname(node)
-            except socket.gaierror as e:
+                ip = gethostbyname(node)
+            except gaierror as e:
                 g.log.error("Failed to get the IP of Host: %s : %s", node,
                             e.strerror)
                 ip = None
@@ -454,8 +466,7 @@ class GlusterBaseClass(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Initialize all the variables necessary for testing Gluster
-        """
+        """Initialize all the variables necessary for testing Gluster."""
         # Get all servers
         cls.all_servers = None
         if 'servers' in g.config and g.config['servers']:
@@ -466,17 +477,16 @@ class GlusterBaseClass(unittest.TestCase):
 
         # Get all slaves
         cls.slaves = None
-        if 'slaves' in g.config and g.config['slaves']:
+        if g.config.get('slaves'):
             cls.slaves = g.config['slaves']
             # Set mnode_slave : Node on which slave commands are executed
             cls.mnode_slave = cls.slaves[0]
             # Slave IP's
-            cls.slaves_ip = []
             cls.slaves_ip = cls.get_ip_from_hostname(cls.slaves)
 
         # Get all clients
         cls.all_clients = None
-        if 'clients' in g.config and g.config['clients']:
+        if g.config.get('clients'):
             cls.all_clients = g.config['clients']
             cls.clients = cls.all_clients
         else:
@@ -484,19 +494,19 @@ class GlusterBaseClass(unittest.TestCase):
 
         # Get all servers info
         cls.all_servers_info = None
-        if 'servers_info' in g.config and g.config['servers_info']:
+        if g.config.get('servers_info'):
             cls.all_servers_info = g.config['servers_info']
         else:
             raise ConfigError("'servers_info' not defined in the global "
                               "config")
         # Get all slaves info
         cls.all_slaves_info = None
-        if 'slaves_info' in g.config and g.config['slaves_info']:
+        if g.config.get('slaves_info'):
             cls.all_slaves_info = g.config['slaves_info']
 
         # All clients_info
         cls.all_clients_info = None
-        if 'clients_info' in g.config and g.config['clients_info']:
+        if g.config.get('clients_info'):
             cls.all_clients_info = g.config['clients_info']
         else:
             raise ConfigError("'clients_info' not defined in the global "
@@ -506,7 +516,6 @@ class GlusterBaseClass(unittest.TestCase):
         cls.mnode = cls.all_servers[0]
 
         # Server IP's
-        cls.servers_ips = []
         cls.servers_ips = cls.get_ip_from_hostname(cls.servers)
 
         # SMB Cluster info
@@ -521,13 +530,14 @@ class GlusterBaseClass(unittest.TestCase):
 
         # NFS-Ganesha Cluster info
         try:
-            cls.enable_nfs_ganesha = bool(g.config['gluster']['cluster_config']
-                                          ['nfs_ganesha']['enable'])
-            cls.num_of_nfs_ganesha_nodes = (g.config['gluster']
-                                            ['cluster_config']['nfs_ganesha']
-                                            ['num_of_nfs_ganesha_nodes'])
-            cls.vips = (g.config['gluster']['cluster_config']['nfs_ganesha']
-                        ['vips'])
+            cls.enable_nfs_ganesha = (
+                g.config['gluster']['cluster_config']['nfs_ganesha']['enable']
+                in ('TRUE', 'True', 'true', 'YES', 'Yes', 'yes', '1', 1)
+            )
+            cls.num_of_nfs_ganesha_nodes = g.config['gluster'][
+                'cluster_config']['nfs_ganesha']['num_of_nfs_ganesha_nodes']
+            cls.vips = (
+                g.config['gluster']['cluster_config']['nfs_ganesha']['vips'])
         except KeyError:
             cls.enable_nfs_ganesha = False
             cls.num_of_nfs_ganesha_nodes = None
@@ -538,41 +548,38 @@ class GlusterBaseClass(unittest.TestCase):
             'replicated': {
                 'type': 'replicated',
                 'replica_count': 3,
-                'transport': 'tcp'
-                },
+                'transport': 'tcp',
+            },
             'dispersed': {
                 'type': 'dispersed',
                 'disperse_count': 6,
                 'redundancy_count': 2,
-                'transport': 'tcp'
-                },
+                'transport': 'tcp',
+            },
             'distributed': {
                 'type': 'distributed',
                 'dist_count': 4,
-                'transport': 'tcp'
-                },
+                'transport': 'tcp',
+            },
             'distributed-replicated': {
                 'type': 'distributed-replicated',
                 'dist_count': 2,
                 'replica_count': 3,
-                'transport': 'tcp'
-                },
+                'transport': 'tcp',
+            },
             'distributed-dispersed': {
                 'type': 'distributed-dispersed',
                 'dist_count': 2,
                 'disperse_count': 6,
                 'redundancy_count': 2,
-                'transport': 'tcp'
-                }
+                'transport': 'tcp',
             }
+        }
 
-        # Check if default volume_type configuration is provided in
-        # config yml
-        if (g.config.get('gluster') and
-                g.config['gluster'].get('volume_types')):
+        # Check if default volume_type configuration is provided in config yml
+        if g.config.get('gluster', {}).get('volume_types'):
             default_volume_type_from_config = (
                 g.config['gluster']['volume_types'])
-
             for volume_type in default_volume_type_from_config.keys():
                 if default_volume_type_from_config[volume_type]:
                     if volume_type in cls.default_volume_type_config:
@@ -581,53 +588,40 @@ class GlusterBaseClass(unittest.TestCase):
 
         # Create Volume with force option
         cls.volume_create_force = False
-        if (g.config.get('gluster') and
-                g.config['gluster'].get('volume_create_force')):
+        if g.config.get('gluster', {}).get('volume_create_force'):
             cls.volume_create_force = (
                 g.config['gluster']['volume_create_force'])
 
         # Default volume options which is applicable for all the volumes
         cls.volume_options = {}
-        if (g.config.get('gluster') and
-                g.config['gluster'].get('volume_options')):
+        if g.config.get('gluster', {}).get('volume_options'):
             cls.volume_options = g.config['gluster']['volume_options']
 
         # If the volume is exported as SMB Share, then set the following
         # volume options on the share.
         cls.smb_share_options = {}
-        if (g.config.get('gluster') and
-                g.config['gluster'].get('smb_share_options')):
-            cls.smb_share_options = (
-                g.config['gluster']['smb_share_options'])
+        if g.config.get('gluster', {}).get('smb_share_options'):
+            cls.smb_share_options = g.config['gluster']['smb_share_options']
 
         # If the volume is exported as NFS-Ganesha export,
         # then set the following volume options on the export.
         cls.nfs_ganesha_export_options = {}
-        if (g.config.get('gluster') and
-                g.config['gluster'].get('nfs_ganesha_export_options')):
+        if g.config.get('gluster', {}).get('nfs_ganesha_export_options'):
             cls.nfs_ganesha_export_options = (
                 g.config['gluster']['nfs_ganesha_export_options'])
 
         # Get the volume configuration.
         cls.volume = {}
         if cls.volume_type:
-            found_volume = False
-            if 'gluster' in g.config:
-                if 'volumes' in g.config['gluster']:
-                    for volume in g.config['gluster']['volumes']:
-                        if volume['voltype']['type'] == cls.volume_type:
-                            cls.volume = copy.deepcopy(volume)
-                            found_volume = True
-                            break
-
-            if found_volume:
-                if 'name' not in cls.volume:
-                    cls.volume['name'] = 'testvol_%s' % cls.volume_type
-
-                if 'servers' not in cls.volume:
-                    cls.volume['servers'] = cls.all_servers
-
-            if not found_volume:
+            for volume in g.config.get('gluster', {}).get('volumes', []):
+                if volume['voltype']['type'] == cls.volume_type:
+                    cls.volume = deepcopy(volume)
+                    if 'name' not in cls.volume:
+                        cls.volume['name'] = 'testvol_%s' % cls.volume_type
+                    if 'servers' not in cls.volume:
+                        cls.volume['servers'] = cls.all_servers
+                    break
+            else:
                 try:
                     if g.config['gluster']['volume_types'][cls.volume_type]:
                         cls.volume['voltype'] = (g.config['gluster']
@@ -635,8 +629,8 @@ class GlusterBaseClass(unittest.TestCase):
                                                  [cls.volume_type])
                 except KeyError:
                     try:
-                        cls.volume['voltype'] = (cls.default_volume_type_config
-                                                 [cls.volume_type])
+                        cls.volume['voltype'] = (
+                            cls.default_volume_type_config[cls.volume_type])
                     except KeyError:
                         raise ConfigError("Unable to get configs of volume "
                                           "type: %s", cls.volume_type)
@@ -658,66 +652,45 @@ class GlusterBaseClass(unittest.TestCase):
         cls.mounts = []
         if cls.mount_type:
             cls.mounts_dict_list = []
-            found_mount = False
-            if 'gluster' in g.config:
-                if 'mounts' in g.config['gluster']:
-                    for mount in g.config['gluster']['mounts']:
-                        if mount['protocol'] == cls.mount_type:
-                            temp_mount = {}
-                            temp_mount['protocol'] = cls.mount_type
-                            if 'volname' in mount and mount['volname']:
-                                if mount['volname'] == cls.volname:
-                                    temp_mount = copy.deepcopy(mount)
-                                else:
-                                    continue
-                            else:
-                                temp_mount['volname'] = cls.volname
-                            if ('server' not in mount or
-                                    (not mount['server'])):
-                                temp_mount['server'] = cls.mnode
-                            else:
-                                temp_mount['server'] = mount['server']
-                            if ('mountpoint' not in mount or
-                                    (not mount['mountpoint'])):
-                                temp_mount['mountpoint'] = (os.path.join(
-                                    "/mnt", '_'.join([cls.volname,
-                                                      cls.mount_type])))
-                            else:
-                                temp_mount['mountpoint'] = mount['mountpoint']
-                            if ('client' not in mount or
-                                    (not mount['client'])):
-                                temp_mount['client'] = (
-                                    cls.all_clients_info[
-                                        random.choice(
-                                            cls.all_clients_info.keys())]
-                                    )
-                            else:
-                                temp_mount['client'] = mount['client']
-                            if 'options' in mount and mount['options']:
-                                temp_mount['options'] = mount['options']
-                            else:
-                                temp_mount['options'] = ''
-                            cls.mounts_dict_list.append(temp_mount)
-                            found_mount = True
+            for mount in g.config.get('gluster', {}).get('mounts', []):
+                if mount['protocol'] != cls.mount_type:
+                    continue
+                temp_mount = {
+                    'protocol': cls.mount_type,
+                    'volname': cls.volname,
+                }
+                if mount.get('volname'):
+                    if mount['volname'] == cls.volname:
+                        temp_mount = deepcopy(mount)
+                    else:
+                        continue
+                temp_mount.update({
+                    'server': mount.get('server', cls.mnode),
+                    'mountpoint': mount.get('mountpoint', path_join(
+                        "/mnt", '_'.join([cls.volname, cls.mount_type]))),
+                    'client': mount.get('client', cls.all_clients_info[
+                        random_choice(list(cls.all_clients_info.keys()))]),
+                    'options': mount.get('options', ''),
+                })
+                cls.mounts_dict_list.append(temp_mount)
 
-            if not found_mount:
+            if not cls.mounts_dict_list:
                 for client in cls.all_clients_info.keys():
-                    mount = {
+                    cls.mounts_dict_list.append({
                         'protocol': cls.mount_type,
                         'server': cls.mnode,
                         'volname': cls.volname,
                         'client': cls.all_clients_info[client],
-                        'mountpoint': (os.path.join(
-                            "/mnt", '_'.join([cls.volname, cls.mount_type]))),
-                        'options': ''
-                        }
-                    cls.mounts_dict_list.append(mount)
+                        'mountpoint': path_join(
+                            "/mnt", '_'.join([cls.volname, cls.mount_type])),
+                        'options': '',
+                    })
 
             if cls.mount_type == 'cifs' or cls.mount_type == 'smb':
                 for mount in cls.mounts_dict_list:
                     if 'smbuser' not in mount:
-                        mount['smbuser'] = random.choice(
-                            cls.smb_users_info.keys())
+                        mount['smbuser'] = random_choice(
+                            list(cls.smb_users_info.keys()))
                         mount['smbpasswd'] = (
                             cls.smb_users_info[mount['smbuser']]['password'])
 
@@ -730,37 +703,26 @@ class GlusterBaseClass(unittest.TestCase):
             cls.clients = list(set(cls.clients))
 
         # Gluster Logs info
-        cls.server_gluster_logs_dirs = ["/var/log/glusterfs",
-                                        "/var/log/samba"]
+        cls.server_gluster_logs_dirs = ["/var/log/glusterfs", "/var/log/samba"]
         cls.server_gluster_logs_files = ["/var/log/ganesha.log",
                                          "/var/log/ganesha-gfapi.log"]
-        if ('gluster' in g.config and
-                'server_gluster_logs_info' in g.config['gluster']):
+        if g.config.get('gluster', {}).get('server_gluster_logs_info'):
             server_gluster_logs_info = (
                 g.config['gluster']['server_gluster_logs_info'])
-            if ('dirs' in server_gluster_logs_info and
-                    server_gluster_logs_info['dirs']):
-                cls.server_gluster_logs_dirs = (
-                    server_gluster_logs_info['dirs'])
-
-            if ('files' in server_gluster_logs_info and
-                    server_gluster_logs_info['files']):
+            if server_gluster_logs_info.get('dirs'):
+                cls.server_gluster_logs_dirs = server_gluster_logs_info['dirs']
+            if server_gluster_logs_info.get('files'):
                 cls.server_gluster_logs_files = (
                     server_gluster_logs_info['files'])
 
         cls.client_gluster_logs_dirs = ["/var/log/glusterfs"]
         cls.client_gluster_logs_files = []
-        if ('gluster' in g.config and
-                'client_gluster_logs_info' in g.config['gluster']):
+        if g.config.get('gluster', {}).get('client_gluster_logs_info'):
             client_gluster_logs_info = (
                 g.config['gluster']['client_gluster_logs_info'])
-            if ('dirs' in client_gluster_logs_info and
-                    client_gluster_logs_info['dirs']):
-                cls.client_gluster_logs_dirs = (
-                    client_gluster_logs_info['dirs'])
-
-            if ('files' in client_gluster_logs_info and
-                    client_gluster_logs_info['files']):
+            if client_gluster_logs_info.get('dirs'):
+                cls.client_gluster_logs_dirs = client_gluster_logs_info['dirs']
+            if client_gluster_logs_info.get('files'):
                 cls.client_gluster_logs_files = (
                     client_gluster_logs_info['files'])
 
@@ -768,7 +730,7 @@ class GlusterBaseClass(unittest.TestCase):
         # gluster logs
         if 'glustotest_run_id' not in g.config:
             g.config['glustotest_run_id'] = (
-                datetime.datetime.now().strftime('%H_%M_%d_%m_%Y'))
+                datetime.now().strftime('%H_%M_%d_%m_%Y'))
         cls.glustotest_run_id = g.config['glustotest_run_id']
 
         msg = "Setupclass: %s : %s" % (cls.__name__, cls.glustotest_run_id)
