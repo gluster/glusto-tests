@@ -17,13 +17,13 @@
 
 from __future__ import print_function
 import argparse
-import random
-import os
-import time
-import string
 import datetime
 from multiprocessing import Process
+import os
+import random
+import string
 import sys
+import time
 
 
 def is_root(path):
@@ -80,15 +80,14 @@ def create_dir(dir_path):
 
 def fd_write_file(filename, file_size, chunk_sizes_list, write_time,
                   delay_between_writes=10, log_level='INFO'):
-    """Write random data to the file until write_time
-    """
+    """Write random data to the file until write_time."""
     rc = 0
     time_counter = 0
 
     try:
         fd = open(filename, "w+b")
-        fd.seek(file_size-1)
-        fd.write("0")
+        fd.seek(file_size - 1)
+        fd.write(bytes(str("0").encode("utf-8")))
         fd.flush()
     except IOError as e:
         print("Unable to open file %s for writing : %s" % (
@@ -109,7 +108,7 @@ def fd_write_file(filename, file_size, chunk_sizes_list, write_time,
                           filename, actual_file_size, offset, len(write_data),
                           time_counter))
             fd.seek(offset)
-            fd.write(write_data)
+            fd.write(bytes(str(write_data).encode("utf-8")))
             fd.seek(0)
             fd.flush()
         except IOError as e:
@@ -130,11 +129,11 @@ def fd_writes(args):
     base_file_name = args.base_file_name
     file_sizes_list = args.file_sizes_list
     if file_sizes_list:
-        file_sizes_list = filter(None, args.file_sizes_list.split(","))
+        file_sizes_list = list(filter(None, args.file_sizes_list.split(",")))
     chunk_sizes_list = args.chunk_sizes_list
     if chunk_sizes_list:
-        chunk_sizes_list = map(int, filter(None,
-                                           args.chunk_sizes_list.split(",")))
+        chunk_sizes_list = list(
+            map(int, filter(None, args.chunk_sizes_list.split(","))))
     write_time = int(args.write_time)
     delay_between_writes = int(args.delay_between_writes)
     log_level = args.log_level
@@ -151,11 +150,11 @@ def fd_writes(args):
     file_sizes_dict = {
         'k': 1024,
         'K': 1024,
-        'm': 1024*1024,
-        'M': 1024*1024,
-        'g': 1024*1024*1024,
-        'G': 1024*1024*1024
-        }
+        'm': 1024 ** 2,
+        'M': 1024 ** 2,
+        'g': 1024 ** 3,
+        'G': 1024 ** 3,
+    }
 
     file_sizes_expanded_list = []
     for size in file_sizes_list:

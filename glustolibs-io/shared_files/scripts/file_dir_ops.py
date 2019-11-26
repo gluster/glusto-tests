@@ -20,19 +20,20 @@
 """
 
 from __future__ import print_function
-import os
 import argparse
-import sys
-import random
-import string
+import contextlib
 import datetime
 from multiprocessing import Process
 from multiprocessing.pool import ThreadPool
-import subprocess
-from docx import Document
-import contextlib
+import os
 import platform
+import random
 import shutil
+import string
+import subprocess
+import sys
+
+from docx import Document
 import numpy as np
 
 if platform.system() == "Windows":
@@ -147,7 +148,7 @@ def create_dirs(dir_path, depth, num_of_dirs, num_of_files=0,
                         fd.write("1")
                         fd.flush()
                         fd.close()
-                    except IOError as e:
+                    except IOError:
                         print("Unable to write the rc to the "
                               "/tmp/file_dir_ops_create_dirs_rc file")
     if depth == 0:
@@ -185,9 +186,10 @@ def create_deep_dirs(args):
     for i in range(dirname_start_num, (dirname_start_num + dir_length)):
         num_of_dirs = random.choice(range(1, max_num_of_dirs + 1))
         process_dir_path = os.path.join(dir_path, "user%d" % i)
-        process_list.append(Process(target=create_dirs,
-                                    args=(process_dir_path, dir_depth,
-                                          num_of_dirs)))
+        process_list.append(Process(
+            target=create_dirs,
+            args=(process_dir_path, dir_depth, num_of_dirs)
+        ))
     for each_process in process_list:
         each_process.start()
 
@@ -239,11 +241,11 @@ def create_deep_dirs_with_files(args):
     for i in range(dirname_start_num, (dirname_start_num + dir_length)):
         num_of_dirs = random.choice(range(1, max_num_of_dirs + 1))
         process_dir_path = os.path.join(dir_path, "user%d" % i)
-        process_list.append(Process(target=create_dirs,
-                                    args=(process_dir_path, dir_depth,
-                                          num_of_dirs, num_of_files,
-                                          fixed_file_size, base_file_name,
-                                          file_types)))
+        process_list.append(Process(
+            target=create_dirs,
+            args=(process_dir_path, dir_depth, num_of_dirs, num_of_files,
+                  fixed_file_size, base_file_name, file_types)
+        ))
     for each_process in process_list:
         each_process.start()
 
@@ -271,8 +273,8 @@ def _create_file(file_abs_path, file_type, file_size):
                 new_file.flush()
                 new_file.close()
             except IOError as err:
-                print("Unable to write to file '%s' : %s" %
-                      (file_abs_path, err.strerror))
+                print("Unable to write to file '%s' : %s" % (
+                    file_abs_path, err.strerror))
                 rc = 1
 
     elif file_type == 'docx':
@@ -284,8 +286,8 @@ def _create_file(file_abs_path, file_type, file_size):
             document.add_paragraph(file_str)
             document.save(file_abs_path)
         except Exception as err:
-            print("Unable to write to file '%s' : %s" %
-                  (file_abs_path, err.strerror))
+            print("Unable to write to file '%s' : %s" % (
+                file_abs_path, err.strerror))
             rc = 1
 
     elif file_type == 'empty_file':
@@ -293,8 +295,8 @@ def _create_file(file_abs_path, file_type, file_size):
             with open(file_abs_path, "w+") as new_file:
                 new_file.close()
         except IOError as err:
-            print("Unable to write to file '%s' : %s" %
-                  (file_abs_path, err.strerror))
+            print("Unable to write to file '%s' : %s" % (
+                file_abs_path, err.strerror))
             rc = 1
 
     return rc
@@ -308,8 +310,8 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
         '1k': 1024,
         '10k': 10240,
         '512k': 524288,
-        '1M': 1048576
-        }
+        '1M': 1048576,
+    }
 
     # Create dir_path
     rc = create_dir(dir_path)
@@ -321,14 +323,14 @@ def _create_files(dir_path, num_of_files, fixed_file_size=None,
         # this generator yields file tuples: (file name, file type, file size)
         files = ((fname_abs_path + str(num),
                   random.choice(file_types_list),
-                  random.choice(file_sizes_dict.values()))
-                 for num in xrange(num_of_files))
+                  random.choice(list(file_sizes_dict.values())))
+                 for num in range(num_of_files))
     else:
         try:
             files = ((fname_abs_path + str(num),
                       random.choice(file_types_list),
                       file_sizes_dict[fixed_file_size])
-                     for num in xrange(num_of_files))
+                     for num in range(num_of_files))
         except KeyError:
             print("File sizes can be [1k, 10k, 512k, 1M]")
             return 1
@@ -416,8 +418,7 @@ def rename(args):
 
 
 def ls(args):
-    """Recursively list all the files/dirs under 'dir'
-    """
+    """Recursively list all the files/dirs under 'dir'."""
     dir_path = os.path.abspath(args.dir)
     log_file_name = args.log_file_name
 
@@ -443,11 +444,9 @@ def ls(args):
 
 
 def _get_path_stats(path):
-    """Get the stat of a specified path.
-    """
+    """Get the stat of a specified path."""
     rc = 0
     path = os.path.abspath(args.path)
-    file_stats = {}
     file_stats = {}
 
     if platform.system() == "Linux":
@@ -475,8 +474,8 @@ def _get_path_stats(path):
             'mtime': stat.st_mtime,
             'ctime': stat.st_ctime,
             'inode': stat.st_ino,
-            'stat': stat
-            })
+            'stat': stat,
+        })
     except Exception:
         rc = 1
         err = "Unable to get the stat of path %s" % path
@@ -485,8 +484,7 @@ def _get_path_stats(path):
 
 
 def get_path_stats(args):
-    """Get file/dir Stat
-    """
+    """Get file/dir Stat."""
     path = os.path.abspath(args.path)
     recursive = args.recursive
     log_file_name = args.log_file_name
@@ -499,27 +497,26 @@ def get_path_stats(args):
     file_stats = {}
 
     if os.path.isfile(path):
-        file_stats[path] = (_get_path_stats(path))
+        file_stats[path] = _get_path_stats(path)
 
     if os.path.isdir(path):
         if recursive:
             for dirName, subdirList, fileList in os.walk(path, topdown=False):
-                file_stats[dirName] = (_get_path_stats(dirName))
+                file_stats[dirName] = _get_path_stats(dirName)
 
                 for fname in fileList:
                     fname_abs_path = os.path.join(dirName, fname)
-                    file_stats[fname_abs_path] = (_get_path_stats(
-                        fname_abs_path))
+                    file_stats[fname_abs_path] = _get_path_stats(
+                        fname_abs_path)
         else:
-            file_stats[path] = (_get_path_stats(path))
+            file_stats[path] = _get_path_stats(path)
 
     rc = 0
 
     with open_file_to_write(log_file_name) as file_handle:
         if log_file_name:
             time_str = _get_current_time()
-            file_handle.write("Starting 'stat %s' : %s" % (
-                path, time_str))
+            file_handle.write("Starting 'stat %s' : %s" % (path, time_str))
         for key in file_stats.keys():
             file_handle.write("\nFile: %s" % key)
             ret, file_stat, err = file_stats[key]
@@ -530,8 +527,7 @@ def get_path_stats(args):
                 file_handle.write("\t%s\n" % file_stat)
         if log_file_name:
             time_str = _get_current_time()
-            file_handle.write("Ending 'stat %s' : %s" % (
-                path, time_str))
+            file_handle.write("Ending 'stat %s' : %s" % (path, time_str))
         file_handle.write("\n")
 
     return rc
@@ -566,16 +562,16 @@ def compress(args):
     proc_list = []
     for each_dir in dirs:
         if compress_type == '7z':
-            file_name = (dest_dir + path_sep +
-                         os.path.basename(each_dir) + "_7z.7z")
+            file_name = dest_dir + path_sep + os.path.basename(
+                each_dir) + "_7z.7z"
             cmd = "7z a -t7z " + file_name + " " + each_dir
         elif compress_type == 'gzip':
-            tmp_file_name = (dir_path + path_sep +
-                             os.path.basename(each_dir) + "_tar.tar")
-            file_name = (dest_dir + path_sep +
-                         os.path.basename(each_dir) + "_tgz.tgz")
-            cmd = ("7z a -ttar -so " + tmp_file_name + " " +
-                   each_dir + " | 7z a -si " + file_name)
+            tmp_file_name = dir_path + path_sep + os.path.basename(
+                each_dir) + "_tar.tar"
+            file_name = dest_dir + path_sep + os.path.basename(
+                each_dir) + "_tgz.tgz"
+            cmd = ("7z a -ttar -so " + tmp_file_name + " "
+                   + each_dir + " | 7z a -si " + file_name)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, shell=True)
         proc_list.append(proc)
@@ -590,12 +586,12 @@ def compress(args):
         file_name = dest_dir + path_sep + os.path.basename(dir_path) + "_7z.7z"
         cmd = "7z a -t7z " + file_name + " " + dir_path
     elif compress_type == 'gzip':
-        tmp_file_name = (dest_dir + path_sep + os.path.basename(dir_path) +
-                         "_tar.tar")
-        file_name = (dest_dir + path_sep + os.path.basename(dir_path) +
-                     "_tgz.tgz")
-        cmd = ("7z a -ttar -so " + tmp_file_name + " " + dir_path +
-               " | 7z a -si " + file_name)
+        tmp_file_name = (dest_dir + path_sep + os.path.basename(dir_path)
+                         + "_tar.tar")
+        file_name = dest_dir + path_sep + os.path.basename(
+            dir_path) + "_tgz.tgz"
+        cmd = ("7z a -ttar -so " + tmp_file_name + " " + dir_path
+               + " | 7z a -si " + file_name)
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
     proc.communicate()
@@ -607,13 +603,12 @@ def compress(args):
 
 
 def uncompress(args):
-    """UnCompress the given compressed file
-    """
+    """UnCompress the given compressed file."""
     compressed_file = os.path.abspath(args.compressed_file)
     dest_dir = args.dest_dir
     date_time = datetime.datetime.now().strftime("%I_%M%p_%B_%d_%Y")
-    cmd = ("7z x " + compressed_file + " -o" + dest_dir + path_sep +
-           "uncompress_" + date_time + " -y")
+    cmd = ("7z x " + compressed_file + " -o" + dest_dir + path_sep
+           + "uncompress_" + date_time + " -y")
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
     proc.communicate()
@@ -625,13 +620,12 @@ def uncompress(args):
 
 
 def uncompress_dir(args):
-    """UnCompress all compressed files in destination directory
-    """
+    """UnCompress all compressed files in destination directory."""
     dir_path = os.path.abspath(args.dir)
     dest_dir = args.dest_dir
     date_time = datetime.datetime.now().strftime("%I_%M%p_%B_%d_%Y")
-    cmd = ("7z x " + dir_path + " -o" + dest_dir + path_sep +
-           "uncompress_" + date_time + " -y")
+    cmd = ("7z x " + dir_path + " -o" + dest_dir + path_sep
+           + "uncompress_" + date_time + " -y")
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
     proc.communicate()
@@ -643,7 +637,7 @@ def uncompress_dir(args):
 
 
 def create_hard_links(args):
-    """Creates hard link"""
+    """Create hard link."""
     src_dir = os.path.abspath(args.src_dir)
     dest_dir = args.dest_dir
 
@@ -670,8 +664,8 @@ def create_hard_links(args):
                 rc = create_dir(dest_dir + path_sep + tmp_dir)
                 if rc != 0:
                     rc = 1
-                link_file = (dest_dir + path_sep + tmp_dir + path_sep +
-                             new_fname + "_h")
+                link_file = (dest_dir + path_sep + tmp_dir + path_sep
+                             + new_fname + "_h")
                 target_file = os.path.join(dir_name, fname)
                 if platform.system() == "Windows":
                     cmd = "mklink /H " + link_file + " " + target_file
@@ -722,9 +716,7 @@ def read(args):
 
 
 def copy(args):
-    """
-    Copies files/dirs under 'dir' to destination directory
-    """
+    """Copy files/dirs under 'dir' to destination directory."""
     src_dir = os.path.abspath(args.src_dir)
     dest_dir = args.dest_dir
 
@@ -755,8 +747,8 @@ def copy(args):
         if dir_name != src_dir:
             try:
                 src = dir_name
-                dst = (dest_dir + path_sep +
-                       os.path.basename(os.path.normpath(src)))
+                dst = (dest_dir + path_sep
+                       + os.path.basename(os.path.normpath(src)))
                 shutil.copytree(src, dst)
             except OSError:
                 rc = 1
@@ -764,9 +756,7 @@ def copy(args):
 
 
 def delete(args):
-    """
-    Deletes files/dirs under 'dir'
-    """
+    """Delete files/dirs under 'dir'."""
     dir_path = os.path.abspath(args.dir)
 
     # Check if dir_path is '/'

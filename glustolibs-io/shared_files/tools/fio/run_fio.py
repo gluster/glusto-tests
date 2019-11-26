@@ -15,17 +15,16 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
 import argparse
 import fileinput
+import os
 import re
 import subprocess
 import time
 
 
 def generate_workload_using_fio(root_dirname, ini_file):
-    """
-    Populates data in the given directory using fio tool.
+    """Populate data in the given directory using fio tool.
 
     Args:
         root_dirname (str): Directory name
@@ -54,16 +53,15 @@ if __name__ == "__main__":
     # http://git.kernel.dk/?p=fio.git;a=blob;f=README;
     # h=5fa37f3eed33a15a15a38836cf0080edc81688fd;hb=HEAD
 
-    parser = argparse.ArgumentParser(prog="test_fio.py",
-                                     description=("Generate workload "
-                                                  "using fio"))
+    parser = argparse.ArgumentParser(
+        prog="test_fio.py",
+        description=("Generate workload using fio"))
     parser.add_argument(
         'dir', metavar='DIR', type=str,
         help="Directory on which IO has to be performed")
-    parser.add_argument('--job-files',
-                        metavar=('job_files'), dest='job_files',
-                        help="space separated absolute paths of "
-                             "ini job files", required=True)
+    parser.add_argument(
+        '--job-files', metavar=('job_files'), dest='job_files',
+        help="space separated absolute paths of ini job files", required=True)
     args = parser.parse_args()
     root_dirname = args.dir
     ini_files_list = args.job_files.split()

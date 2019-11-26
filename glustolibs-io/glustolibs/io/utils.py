@@ -17,11 +17,12 @@
 """
     Description: Helper library for io modules.
 """
+from multiprocessing import Pool
 import os
 import subprocess
+
 from glusto.core import Glusto as g
 from glustolibs.gluster.mount_ops import GlusterMount
-from multiprocessing import Pool
 from glustolibs.gluster.volume_libs import get_subvols
 
 
@@ -48,8 +49,7 @@ def collect_mounts_arequal(mounts):
         g.log.info("arequal-checksum of mount %s:%s", mount_obj.client_system,
                    mount_obj.mountpoint)
         cmd = "arequal-checksum -p %s -i .trashcan" % mount_obj.mountpoint
-        proc = g.run_async(mount_obj.client_system, cmd,
-                           user=mount_obj.user)
+        proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
     all_mounts_arequal_checksums = []
     _rc = True
@@ -68,7 +68,7 @@ def collect_mounts_arequal(mounts):
 
 
 def log_mounts_info(mounts):
-    """Logs mount information like df, stat, ls
+    """Log mount information like df, stat, ls
 
     Args:
         mounts (list): List of all GlusterMount objs.
@@ -83,22 +83,22 @@ def log_mounts_info(mounts):
         # Mount Info
         g.log.info("Look For Mountpoint:\n")
         cmd = "mount | grep %s" % mount_obj.mountpoint
-        _, _, _ = g.run(mount_obj.client_system, cmd)
+        g.run(mount_obj.client_system, cmd)
 
         # Disk Space Usage
         g.log.info("Disk Space Usage Of Mountpoint:\n")
         cmd = "df -h %s" % mount_obj.mountpoint
-        _, _, _ = g.run(mount_obj.client_system, cmd)
+        g.run(mount_obj.client_system, cmd)
 
         # Long list the mountpoint
         g.log.info("List Mountpoint Entries:\n")
         cmd = "ls -ld %s" % mount_obj.mountpoint
-        _, _, _ = g.run(mount_obj.client_system, cmd)
+        g.run(mount_obj.client_system, cmd)
 
         # Stat mountpoint
         g.log.info("Mountpoint Status:\n")
         cmd = "stat %s" % mount_obj.mountpoint
-        _, _, _ = g.run(mount_obj.client_system, cmd)
+        g.run(mount_obj.client_system, cmd)
 
 
 def get_mounts_stat(mounts):
@@ -119,9 +119,8 @@ def get_mounts_stat(mounts):
     for mount_obj in mounts:
         g.log.info("Stat of mount %s:%s", mount_obj.client_system,
                    mount_obj.mountpoint)
-        cmd = ("find %s | xargs stat" % (mount_obj.mountpoint))
-        proc = g.run_async(mount_obj.client_system, cmd,
-                           user=mount_obj.user)
+        cmd = "find %s | xargs stat" % (mount_obj.mountpoint)
+        proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
     _rc = True
     for i, proc in enumerate(all_mounts_procs):
@@ -157,7 +156,7 @@ def list_all_files_and_dirs_mounts(mounts):
     for mount_obj in mounts:
         g.log.info("Listing files and dirs on %s:%s", mount_obj.client_system,
                    mount_obj.mountpoint)
-        cmd = ("find %s | grep -ve '%s'" % (mount_obj.mountpoint, ignore_dirs))
+        cmd = "find %s | grep -ve '%s'" % (mount_obj.mountpoint, ignore_dirs)
         proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
     _rc = True
@@ -194,7 +193,7 @@ def view_snaps_from_mount(mounts, snaps):
     for mount_obj in mounts:
         g.log.info("Viewing '.snaps' on %s:%s", mount_obj.client_system,
                    mount_obj.mountpoint)
-        cmd = ("ls -1 %s/.snaps" % mount_obj.mountpoint)
+        cmd = "ls -1 %s/.snaps" % mount_obj.mountpoint
         proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
 
@@ -229,7 +228,7 @@ def view_snaps_from_mount(mounts, snaps):
 
 
 def validate_io_procs(all_mounts_procs, mounts):
-    """Validates whether IO was successful or not
+    """Validate whether IO was successful or not.
 
     Args:
         all_mounts_procs (list): List of open connection descriptor as
@@ -316,19 +315,16 @@ def cleanup_mounts(mounts):
     for mount_obj in mounts:
         g.log.info("Cleaning up data from %s:%s", mount_obj.client_system,
                    mount_obj.mountpoint)
-        if (not mount_obj.mountpoint or
-                (os.path.realpath(os.path.abspath(mount_obj.mountpoint))
-                 == '/')):
+        if (not mount_obj.mountpoint or (os.path.realpath(os.path.abspath(
+                mount_obj.mountpoint)) == '/')):
             g.log.error("%s on %s is not a valid mount point",
                         mount_obj.mountpoint, mount_obj.client_system)
             continue
         cmd = "rm -rf %s/*" % (mount_obj.mountpoint)
-        proc = g.run_async(mount_obj.client_system, cmd,
-                           user=mount_obj.user)
+        proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
         valid_mounts.append(mount_obj)
-    g.log.info("rm -rf on all clients is complete. Validating "
-               "deletion now...")
+    g.log.info("rm -rf on all clients is complete. Validating deletion now...")
 
     # Get cleanup status
     _rc_rmdir = True
@@ -355,8 +351,7 @@ def cleanup_mounts(mounts):
     for mount_obj in mounts:
         cmd = ("find %s -mindepth 1 | grep -ve '%s'" %
                (mount_obj.mountpoint, ignore_dirs))
-        proc = g.run_async(mount_obj.client_system, cmd,
-                           user=mount_obj.user)
+        proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
 
     # Get cleanup status
@@ -383,8 +378,7 @@ def cleanup_mounts(mounts):
 
 
 def run_bonnie(servers, directory_to_run, username="root"):
-    """
-    Module to run bonnie test suite on the given servers.
+    """Run bonnie test suite on the given servers.
 
     Args:
         servers (list): servers in which tests to be run.
@@ -459,8 +453,7 @@ def run_bonnie(servers, directory_to_run, username="root"):
 
 
 def run_fio(servers, directory_to_run):
-    """
-    Module to run fio test suite on the given servers.
+    """Run fio test suite on the given servers.
 
     Args:
         servers (list): servers in which tests to be run.
@@ -536,15 +529,14 @@ def run_fio(servers, directory_to_run):
 
 
 def run_mixed_io(servers, io_tools, directory_to_run):
-    """
-    Module to run different io patterns on each given servers.
+    """Run different io patterns on each given servers.
 
     Args:
         servers (list): servers in which tests to be run.
         io_tools (list): different io tools. Currently fio, bonnie are
-         supported.
+            supported.
         directory_to_run (list): directory path where tests will run for
-         each server.
+            each server.
 
     Returns:
         bool: True, if test passes in all servers, False otherwise
@@ -565,8 +557,7 @@ def run_mixed_io(servers, io_tools, directory_to_run):
     for items in zip(servers, io_tools):
         server_io_dict[items[0]] = items[1]
 
-    io_dict = {'fio': run_fio,
-               'bonnie': run_bonnie}
+    io_dict = {'fio': run_fio, 'bonnie': run_bonnie}
 
     func_list = []
     for index, server in enumerate(servers):
@@ -586,8 +577,7 @@ def run_mixed_io(servers, io_tools, directory_to_run):
 
 
 def is_io_procs_fail_with_rofs(self, all_mounts_procs, mounts):
-    """
-    Checks whether IO failed with Read-only file system error
+    """Check whether IO failed with Read-only file system error.
 
     Args:
         all_mounts_procs (list): List of open connection descriptor as
@@ -619,8 +609,8 @@ def is_io_procs_fail_with_rofs(self, all_mounts_procs, mounts):
             g.log.info("EXPECTED : IO Failed on %s:%s",
                        self.mounts[i].client_system,
                        self.mounts[i].mountpoint)
-            if ("Read-only file system" in err or
-                    "Read-only file system" in out):
+            if ("Read-only file system" in err
+                    or "Read-only file system" in out):
                 g.log.info("EXPECTED : Read-only file system in output")
                 io_results[proc] = True
             else:
@@ -637,8 +627,7 @@ def is_io_procs_fail_with_rofs(self, all_mounts_procs, mounts):
 
 
 def is_io_procs_fail_with_error(self, all_mounts_procs, mounts, mount_type):
-    """
-    Checks whether IO failed with connection error
+    """Check whether IO failed with connection error.
 
     Args:
         all_mounts_procs (list): List of open connection descriptor as
@@ -672,8 +661,8 @@ def is_io_procs_fail_with_error(self, all_mounts_procs, mounts, mount_type):
                        self.mounts[i].client_system,
                        self.mounts[i].mountpoint)
             if mount_type == "glusterfs":
-                if ("Transport endpoint is not connected" in err or
-                        "Transport endpoint is not connected" in out):
+                if ("Transport endpoint is not connected" in err
+                        or "Transport endpoint is not connected" in out):
                     g.log.info("EXPECTED : Transport endpoint is not connected"
                                " in output")
                     io_results[proc] = True
@@ -683,8 +672,7 @@ def is_io_procs_fail_with_error(self, all_mounts_procs, mounts, mount_type):
                         "not found in output")
                     io_results[proc] = False
             if mount_type == "nfs":
-                if ("Input/output error" in err or
-                        "Input/output error" in out):
+                if "Input/output error" in err or "Input/output error" in out:
                     g.log.info("EXPECTED : Input/output error in output")
                     io_results[proc] = True
                 else:
@@ -702,8 +690,7 @@ def is_io_procs_fail_with_error(self, all_mounts_procs, mounts, mount_type):
 
 
 def compare_dir_structure_mount_with_brick(mnthost, mntloc, brick_list, type):
-    """ Compare directory structure from mount point with  brick path along
-        with stat parameter
+    """Compare mount point dir structure with brick path along with stat param..
 
     Args:
         mnthost (str): hostname or ip of mnt system
@@ -725,8 +712,8 @@ def compare_dir_structure_mount_with_brick(mnthost, mntloc, brick_list, type):
     if type == 2:
         statformat = '%A'
 
-    command = ("find %s -mindepth 1 -type d | xargs -r stat -c '%s'"
-               % (mntloc, statformat))
+    command = "find %s -mindepth 1 -type d | xargs -r stat -c '%s'" % (
+        mntloc, statformat)
     rcode, rout, _ = g.run(mnthost, command)
     all_dir_mnt_perm = rout.strip().split('\n')
 
@@ -736,7 +723,8 @@ def compare_dir_structure_mount_with_brick(mnthost, mntloc, brick_list, type):
                    "xargs -r stat -c '%s'" % (brick_path, statformat))
         rcode, rout, _ = g.run(brick_node, command)
         all_brick_dir_perm = rout.strip().split('\n')
-        retval = cmp(all_dir_mnt_perm, all_brick_dir_perm)
+        retval = (all_dir_mnt_perm > all_brick_dir_perm) - (
+            all_dir_mnt_perm < all_brick_dir_perm)
         if retval != 0:
             return False
 
@@ -769,8 +757,7 @@ def check_arequal_bricks_replicated(mnode, volname):
         subvol_brick_list = subvols_dict['volume_subvols'][i]
         node, brick_path = subvol_brick_list[0].split(':')
         command = ('arequal-checksum -p %s '
-                   '-i .glusterfs -i .landfill -i .trashcan'
-                   % brick_path)
+                   '-i .glusterfs -i .landfill -i .trashcan' % brick_path)
         ret, arequal, _ = g.run(node, command)
         if ret != 0:
             g.log.error("Failed to calculate arequal for first brick"
@@ -782,20 +769,17 @@ def check_arequal_bricks_replicated(mnode, volname):
         for brick in subvol_brick_list[1:]:
             node, brick_path = brick.split(':')
             command = ('arequal-checksum -p %s '
-                       '-i .glusterfs -i .landfill -i .trashcan'
-                       % brick_path)
+                       '-i .glusterfs -i .landfill -i .trashcan' % brick_path)
             ret, brick_arequal, _ = g.run(node, command)
             if ret != 0:
-                g.log.error('Failed to get arequal on brick %s'
-                            % brick)
+                g.log.error('Failed to get arequal on brick %s' % brick)
                 return False
             g.log.info('Getting arequal for %s is successful', brick)
             brick_total = brick_arequal.splitlines()[-1].split(':')[-1]
             # compare arequal of first brick of subvol with all brick other
             # bricks in subvol
             if first_brick_total != brick_total:
-                g.log.error('Arequals for subvol and %s are not equal'
-                            % brick)
+                g.log.error('Arequals for subvol and %s are not equal' % brick)
                 return False
             g.log.info('Arequals for subvol and %s are equal', brick)
     g.log.info('All arequals are equal for volume %s', volname)
@@ -806,8 +790,7 @@ def run_crefi(client, mountpoint, number, breadth, depth, thread=5,
               random_size=False, fop='create', filetype='text',
               minfs=10, maxfs=500, single=False, multi=False, size=100,
               interval=100, nameBytes=10, random_filename=True):
-    """
-    A function to run crefi on a given mount point and generate I/O.
+    """Run crefi on a given mount point and generate I/O.
 
     Args:
         client(str): Client on which I/O has to be performed.
@@ -876,8 +859,8 @@ def run_crefi(client, mountpoint, number, breadth, depth, thread=5,
         return False
 
     # Creating basic command.
-    command = ("crefi %s -n %s -b %s -d %s "
-               % (mountpoint, number, breadth, depth))
+    command = "crefi %s -n %s -b %s -d %s " % (
+        mountpoint, number, breadth, depth)
 
     # Checking thread value and adding it, If it is greater or smaller than 5.
     if thread > 5 or thread < 5:
@@ -963,8 +946,8 @@ def run_cthon(mnode, volname, clients, dir_name):
                 else:
                     test_type = "Lock"
                 g.log.info("Running %s test" % test_type)
-                cmd = ("cd /root/%s; ./server %s -o vers=%s -p %s -N "
-                       "1 %s;" % (dir_name, param, vers, volname, mnode))
+                cmd = "cd /root/%s; ./server %s -o vers=%s -p %s -N 1 %s;" % (
+                    dir_name, param, vers, volname, mnode)
                 ret, _, _ = g.run(client, cmd)
                 if ret:
                     g.log.error("Error with %s test" % test_type)
