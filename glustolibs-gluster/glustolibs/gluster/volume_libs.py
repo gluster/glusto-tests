@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2019  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -221,6 +221,41 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
             return False
 
         number_of_bricks = (kwargs['dist_count'] * kwargs['disperse_count'])
+
+    elif volume_type == 'arbiter':
+        if 'replica_count' in volume_config.get('voltype'):
+            kwargs['replica_count'] = (volume_config['voltype']
+                                       ['replica_count'])
+        else:
+            g.log.error("Replica count not specified in the volume config")
+            return False
+        if 'arbiter_count' in volume_config.get('voltype'):
+            kwargs['arbiter_count'] = (volume_config['voltype']
+                                       ['arbiter_count'])
+        else:
+            g.log.error("Arbiter count not specified in the volume config")
+            return False
+        number_of_bricks = kwargs['replica_count']
+    elif volume_type == 'distributed-arbiter':
+        if 'dist_count' in volume_config.get('voltype'):
+            kwargs['dist_count'] = (volume_config['voltype']['dist_count'])
+        else:
+            g.log.error("Distribute Count not specified in the volume config")
+            return False
+        if 'replica_count' in volume_config.get('voltype'):
+            kwargs['replica_count'] = (volume_config['voltype']
+                                       ['replica_count'])
+        else:
+            g.log.error("Replica count not specified in the volume config")
+            return False
+        if 'arbiter_count' in volume_config.get('voltype'):
+            kwargs['arbiter_count'] = (volume_config['voltype']
+                                       ['arbiter_count'])
+        else:
+            g.log.error("Arbiter count not specified in the volume config")
+            return False
+        number_of_bricks = (kwargs['dist_count'] * kwargs['replica_count'])
+
     else:
         g.log.error("Invalid volume type defined in config")
         return False
