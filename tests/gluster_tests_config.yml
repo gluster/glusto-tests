@@ -190,6 +190,17 @@ gluster:
             disperse_count: 6
             redundancy_count: 2
             transport: tcp
+        arbiter: &arbiter
+            type: arbiter
+            replica_count: 3
+            arbiter_count: 1
+            transport: tcp
+        distributed-arbiter: &distrbuted_arbiter
+            type: distributed_arbiter
+            dist_count: 2
+            replica_count: 3
+            arbiter_count: 1
+            transport: tcp
 
     volume_create_force: False
 

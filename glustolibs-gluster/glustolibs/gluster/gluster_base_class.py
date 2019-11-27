@@ -61,7 +61,8 @@ class runs_on(g.CarteTestClass):
         # the options to replace 'ALL' in selections
         self.available_options = [['distributed', 'replicated',
                                    'distributed-replicated',
-                                   'dispersed', 'distributed-dispersed'],
+                                   'dispersed', 'distributed-dispersed',
+                                   'arbiter', 'distributed-arbiter'],
                                   ['glusterfs', 'nfs', 'cifs', 'smb']]
 
         # these are the volume and mount options to run and set in config
@@ -573,6 +574,19 @@ class GlusterBaseClass(TestCase):
                 'disperse_count': 6,
                 'redundancy_count': 2,
                 'transport': 'tcp',
+            },
+            'arbiter': {
+                'type': 'arbiter',
+                'replica_count': 3,
+                'arbiter_count': 1,
+                'transport': 'tcp',
+            },
+            'distributed-arbiter': {
+                'type': 'distributed-arbiter',
+                'dist_count': 2,
+                'replica_count': 3,
+                'arbiter_count': 1,
+                'tranport': 'tcp',
             }
         }
 
