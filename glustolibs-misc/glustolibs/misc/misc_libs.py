@@ -16,15 +16,16 @@
 
 """ Description: Helper module for misc libs. """
 
-from glusto.core import Glusto as g
-from glustolibs.gluster.lib_utils import is_rhel7
 import os
 import sys
 import time
 
+from glusto.core import Glusto as g
+from glustolibs.gluster.lib_utils import is_rhel7
+
 
 def create_dirs(list_of_nodes, list_of_dir_paths):
-    """Creates directories on nodes.
+    """Create directories on nodes.
 
     Args:
         list_of_nodes (list): Nodes on which dirs has to be created.
@@ -55,7 +56,7 @@ def create_dirs(list_of_nodes, list_of_dir_paths):
 
 
 def path_exists(list_of_nodes, list_of_paths):
-    """check if paths exists on nodes.
+    """Check if paths exist on nodes.
 
     Args:
         list_of_nodes (list): List of nodes.
@@ -88,10 +89,10 @@ def path_exists(list_of_nodes, list_of_paths):
 
 def upload_scripts(list_of_nodes, list_of_scripts_abs_path,
                    upload_dir="/usr/share/glustolibs/io/scripts/", user=None):
-    """Uploads specified scripts to all the nodes.
+    """Upload specified scripts to all the nodes.
 
     Args:
-        list_of_nodes (list): Nodes on which scripts has to be uploaded.
+        list_of_nodes (list): Nodes on which scripts have to be uploaded.
         list_of_scripts_abs_path (list): List of absolute path of all
             scripts that are to be uploaded from local node.
         upload_dir (optional[str]): Name of the dir under which
@@ -157,7 +158,7 @@ def yum_add_repos(list_of_nodes, list_of_yum_repos):
     """Add yum repo files on all the nodes.
 
     Args:
-        list_of_nodes (list): Nodes on which yum repo files has to be added.
+        list_of_nodes (list): Nodes on which yum repo files have to be added.
         list_of_yum_repos (list): List of yum repos
 
     Returns:
@@ -190,7 +191,7 @@ def yum_install_packages(list_of_nodes, yum_packages):
     """Install the specified yum packages on all nodes.
 
     Args:
-        list_of_nodes (list): Nodes on which yum packages has to be installed.
+        list_of_nodes (list): Nodes on which yum packages have to be installed.
         yum_packages (list): List of yum packages.
 
     Returns:
@@ -221,7 +222,7 @@ def yum_remove_packages(list_of_nodes, yum_packages):
     """Remove the specified yum packages on all nodes.
 
     Args:
-        list_of_nodes (list): Nodes on which yum packages has to be removed.
+        list_of_nodes (list): Nodes on which yum packages have to be removed.
         yum_packages (list): List of yum packages.
 
     Returns:
@@ -252,7 +253,7 @@ def pip_install_packages(list_of_nodes, python_packages):
     """Install the specified python packages on all the specified nodes.
 
     Args:
-        list_of_nodes (list): Nodes on which python packages has to be
+        list_of_nodes (list): Nodes on which python packages have to be
             installed.
         python_packages (list): List of python packages.
 
@@ -320,7 +321,7 @@ def install_testing_tools(list_of_nodes, testing_tools):
 
 
 def install_arequal(list_of_nodes):
-    """Installs arequal on nodes in /usr/bin/.
+    """Install arequal on nodes in /usr/bin/.
 
     Args:
         nodes(list): List of nodes on which arequal-checksum needs to be
@@ -378,11 +379,10 @@ def install_arequal(list_of_nodes):
 
 
 def are_nodes_online(nodes):
-    """
-    check whether nodes are online or not
+    """Check whether nodes are online or not.
 
     Args:
-        nodes ( str|list ) : Node/Nodes to check whether online or not
+        nodes (str|list): Node(s) to check whether online or not.
 
     Returns:
         tuple : Tuple containing two elements (ret, node_results).
@@ -394,7 +394,7 @@ def are_nodes_online(nodes):
         then the result contains True else False.
     """
 
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     node_results = {}
@@ -414,17 +414,15 @@ def are_nodes_online(nodes):
 
 
 def reboot_nodes(nodes):
-    """
-    reboot the nodes and checks whether nodes are offline or not
+    """Reboot the nodes and check whether nodes are offline or not.
 
     Args:
-        nodes ( str|list ) : Node/Nodes to reboot
+        nodes (str|list): Node(s) to reboot.
 
     Returns:
-        bool : '_rc' is of type 'bool', True if all nodes
-        comes offline after reboot. False otherwise.
+        bool: True if all nodes come offline after reboot. False otherwise.
     """
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     cmd = "reboot"
@@ -455,11 +453,10 @@ def reboot_nodes(nodes):
 
 
 def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
-    """
-    reboot the node and wait for node to come online
+    """Reboot node(s) and wait for it to become online.
 
     Args:
-        nodes ( str|list ) : Node/Nodes to reboot
+        nodes (str|list): Node(s) to reboot.
 
     Kwargs:
         timeout (int): timeout value in seconds to wait for node
@@ -508,11 +505,10 @@ def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
 
 
 def are_nodes_offline(nodes):
-    """
-    check whether nodes are offline or not
+    """Check whether nodes are offline or not.
 
     Args:
-        nodes ( str|list ) : Node/Nodes to check whether offline or not
+        nodes (str|list): Node(s) to check whether offline or not.
 
     Returns:
         tuple : Tuple containing two elements (ret, node_results).
@@ -524,7 +520,7 @@ def are_nodes_offline(nodes):
         then the result contains True else False.
     """
 
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     node_results = {}
@@ -544,7 +540,7 @@ def are_nodes_offline(nodes):
 
 
 def drop_caches(hosts):
-    """Drops Kernel Cache on a list of hosts
+    """Drop Kernel Cache on a list of hosts
        (in order to run reads/renames etc on a cold cache).
 
     Args:
@@ -552,7 +548,7 @@ def drop_caches(hosts):
                       dropped (Servers/ Clients)
 
     Returns:
-        bool : True , post successful completion.Else,False.
+        bool: True , post successful completion.Else,False.
     """
     cmd = "echo 3 > /proc/sys/vm/drop_caches"
     results = g.run_parallel(hosts, cmd)
@@ -567,14 +563,13 @@ def drop_caches(hosts):
 
 
 def daemon_reload(node):
-    """
-    Reloads the Daemons when unit files are changed
+    """Reload the Daemons when unit files are changed.
 
     Args:
-        node : Node on which daemon has to be reloaded
+        node (str): Node on which daemon has to be reloaded.
 
     Returns:
-        bool : True, On successful daemon reload
+        bool: True, On successful daemon reload
                False, Otherwise
     """
     if is_rhel7([node]):
@@ -592,10 +587,9 @@ def daemon_reload(node):
     return True
 
 
-def git_clone_and_compile(hosts, link, dir_name,
-                          compile_option='False'):
-    """This function clones a repo and depending
-       on kwargs compiles it.
+def git_clone_and_compile(hosts, link, dir_name, compile_option='False'):
+    """Clone and compile a repo.
+
     Args:
         hosts (list|str): List of hosts where the repo needs to be cloned.
         link (str): Link to the repo that needs to be cloned.
@@ -610,12 +604,12 @@ def git_clone_and_compile(hosts, link, dir_name,
        bool : True on successfull cloning (and compilation)
             False otherwise.
     """
-    if isinstance(hosts, str):
+    if not isinstance(hosts, list):
         hosts = [hosts]
 
-    cmd = ("cd /root; git clone %s %s;" % (link, dir_name))
+    cmd = "cd /root; git clone %s %s;" % (link, dir_name)
     if compile_option:
-        cmd = cmd + (("cd /root/%s; make") % dir_name)
+        cmd = cmd + ("cd /root/%s; make" % dir_name)
 
     for host in hosts:
         ret, _, _ = g.run(host, cmd)
