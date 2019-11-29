@@ -36,7 +36,7 @@ class FuseAuthAllow(GlusterBaseClass):
         """
         Create and start volume
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Create and start volume
         g.log.info("Starting volume setup process %s", cls.volname)
         ret = cls.setup_volume()

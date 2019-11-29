@@ -44,7 +44,7 @@ class AuthAllowEmptyString(GlusterBaseClass):
         g.log.info("Volume %s has been setup successfully", self.volname)
 
         # Calling GlusterBaseClass Setup
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def test_validate_authallow(self):
         """

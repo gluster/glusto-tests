@@ -50,7 +50,7 @@ class AuthRejectVol(GlusterBaseClass):
             raise ExecutionError("Volume has not Started")
         g.log.info("Volume is started.")
         # Calling GlusterBaseClass Setup
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         # tearDown for every test
@@ -63,7 +63,7 @@ class AuthRejectVol(GlusterBaseClass):
                    ": %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_validate_authreject_vol(self):
         """
