@@ -46,7 +46,7 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         """Upload the necessary scripts to run tests.
         """
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -66,7 +66,7 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         """Setup Volume
         """
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup_Volume
         g.log.info("Starting to Setup Volume %s", self.volname)
@@ -86,7 +86,7 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         g.log.info("Successful in Setup Volume %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @pytest.mark.bvt_vvt
     def test_volume_create_start_stop_start(self):

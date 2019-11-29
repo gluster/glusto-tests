@@ -117,12 +117,10 @@ class GlusterBaseClass(TestCase):
 
         """
         current_type = obj if isclass(obj) else obj.__class__
-        if (getattr(super(current_type, obj), method_name) != getattr(
-                obj, method_name)):
-            return getattr(super(current_type, obj), method_name)
-        # NOTE(vponomar): we always have here just one base as 'obj' is
-        # expected to be renamed copy of it's parent.
-        return getattr(super(current_type.__bases__[0], obj), method_name)
+        while getattr(super(current_type, obj), method_name) == getattr(
+                obj, method_name):
+            current_type = current_type.__base__
+        return getattr(super(current_type, obj), method_name)
 
     @classmethod
     def inject_msg_in_gluster_logs(cls, msg):

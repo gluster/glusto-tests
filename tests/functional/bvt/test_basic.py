@@ -32,7 +32,7 @@ class TestGlusterdSanity(GlusterBaseClass):
         """setUp required for tests
         """
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Defining this variable to check if restart glusterd is required
         # in teardown
@@ -128,4 +128,4 @@ class TestGlusterdSanity(GlusterBaseClass):
             g.log.info("All peers are in connected state")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
