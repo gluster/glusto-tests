@@ -33,7 +33,7 @@ class QuotaDeemStatfsAndQuotad(GlusterBaseClass):
         """
         setup volume and initialize necessary variables
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting to Setup Volume")
         ret = cls.setup_volume()
         if not ret:
@@ -53,7 +53,7 @@ class QuotaDeemStatfsAndQuotad(GlusterBaseClass):
         g.log.info("Successful in Cleanup Volume")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_quota_deem_statfs_quotad(self):
         """

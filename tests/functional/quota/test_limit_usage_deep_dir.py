@@ -15,6 +15,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import random
+import sys
+
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
@@ -39,7 +41,7 @@ class LimitUsageDeepDir(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -57,7 +59,7 @@ class LimitUsageDeepDir(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
 
@@ -80,7 +82,7 @@ class LimitUsageDeepDir(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_limit_usage_deep_dir(self):
         # pylint: disable=too-many-statements
@@ -180,9 +182,10 @@ class LimitUsageDeepDir(GlusterBaseClass):
             # Data creation
             # Creates one file of rand[0] size in each dir
             rand = random.sample([1, 10, 512], 1)
-            cmd = ("python %s create_files --fixed-file-size %sk %s/%s"
-                   % (self.script_upload_path, rand[0],
-                      mount_object.mountpoint, dir_list[0]))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "--fixed-file-size %sk %s/%s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       rand[0], mount_object.mountpoint, dir_list[0]))
 
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertFalse(ret, "Failed to create files")

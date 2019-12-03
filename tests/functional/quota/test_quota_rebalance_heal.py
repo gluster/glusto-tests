@@ -14,8 +14,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 from time import sleep
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
 from glustolibs.gluster.quota_ops import (quota_enable,
@@ -43,7 +46,7 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -61,7 +64,7 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
 
@@ -84,7 +87,7 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_quota_rebalance_heal(self):
         """
@@ -123,9 +126,10 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
         for mount_object in self.mounts:
             g.log.info("Creating Directories on %s:%s",
                        mount_object.client_system, mount_object.mountpoint)
-            cmd = ('python %s create_deep_dirs_with_files -d 0 -f 1024 -l 4'
-                   ' --fixed-file-size 1k %s'
-                   % (self.script_upload_path, mount_object.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files -d 0 "
+                   "-f 1024 -l 4 --fixed-file-size 1k %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_object.mountpoint))
 
             proc = g.run_async(mount_object.client_system, cmd,
                                user=mount_object.user)
@@ -182,9 +186,10 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
         # Do some more IO and check if hard limit is honoured
         all_mounts_procs = []
         for mount_object in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 100 --base-file-name file %s"
-                   % (self.script_upload_path, mount_object.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 100 --base-file-name file %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_object.mountpoint))
             proc = g.run_async(mount_object.client_system, cmd,
                                user=mount_object.user)
             all_mounts_procs.append(proc)

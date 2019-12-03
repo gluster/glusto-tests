@@ -34,7 +34,7 @@ class TestNegativeQuota(GlusterBaseClass):
 
     def setUp(self):
         """ creates the volume and mount it"""
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Creating the vol %s and mount it", self.volname)
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -49,7 +49,7 @@ class TestNegativeQuota(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to delete the "
                                  "volume" % (self.volname))
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_negative_quota_enable(self):
         """ This testcase will enable quota by giving negative inputs or
