@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.volume_libs import (
     log_volume_info_and_status)
@@ -40,7 +43,7 @@ class TestRmrfMount(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -72,7 +75,7 @@ class TestRmrfMount(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -110,7 +113,7 @@ class TestRmrfMount(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_self_heal(self):
         """
@@ -130,14 +133,14 @@ class TestRmrfMount(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 35 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path,
-                                            self.counter,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       self.counter, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
@@ -146,10 +149,10 @@ class TestRmrfMount(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
+        bricks_to_bring_offline = list(filter(None, (
             bricks_to_bring_offline_dict['hot_tier_bricks'] +
             bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['volume_bricks'])))
 
         # Killing one brick from the volume set
         g.log.info("Bringing bricks: %s offline", bricks_to_bring_offline)

@@ -33,7 +33,7 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Overriding the volume type to specifically test the volume type
 
@@ -47,8 +47,8 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
         """
         Setup Volume
         """
-        # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(self)
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume
         g.log.info("Starting to Setup Volume")
@@ -68,7 +68,7 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
         g.log.info("Successful Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Clearing bricks
         for subvol in self.subvols:

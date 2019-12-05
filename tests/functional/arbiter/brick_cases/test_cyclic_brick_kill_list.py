@@ -14,8 +14,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 import time
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import log_volume_info_and_status
 from glustolibs.gluster.brick_libs import (
@@ -41,7 +44,7 @@ class ListMount(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -73,7 +76,7 @@ class ListMount(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -117,7 +120,7 @@ class ListMount(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_files_on_mount(self):
         """""
@@ -134,13 +137,14 @@ class ListMount(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s "
+            cmd = ("/usr/bin/env python%d %s "
                    "--file-sizes-list 1G "
                    "--chunk-sizes-list 128 "
                    "--write-time 900 "
                    "--num-of-files 2 "
                    "--base-file-name test_brick_down_from_client_%s.txt "
-                   "--dir %s " % (self.script_upload_path,
+                   "--dir %s " % (sys.version_info.major,
+                                  self.script_upload_path,
                                   mount_obj.client_system,
                                   mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
