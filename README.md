@@ -135,6 +135,23 @@ The most common used is Pytest.
 
 For more info about running tests on PyUnit, Pytest and Nose Tests, refer the [docs](http://glusto.readthedocs.io/en/latest/userguide/glusto.html#options-for-running-unit-tests).
 
+glusto-tests can also be executed using `tox`:
+
+```
+       # tox -e functional -- glusto -c 'config.yml' --pytest='-v -s -k test_demo1'
+```
+
+glusto-tests can also be executed with python3 using `tox`:
+
+```
+       # tox -e functional3 -- glusto -c 'config.yml' --pytest='-v -s -k test_demo1'
+```
+
+**NOTE:**
+- Please note that glusto-tests is not completely compatible with python3.
+- You would not need to install the glusto or glusto-tests libraries while running it
+  using `tox`. For more info about tox refer the [docs](https://tox.readthedocs.io/en/latest/#).
+
 Writing tests in glusto-tests:
 ----------------------------------
 - `tests` directory in glusto-tests contain testcases. Testcases are written as component wise.
