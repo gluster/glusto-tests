@@ -44,7 +44,7 @@ class HealMetadataSplitBrain(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volume
         if cls.volume_type == "replicated":
@@ -84,7 +84,7 @@ class HealMetadataSplitBrain(GlusterBaseClass):
             raise ExecutionError("Failed to create volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def verify_brick_arequals(self):
         g.log.info("Fetching bricks for the volume: %s", self.volname)

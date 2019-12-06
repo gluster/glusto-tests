@@ -42,7 +42,8 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         which is used in tests
         """
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
+
         list_of_vol = ['distributed-dispersed', 'replicated',
                        'dispersed', 'distributed', 'distributed-replicated']
         cls.volume_configs = []
@@ -98,7 +99,7 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         g.log.info("Successfully Cleanedup all Volumes")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_no_glustershd_with_distribute(self):
         """

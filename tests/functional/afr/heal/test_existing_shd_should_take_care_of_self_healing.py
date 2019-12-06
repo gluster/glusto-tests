@@ -46,7 +46,7 @@ class SelfHealDaemonProcessTestsWithHealing(GlusterBaseClass):
         which is used in tests
         """
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -74,8 +74,8 @@ class SelfHealDaemonProcessTestsWithHealing(GlusterBaseClass):
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
-        # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(self)
+        # calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_existing_glustershd_should_take_care_of_self_healing(self):
         """
