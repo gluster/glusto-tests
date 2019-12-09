@@ -41,7 +41,7 @@ class TestBrickMultiplexing(GlusterBaseClass):
         # Calling GlusterBaseClass teardown
         GlusterBaseClass.tearDown.im_func(self)
 
-    def test_enabling_brix_mux(self):
+    def test_enabling_brick_mux(self):
         """
         Test case:
         - check if brick multiplex is disable by default
