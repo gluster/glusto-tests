@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2019  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import sys
 
 from docx import Document
 import numpy as np
+from sh import rsync as sh_rsync
 
 if platform.system() == "Windows":
     path_sep = "\\"
@@ -784,6 +785,135 @@ def delete(args):
     return rc
 
 
+sizes_dict = {
+    '1k': 1024,
+    '10k': 10240,
+    '512k': 524288,
+    '1M': 1048576,
+    '0.5k': 513
+}
+
+
+def append(args):
+    """
+    Appends all files under 'dir' with randomly sized data.
+    """
+    dir_path = os.path.abspath(args.dir)
+    if not path_exists(args.dir):
+        return 1
+    rc = 0
+
+    for dir_name, subdir_list, file_list in os.walk(dir_path, topdown=False):
+        for fname in file_list:
+            append_size = sizes_dict[
+                random.choice(list(sizes_dict.keys()))]
+            try:
+                file = os.path.join(dir_name, fname)
+                with open(file, "a") as fd:
+                    try:
+                        fd.write(''.join(random.choice(string.printable)
+                                         for x in range(append_size)))
+                        fd.flush()
+                    except IOError as e:
+                        print("Unable to append to file '%s' : %s" %
+                              (file, e.strerror))
+                        rc = 1
+
+            except OSError:
+                rc = 1
+
+    return rc
+
+
+def overwrite(args):
+    """
+    Truncates everything present and overwrites the file with new data.
+    """
+    dir_path = os.path.abspath(args.dir)
+    if not path_exists(args.dir):
+        return 1
+    rc = 0
+
+    for dir_name, subdir_list, file_list in os.walk(dir_path, topdown=False):
+        for fname in file_list:
+            new_size = sizes_dict[
+                random.choice(list(sizes_dict.keys()))]
+            try:
+                file = os.path.join(dir_name, fname)
+                with open(file, "w+") as fd:
+                    try:
+                        fd.write(''.join(random.choice(string.printable)
+                                         for x in range(new_size)))
+                        fd.flush()
+                    except IOError as e:
+                        print("Unable to write to file '%s' : %s" %
+                              (file, e.strerror))
+                        rc = 1
+            except OSError:
+                rc = 1
+    return rc
+
+
+def truncate(args):
+    """
+    Truncates files to a certain size calculated randomly.
+    """
+    dir_path = os.path.abspath(args.dir)
+    if not path_exists(args.dir):
+        return 1
+    rc = 0
+
+    for dir_name, subdir_list, file_list in os.walk(dir_path, topdown=False):
+        for fname in file_list:
+            try:
+                file = os.path.join(dir_name, fname)
+                with open(file, "a+") as fd:
+                    try:
+                        fsize = os.path.getsize(file)
+                        new_size = random.randrange(
+                            0, fsize//random.choice([2, 3, 4, 5]))
+                        fd.truncate(new_size)
+
+                    except IOError as e:
+                        print("Unable to truncate file '%s' : %s" %
+                              (file, e.strerror))
+                        rc = 1
+            except OSError:
+                rc = 1
+    return rc
+
+
+def rsync(args):
+    """
+    rsync files from source to destination.
+    """
+    src_dir = os.path.abspath(args.src_dir)
+    remote_dir = args.remote_dir
+
+    if platform.system() == "Windows":
+        print("rsync not supported on Windows,Exiting!")
+        return 1
+
+    # Check if src_dir exists
+    if not path_exists(src_dir):
+        print("Directory '%s' does not exist" % src_dir)
+        return 1
+
+    # Create dest_dir
+    rc = create_dir(remote_dir)
+    if rc != 0:
+        return rc
+    rc = 0
+
+    try:
+        sh_rsync("-r", remote_dir, src_dir)
+
+    except Exception as e:
+        print("Can't rsync! : %s" % e.strerror)
+        rc = 1
+    return rc
+
+
 if __name__ == "__main__":
     print("Starting File/Dir Ops: %s" % _get_current_time())
     test_start_time = datetime.datetime.now().replace(microsecond=0)
@@ -1029,7 +1159,66 @@ if __name__ == "__main__":
         help="Directory on which operations has to be performed")
     read_parser.set_defaults(func=read)
 
-    # copy all files/directories under dir
+    # Appends files under dir
+    append_parser = subparsers.add_parser(
+        'append',
+        help=("Appends data to already created files. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    append_parser.add_argument(
+        '--log-file', help="Output log filename to log the "
+                           "contents of file",
+        metavar=('log_file'), dest='log_file',
+        type=str, default=default_log_file)
+    append_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    append_parser.set_defaults(func=append)
+
+    # Overwrites files under dir
+    overwrite_parser = subparsers.add_parser(
+        'overwrite',
+        help=("Overwrites existing files with new data "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    overwrite_parser.add_argument(
+        '--log-file', help="Output log filename to log the "
+                           "contents of file",
+        metavar=('log_file'), dest='log_file',
+        type=str, default=default_log_file)
+    overwrite_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    overwrite_parser.set_defaults(func=overwrite)
+
+    # rsync dir to a remote directory
+    rsyncs_parser = subparsers.add_parser(
+        'rsync',
+        help=("Rsync all dirs in a  remote location to 'dir'. "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    rsyncs_parser.add_argument(
+        '--remote-dir', help="Remote location to rsync from)",
+        metavar=('remote_dir'), dest='remote_dir',
+        type=str)
+    rsyncs_parser.add_argument(
+        'src_dir', metavar='src_dir', type=str,
+        help="Directory on which operations has to be performed")
+    rsyncs_parser.set_defaults(func=rsync)
+
+    # Truncates files under dir
+    truncate_parser = subparsers.add_parser(
+        'truncate',
+        help=("Truncates existing files "),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    truncate_parser.add_argument(
+        '--log-file', help="Output log filename to log the "
+                           "contents of file",
+        metavar=('log_file'), dest='log_file',
+        type=str, default=default_log_file)
+    truncate_parser.add_argument(
+        'dir', metavar='DIR', type=str,
+        help="Directory on which operations has to be performed")
+    truncate_parser.set_defaults(func=truncate)
+
+    # Copy all files/directories under dir
     copy_parser = subparsers.add_parser(
         'copy',
         help=("Copy all files/directories under 'dir'. "),
