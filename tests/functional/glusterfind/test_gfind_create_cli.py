@@ -36,7 +36,7 @@ class TestGlusterFindCreateCLI(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup %s", self.volname)
@@ -67,7 +67,7 @@ class TestGlusterFindCreateCLI(GlusterBaseClass):
         g.log.info("Successful in Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_gfind_create_cli(self):
         """
