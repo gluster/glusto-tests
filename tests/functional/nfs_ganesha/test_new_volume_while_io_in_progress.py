@@ -19,7 +19,10 @@
         IO is in progress on another volume
 """
 from copy import deepcopy
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.nfs_ganesha_libs import (
     NfsGaneshaClusterSetupClass, wait_for_nfs_ganesha_volume_to_get_exported)
 from glustolibs.gluster.gluster_base_class import runs_on
@@ -47,7 +50,7 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
         Setup nfs-ganesha if not exists.
         Upload IO scripts to clients
         """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup nfs-ganesha if not exists.
         ret = cls.setup_nfs_ganesha()
@@ -97,13 +100,14 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -245,6 +249,5 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
 
     @classmethod
     def tearDownClass(cls):
-        (NfsGaneshaClusterSetupClass.
-         tearDownClass.
-         im_func(cls, delete_nfs_ganesha_cluster=False))
+        cls.get_super_method(cls, 'tearDownClass')(
+            delete_nfs_ganesha_cluster=False)

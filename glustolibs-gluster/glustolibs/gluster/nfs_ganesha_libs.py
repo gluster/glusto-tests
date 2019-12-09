@@ -46,7 +46,7 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
         Setup variable for nfs-ganesha tests.
         """
         # pylint: disable=too-many-statements, too-many-branches
-        GlusterBaseClass.setUpClass.im_func(cls)
+        super(NfsGaneshaClusterSetupClass, cls).setUpClass()
 
         # Check if enable_nfs_ganesha is set in config file
         if not cls.enable_nfs_ganesha:
@@ -189,7 +189,7 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
     def tearDownClass(cls, delete_nfs_ganesha_cluster=True):
         """Teardown nfs ganesha cluster.
         """
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        super(NfsGaneshaClusterSetupClass, cls).tearDownClass()
 
         if delete_nfs_ganesha_cluster:
             ret = teardown_nfs_ganesha_cluster(

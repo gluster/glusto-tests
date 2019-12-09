@@ -26,7 +26,7 @@ from glustolibs.gluster.nfs_ganesha_ops import (
 from glustolibs.gluster.nfs_ganesha_libs import (
         NfsGaneshaClusterSetupClass,
         wait_for_nfs_ganesha_volume_to_get_unexported)
-from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
+from glustolibs.gluster.gluster_base_class import runs_on
 from glustolibs.gluster.exceptions import ExecutionError
 import time
 import re
@@ -45,7 +45,7 @@ class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
         """
         Setup nfs-ganesha if not exists.
         """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup nfs-ganesha
         ret = cls.setup_nfs_ganesha()
@@ -57,7 +57,7 @@ class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
         """
         Setup Volume
         """
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup and mount volume
         g.log.info("Starting to setip and mount volume %s", self.volname)
@@ -152,7 +152,3 @@ class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
             g.log.info("Successfull unmount and cleanup of volume")
         else:
             raise ExecutionError("Failed to unmount and cleanup volume")
-
-    @classmethod
-    def tearDownClass(cls):
-        NfsGaneshaClusterSetupClass.tearDownClass.im_func(cls)

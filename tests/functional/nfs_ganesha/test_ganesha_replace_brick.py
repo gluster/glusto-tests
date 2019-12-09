@@ -13,7 +13,11 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaClusterSetupClass
 from glustolibs.gluster.gluster_base_class import runs_on
 from glustolibs.gluster.exceptions import ExecutionError
@@ -41,7 +45,7 @@ class TestGaneshaReplaceBrick(NfsGaneshaClusterSetupClass):
         Setup nfs-ganesha if not exists.
         Upload IO scripts to clients
         """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup nfs-ganesha if not exists.
         ret = cls.setup_nfs_ganesha()
@@ -90,13 +94,14 @@ class TestGaneshaReplaceBrick(NfsGaneshaClusterSetupClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -171,6 +176,5 @@ class TestGaneshaReplaceBrick(NfsGaneshaClusterSetupClass):
 
     @classmethod
     def tearDownClass(cls):
-        (NfsGaneshaClusterSetupClass.
-         tearDownClass.
-         im_func(cls, delete_nfs_ganesha_cluster=False))
+        cls.get_super_method(cls, 'tearDownClass')(
+            delete_nfs_ganesha_cluster=False)

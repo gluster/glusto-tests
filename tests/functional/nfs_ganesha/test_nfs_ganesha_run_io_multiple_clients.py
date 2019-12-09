@@ -40,7 +40,7 @@ class TestNfsGaneshaWithDifferentIOPatterns(NfsGaneshaClusterSetupClass):
         """
         Setup nfs-ganesha if not exists.
         """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup nfs-ganesha if not exists.
         ret = cls.setup_nfs_ganesha()
@@ -131,6 +131,5 @@ class TestNfsGaneshaWithDifferentIOPatterns(NfsGaneshaClusterSetupClass):
 
     @classmethod
     def tearDownClass(cls):
-        (NfsGaneshaClusterSetupClass.
-         tearDownClass.
-         im_func(cls, delete_nfs_ganesha_cluster=False))
+        cls.get_super_method(cls, 'tearDownClass')(
+            delete_nfs_ganesha_cluster=False)
