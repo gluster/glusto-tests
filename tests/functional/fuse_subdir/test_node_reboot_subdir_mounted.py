@@ -19,7 +19,10 @@
         is mounted
 """
 import copy
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
 from glustolibs.gluster.glusterdir import mkdir
@@ -43,7 +46,7 @@ class NodeRebootSubDirsMounted(GlusterBaseClass):
         """
         Setup and mount volume
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Setup Volume and Mount Volume
         g.log.info("Starting volume setup and mount %s",
                    cls.volname)
@@ -135,13 +138,14 @@ class NodeRebootSubDirsMounted(GlusterBaseClass):
         for mount_obj in self.subdir_mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

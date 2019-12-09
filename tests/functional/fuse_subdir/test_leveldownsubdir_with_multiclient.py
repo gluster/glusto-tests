@@ -36,7 +36,7 @@ class SubdirLevelDownDirMapping(GlusterBaseClass):
         setup volume and mount volume
         calling GlusterBaseClass setUpClass
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup and Mount Volume %s",
                    cls.volname)

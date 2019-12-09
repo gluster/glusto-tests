@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 import copy
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
 from glustolibs.gluster.mount_ops import (mount_volume,
@@ -41,7 +44,7 @@ class SubdirWithRename(GlusterBaseClass):
         setup volume and mount volume
         calling GlusterBaseClass setUpClass
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup and Mount Volume %s",
@@ -135,13 +138,14 @@ class SubdirWithRename(GlusterBaseClass):
         for mount_obj in self.subdir_mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
