@@ -21,7 +21,10 @@ Test Cases in this module tests the
 uss functionality while io is going on.
 
 """
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.gluster_base_class import runs_on
@@ -43,7 +46,7 @@ class SnapshotUssWhileIo(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.snap_count = 10
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
@@ -60,7 +63,7 @@ class SnapshotUssWhileIo(GlusterBaseClass):
     def setUp(self):
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume and mount volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -124,8 +127,10 @@ class SnapshotUssWhileIo(GlusterBaseClass):
                        "%s", mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files -f 100 --fixed-file-size 1M %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python%d %s create_files -f 100 "
+                       "--fixed-file-size 1M %s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

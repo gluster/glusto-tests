@@ -37,7 +37,7 @@ class SnapshotDeleteSnapVolume(GlusterBaseClass):
 
     def setUp(self):
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
@@ -45,7 +45,7 @@ class SnapshotDeleteSnapVolume(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Unmount and cleanup-volume
         g.log.info("Unmount and cleanup-volume")

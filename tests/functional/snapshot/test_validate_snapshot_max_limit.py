@@ -83,7 +83,7 @@ class SnapCreateMax(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -104,7 +104,7 @@ class SnapCreateMax(GlusterBaseClass):
         setUp method
         """
         # Setup_Volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts,
                                                  volume_create_force=True)
         if not ret:
@@ -118,7 +118,7 @@ class SnapCreateMax(GlusterBaseClass):
         ret, _, _ = snap_delete_all(self.mnode)
         if ret != 0:
             raise ExecutionError("Failed to delete all snapshots.")
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Clean up the volume & mount
         g.log.info("Starting volume and  mount cleanup")

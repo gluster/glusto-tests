@@ -21,7 +21,10 @@ Test Cases in this module tests the
 Creation of clone from snapshot of one volume.
 
 """
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.mount_ops import mount_volume, is_mounted
@@ -43,7 +46,7 @@ class SnapshotRebalance(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap = "snap0"
         cls.clone = "clone1"
         cls.mount1 = "/mnt/clone1"
@@ -101,7 +104,7 @@ class SnapshotRebalance(GlusterBaseClass):
     def setUp(self):
 
         # SetUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -174,9 +177,10 @@ class SnapshotRebalance(GlusterBaseClass):
         # write files to mountpoint
         g.log.info("Starting IO on %s mountpoint...", self.mount1)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s" % (self.script_upload_path,
-                                                   self.mount1))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mount1))
         proc = g.run(self.clients[0], cmd)
         all_mounts_procs.append(proc)
 
@@ -232,4 +236,4 @@ class SnapshotRebalance(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

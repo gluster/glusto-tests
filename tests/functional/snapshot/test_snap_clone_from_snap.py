@@ -21,7 +21,10 @@ Test Cases in this module tests the
 Creation of clone volume from snapshot.
 """
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.gluster_base_class import runs_on
@@ -41,7 +44,7 @@ class SnapshotCloneValidate(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap = "snap0"
 
         # Upload io scripts for running IO on mounts
@@ -58,8 +61,8 @@ class SnapshotCloneValidate(GlusterBaseClass):
         g.log.info("Successfully uploaded IO scripts to clients %s")
 
     def setUp(self):
+        self.get_super_method(self, 'setUp')()
 
-        GlusterBaseClass.setUpClass.im_func(self)
         g.log.info("Starting to SetUp Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -91,9 +94,10 @@ class SnapshotCloneValidate(GlusterBaseClass):
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name file %s" % (self.script_upload_path,
-                                                       mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 10 --base-file-name file %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run(self.clients[0], cmd)
             all_mounts_procs.append(proc)
         g.log.info("Successfully Performed I/O on all mount points")

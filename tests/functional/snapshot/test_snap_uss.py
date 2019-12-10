@@ -21,7 +21,10 @@ Test Cases in this module tests the
 Creation of snapshot and USS feature.
 
 """
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
@@ -46,7 +49,7 @@ class SnapshotUssSnap(GlusterBaseClass):
 
     def setUp(self):
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -89,9 +92,10 @@ class SnapshotUssSnap(GlusterBaseClass):
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name file %s" % (self.script_upload_path,
-                                                       mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 10 --base-file-name file %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -127,9 +131,10 @@ class SnapshotUssSnap(GlusterBaseClass):
                     ret = mkdir(mount_obj.client_system, self.mpoint)
                     self.assertTrue(ret, "Failed to create .snaps directory")
                     g.log.info("Successfully created .snaps directory")
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name foo %s"
-                   % (self.script_upload_path, self.mpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 10 --base-file-name foo %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       self.mpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -226,7 +231,7 @@ class SnapshotUssSnap(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # deleting created snapshots
         g.log.info("Deleting all snapshots")

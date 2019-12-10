@@ -46,7 +46,7 @@ class SnapshotstatusInvalidcases(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap5 = "snap5"
         cls.snap1 = "snap1"
         cls.volname1 = "volume1"
@@ -54,7 +54,7 @@ class SnapshotstatusInvalidcases(GlusterBaseClass):
     def setUp(self):
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:

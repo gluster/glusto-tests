@@ -23,7 +23,10 @@ and delete snapshot and original volume.
 Validate cloned volume is not affected.
 
 """
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import cleanup_volume
@@ -45,7 +48,7 @@ class SnapshotSelfheal(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         cls.clone = "clone1"
         cls.mpoint = "/mnt/clone1"
@@ -89,8 +92,10 @@ class SnapshotSelfheal(GlusterBaseClass):
                        "%s", mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files -f 100 --fixed-file-size 1k %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python%d %s create_files -f 100 "
+                       "--fixed-file-size 1k %s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -187,7 +192,7 @@ class SnapshotSelfheal(GlusterBaseClass):
     def tearDown(self):
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Cleanup cloned volume
         g.log.info("Starting to delete cloned volume")

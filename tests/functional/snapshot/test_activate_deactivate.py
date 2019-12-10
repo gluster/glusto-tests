@@ -41,7 +41,7 @@ class TestActivateDeactivate(GlusterBaseClass):
         setup volume and initialize necessary variables
         """
 
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s:", cls.__name__)
         # Setup volume and mount
         g.log.info("Starting to Setup Volume")
@@ -59,7 +59,7 @@ class TestActivateDeactivate(GlusterBaseClass):
             raise ExecutionError("Snapshot Delete Failed")
         g.log.info("Successfully deleted all snapshots")
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
@@ -74,7 +74,7 @@ class TestActivateDeactivate(GlusterBaseClass):
         g.log.info("Successful in Cleanup Volume and mount")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_activate_deactivate(self):
         # pylint: disable=too-many-branches, too-many-statements

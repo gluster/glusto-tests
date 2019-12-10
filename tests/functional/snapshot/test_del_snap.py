@@ -35,7 +35,7 @@ class DeleteSnapshotTests(GlusterBaseClass):
     """
     def setUp(self):
         # SetUp volume and Mount volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:

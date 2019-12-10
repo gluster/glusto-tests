@@ -117,7 +117,7 @@ class DeleteSnapTests(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # disabling auto-delete
         cmd = "gluster snapshot config auto-delete disable"

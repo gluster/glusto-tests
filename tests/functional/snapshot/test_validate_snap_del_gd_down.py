@@ -39,7 +39,7 @@ class SnapDelWhenGDDown(GlusterBaseClass):
     def setUp(self):
 
         # Setting and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to Set and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:

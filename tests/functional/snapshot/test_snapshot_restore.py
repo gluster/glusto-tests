@@ -18,7 +18,10 @@
 The purpose of this test is to validate restore of a snapshot.
 """
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -60,7 +63,7 @@ class SnapRestore(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -81,7 +84,7 @@ class SnapRestore(GlusterBaseClass):
         setUp method
         """
         # Setup_Volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts,
                                                  volume_create_force=True)
         if not ret:
@@ -95,7 +98,7 @@ class SnapRestore(GlusterBaseClass):
         ret, _, _ = snap_delete_all(self.mnode)
         if not ret:
             raise ExecutionError("Snapshot delete failed.")
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
@@ -108,7 +111,7 @@ class SnapRestore(GlusterBaseClass):
             raise ExecutionError("Failed to cleanup volume and mount")
         g.log.info("Cleanup successful for the volume and mount")
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_validate_snaps_restore(self):
         # pylint: disable=too-many-statements
@@ -118,13 +121,14 @@ class SnapRestore(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -175,13 +179,14 @@ class SnapRestore(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -254,13 +259,14 @@ class SnapRestore(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

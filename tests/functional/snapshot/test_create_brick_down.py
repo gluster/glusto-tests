@@ -45,7 +45,7 @@ class CreateSnapwhenBricksareDown(GlusterBaseClass):
     """
     def setUp(self):
         # SetUp volume and Mount volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -135,7 +135,7 @@ class CreateSnapwhenBricksareDown(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Unmount and cleanup-volume
         g.log.info("Starting to Unmount and cleanup-volume")

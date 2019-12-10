@@ -43,7 +43,7 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
         """
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume")
         ret = self.setup_volume()
         if not ret:
@@ -74,7 +74,7 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
         g.log.info("Successful in Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_snap_scheduler_status(self):
         # pylint: disable=too-many-statements

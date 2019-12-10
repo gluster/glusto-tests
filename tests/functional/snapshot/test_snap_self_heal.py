@@ -21,7 +21,10 @@ Test Cases in this module tests the
 Creation of clone from snapshot of volume.
 
 """
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.mount_ops import (mount_volume, umount_volume,
@@ -50,7 +53,7 @@ class SnapshotSelfheal(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap = "snap1"
         cls.clone = "clone1"
         cls.mount1 = "/mnt/clone1"
@@ -72,7 +75,7 @@ class SnapshotSelfheal(GlusterBaseClass):
                    self.clients[0])
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -149,9 +152,10 @@ class SnapshotSelfheal(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mount1)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s"
-               % (self.script_upload_path, self.mount1))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mount1))
         proc = g.run(self.clients[0], cmd)
         all_mounts_procs.append(proc)
         g.log.info("Successful in creating I/O on mounts")
@@ -165,10 +169,10 @@ class SnapshotSelfheal(GlusterBaseClass):
         g.log.info("Starting to bring bricks to offline")
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
+        bricks_to_bring_offline = list(filter(None, (
             bricks_to_bring_offline_dict['hot_tier_bricks'] +
             bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['volume_bricks'])))
         g.log.info("Brick to bring offline: %s ", bricks_to_bring_offline)
         ret = bring_bricks_offline(self.clone, bricks_to_bring_offline)
         self.assertTrue(ret, "Failed to bring the bricks offline")
@@ -195,9 +199,10 @@ class SnapshotSelfheal(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mount1)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s" % (self.script_upload_path,
-                                                   self.mount1))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mount1))
         proc = g.run(self.clients[0], cmd)
         all_mounts_procs.append(proc)
         g.log.info("Successful in creating I/O on mounts")

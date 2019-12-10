@@ -750,7 +750,7 @@ def set_snap_config(mnode, option, volname=None):
         volname = ""
 
     cmd = ("gluster snapshot config %s %s %s --mode=script"
-           % (volname, option.keys()[0], option.values()[0]))
+           % (volname, list(option.keys())[0], list(option.values())[0]))
     return g.run(mnode, cmd)
 
 

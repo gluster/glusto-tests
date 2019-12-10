@@ -22,7 +22,10 @@
 
 """
 import os
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ConfigError, ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.gluster_base_class import runs_on
@@ -40,7 +43,7 @@ from glustolibs.gluster.mount_ops import create_mount_objs
 class TestSnapMountSnapshot(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
@@ -63,7 +66,7 @@ class TestSnapMountSnapshot(GlusterBaseClass):
         self.mount1 = []
         self.mpoint = "/mnt/snap1"
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
@@ -85,9 +88,10 @@ class TestSnapMountSnapshot(GlusterBaseClass):
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name file %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 10 --base-file-name file %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -149,9 +153,10 @@ class TestSnapMountSnapshot(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name file %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 10 --base-file-name file %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -167,9 +172,10 @@ class TestSnapMountSnapshot(GlusterBaseClass):
         g.log.info("mounts: %s", self.mount1)
         all_mounts_procs = []
         for mount_obj in self.mount1:
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name file %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files "
+                   "-f 10 --base-file-name file %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -183,7 +189,7 @@ class TestSnapMountSnapshot(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # unmounting volume from Custom mount point
         g.log.info("UnMounting mount point %s", self.mpoint)

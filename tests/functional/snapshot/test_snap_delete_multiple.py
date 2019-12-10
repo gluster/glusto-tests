@@ -22,7 +22,10 @@ Creation of clone from snapshot of volume.
 
 """
 import os
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import volume_start
@@ -47,7 +50,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap1 = "snap1"
         cls.snap2 = "snap21"
         cls.clone1 = "clone1"
@@ -71,7 +74,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
     def setUp(self):
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume and mount volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -107,9 +110,10 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
                            mount_obj.client_system, mount_obj.mountpoint)
                 # Create files
                 g.log.info('Creating files...')
-                command = ("python %s create_files -f 100 --fixed-file-size"
-                           " 1k %s" % (self.script_upload_path,
-                                       mount_obj.mountpoint))
+                command = ("/usr/bin/env python%d %s create_files -f 100 "
+                           "--fixed-file-size 1k %s" % (
+                               sys.version_info.major, self.script_upload_path,
+                               mount_obj.mountpoint))
                 proc = g.run_async(mount_obj.client_system, command,
                                    user=mount_obj.user)
                 all_mounts_procs.append(proc)
@@ -208,9 +212,9 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
             g.log.info("Volume %s mounted on %s", clone, mpoint)
             return 0
 
-        value1 = range(0, 20)
-        value2 = range(20, 30)
-        value3 = range(30, 40)
+        value1 = list(range(0, 20))
+        value2 = list(range(20, 30))
+        value3 = list(range(30, 40))
         ret1 = create_snap(value1, self.volname, self.snap1,
                            self.clone1, counter=20)
         self.assertEqual(ret1, 30, "Failed")
@@ -237,7 +241,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Disable Activate on create
         option = {'activate-on-create': 'disable'}
