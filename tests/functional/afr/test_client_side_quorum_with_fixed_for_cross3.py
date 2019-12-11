@@ -18,8 +18,11 @@
         Test Cases in this module tests the client side quorum.
 """
 
+import sys
 from time import sleep
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import (
@@ -45,7 +48,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         Upload the necessary scripts to run tests.
         """
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -61,7 +64,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume %s", self.volname)
@@ -96,7 +99,7 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_client_side_quorum_with_fixed_for_cross3(self):
         """
@@ -150,9 +153,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/O( write ) - must succeed
         all_mounts_procs = []
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -165,8 +169,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # read the file
         g.log.info("Start reading files on %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -200,9 +205,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name testfile %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name testfile %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -216,8 +222,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -245,9 +252,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name newfile %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name newfile %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -261,8 +269,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -283,9 +292,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name filename %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name filename %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -299,8 +309,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -370,9 +381,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name newfilename %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name newfilename %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -386,8 +398,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -411,9 +424,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name textfile %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name textfile %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -427,8 +441,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -449,9 +464,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name newtextfile %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name newtextfile %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -465,8 +481,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -635,9 +652,10 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mountpoint %s", self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name lastfile %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name lastfile %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -651,8 +669,9 @@ class ClientSideQuorumTestsWithSingleVolumeCross3(GlusterBaseClass):
         g.log.info("Start reading files on mountpoint %s",
                    self.mounts[0].mountpoint)
         all_mounts_procs = []
-        cmd = ("python %s read %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s read %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)

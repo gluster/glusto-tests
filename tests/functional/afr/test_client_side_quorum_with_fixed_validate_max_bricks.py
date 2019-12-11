@@ -42,7 +42,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -59,7 +59,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume %s", self.volname)
@@ -92,7 +92,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_client_side_quorum_with_fixed_validate_max_bricks(self):
         """

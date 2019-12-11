@@ -18,7 +18,10 @@
         Test Cases in this module tests the client side quorum.
 """
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import (
@@ -41,7 +44,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -79,7 +82,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume %s", self.volname)
@@ -101,7 +104,7 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_client_side_quorum_with_auto_option_cross2(self):
         """
@@ -126,9 +129,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # Start IO on mounts
         g.log.info("Starting IO .....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s" % (self.script_upload_path,
-                                                   self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -163,9 +167,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # create new file named newfile0.txt
         g.log.info("Start creating new file on all mounts...")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 1 --base-file-name newfile %s" %
-               (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 1 --base-file-name newfile %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -179,8 +184,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # create directory user1
         g.log.info("Start creating directory on all mounts...")
         all_mounts_procs = []
-        cmd = ("python %s create_deep_dir %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s create_deep_dir %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -249,8 +255,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Starting reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -274,8 +281,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # stat on dir
         g.log.info("stat on directory on all mounts")
         for mount_obj in self.mounts:
-            cmd = ("python %s stat %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s stat %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to stat directory on %s'
                              % mount_obj.mountpoint)
@@ -285,8 +293,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # ls on mount point
         g.log.info("ls on mount point on all mounts")
         for mount_obj in self.mounts:
-            cmd = ("python %s ls %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s ls %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             ret, _, _ = g.run(mount_obj.client_system, cmd)
             self.assertFalse(ret, 'Failed to ls on %s'
                              % mount_obj.mountpoint)
@@ -353,9 +362,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -370,8 +380,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -409,9 +420,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name second_file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name second_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -426,8 +438,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -450,9 +463,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mount.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name third_file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name third_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -467,8 +481,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -491,9 +506,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - read must pass, write will fail
         g.log.info("Starting IO on mount......")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name fourth_file %s" %
-               (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name fourth_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -510,8 +526,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -535,9 +552,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mount.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name fifth_file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name fifth_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -552,8 +570,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -576,9 +595,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - read must pass, write will fail
         g.log.info("Start creating files on mounts.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name sixth_file %s" %
-               (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name sixth_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -595,8 +615,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -619,9 +640,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mount.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name seventh_file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name seventh_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -636,8 +658,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -661,9 +684,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mount.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name eigth_file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name eigth_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -678,8 +702,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -712,9 +737,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - read must pass, write will fail
         g.log.info("Start creating files on mounts.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name ninth_file %s" %
-               (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name ninth_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -731,8 +757,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -755,9 +782,10 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         # start I/0 ( write and read ) - must succeed
         g.log.info("Starting IO on mount.....")
         all_mounts_procs = []
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name tenth_file %s"
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python%d %s create_files "
+               "-f 10 --base-file-name tenth_file %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
@@ -772,8 +800,9 @@ class ClientSideQuorumCross2Tests(GlusterBaseClass):
         g.log.info("Start reading files on all mounts")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s read "
-                   "%s" % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python%d %s read %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

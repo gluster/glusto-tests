@@ -21,7 +21,10 @@
         files in a directory when quota-object-limit is set.
 """
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.brick_libs import (get_all_bricks,
@@ -47,7 +50,7 @@ class HealFilesWhenQuotaObjectLimitExceeded(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes
         if cls.volume_type == "replicated":
@@ -88,7 +91,7 @@ class HealFilesWhenQuotaObjectLimitExceeded(GlusterBaseClass):
             raise ExecutionError("Failed to create volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_heal_when_quota_object_limit_exceeded(self):
         # Create a directory to set the quota_limit_objects
@@ -96,9 +99,9 @@ class HealFilesWhenQuotaObjectLimitExceeded(GlusterBaseClass):
         g.log.info("Creating a directory")
         self.all_mounts_procs = []
         for mount_object in self.mounts:
-            cmd = ("python %s create_deep_dir -d 0 -l 0 %s%s "
-                   % (self.script_upload_path, mount_object.mountpoint,
-                      path))
+            cmd = "/usr/bin/env python%d %s create_deep_dir -d 0 -l 0 %s%s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_object.mountpoint, path)
             ret = g.run(mount_object.client_system, cmd)
             self.assertTrue(ret, "Failed to create directory on mountpoint")
             g.log.info("Directory created successfully on mountpoint")
@@ -137,8 +140,10 @@ class HealFilesWhenQuotaObjectLimitExceeded(GlusterBaseClass):
         for mount_object in self.mounts:
             g.log.info("Creating Files on %s:%s", mount_object.client_system,
                        path)
-            cmd = ("python %s create_files -f 3 --base-file-name file-0 %s%s"
-                   % (self.script_upload_path, mount_object.mountpoint, path))
+            cmd = ("/usr/bin/env python%d %s create_files -f 3 "
+                   "--base-file-name file-0 %s%s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_object.mountpoint, path))
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertEqual(ret, 0, ("Failed to create files on %s", path))
             g.log.info("Files created successfully on mountpoint")
@@ -160,8 +165,10 @@ class HealFilesWhenQuotaObjectLimitExceeded(GlusterBaseClass):
 
         # Try creating 5 more files, which should fail as the quota limit
         # exceeds
-        cmd = ("python %s create_files -f 5 --base-file-name file-1 %s%s"
-               % (self.script_upload_path, mount_object.mountpoint, path))
+        cmd = ("/usr/bin/env python%d %s create_files -f 5 --base-file-name "
+               "file-1 %s%s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   mount_object.mountpoint, path))
         ret, _, _ = g.run(mount_object.client_system, cmd)
         self.assertNotEqual(ret, 0, ("Creating 5 files succeeded while it was"
                                      "not supposed to."))

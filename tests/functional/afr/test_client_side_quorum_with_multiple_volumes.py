@@ -18,6 +18,7 @@
         Test Cases in this module tests the client side quorum.
 """
 
+import sys
 import tempfile
 
 from glusto.core import Glusto as g
@@ -44,7 +45,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -153,7 +154,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -180,7 +181,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
             g.log.info("Listing all files and directories is successful")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
@@ -208,7 +209,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
                        cls.client)
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_client_side_quorum_auto_local_to_volume_not_cluster(self):
         """
@@ -229,9 +230,10 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
         for mount_point in self.mount_points:
             self.all_mounts_procs = []
             g.log.info('Creating files...')
-            command = ("python %s create_files -f 50 "
-                       "--fixed-file-size 1k %s"
-                       % (self.script_upload_path, mount_point))
+            command = ("/usr/bin/env python%d %s create_files -f 50 "
+                       "--fixed-file-size 1k %s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_point))
 
             proc = g.run_async(self.mounts[0].client_system, command)
             self.all_mounts_procs.append(proc)
@@ -332,7 +334,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
         # merge two dicts (volname: file_to_delete) and (volname: mountpoint)
         temp_dict = [vols_file_list, self.mount_points_and_volnames]
         file_to_delete_to_mountpoint_dict = {}
-        for k in vols_file_list.iterkeys():
+        for k in vols_file_list:
             file_to_delete_to_mountpoint_dict[k] = (
                 tuple(file_to_delete_to_mountpoint_dict[k]
                       for file_to_delete_to_mountpoint_dict in

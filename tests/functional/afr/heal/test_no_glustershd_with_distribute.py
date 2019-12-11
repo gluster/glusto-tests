@@ -144,10 +144,10 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         self.assertFalse(ret, ("Self heal daemon process is still running "
                                "after stopping all volumes "))
         for node in pids:
-            self.assertEquals(pids[node][0], -1, ("Self heal daemon is still "
-                                                  "running on node %s even "
-                                                  "after stoppong all "
-                                                  "volumes" % node))
+            self.assertEqual(pids[node][0], -1, ("Self heal daemon is still "
+                                                 "running on node %s even "
+                                                 "after stoppong all "
+                                                 "volumes" % node))
         g.log.info("EXPECTED: No self heal daemon process is "
                    "running after stopping all volumes")
 
@@ -169,9 +169,9 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         self.assertFalse(ret, ("Self heal daemon process is still running "
                                "after stopping all volumes "))
         for node in pids:
-            self.assertEquals(pids[node][0], -1, ("Self heal daemon is still "
-                                                  "running on node %s even "
-                                                  "after stopping all "
-                                                  "volumes" % node))
+            self.assertEqual(pids[node][0], -1, ("Self heal daemon is still "
+                                                 "running on node %s even "
+                                                 "after stopping all "
+                                                 "volumes" % node))
         g.log.info("EXPECTED: No self heal daemon process is running "
                    "after stopping all volumes")

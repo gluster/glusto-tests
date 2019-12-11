@@ -16,7 +16,10 @@
 
 # pylint: disable=too-many-statements, too-many-locals
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -36,7 +39,7 @@ class TestSelfHeal(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -77,7 +80,7 @@ class TestSelfHeal(GlusterBaseClass):
             raise ExecutionError("Failed to create volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_heal_gfid_1x3(self):
 
@@ -101,9 +104,10 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("creating a file from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 1 --base-file-name test_file --fixed-file-size 10k %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files -f 1 "
+                   "--base-file-name test_file --fixed-file-size 10k %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -133,9 +137,10 @@ class TestSelfHeal(GlusterBaseClass):
                    "from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 1 --base-file-name test_file --fixed-file-size 1M %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files -f 1 "
+                   "--base-file-name test_file --fixed-file-size 1M %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

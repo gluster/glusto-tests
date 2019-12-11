@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -37,7 +40,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -63,7 +66,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -98,7 +101,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_shd_should_not_crash_executed_heal_info(self):
         """
@@ -131,8 +134,10 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files -f 10 --fixed-file-size 1M %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python%d %s create_files -f 10 "
+                       "--fixed-file-size 1M %s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
@@ -167,12 +172,13 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files "
+            command = ("/usr/bin/env python%d %s create_files "
                        "-f %s "
                        "--fixed-file-size 1k "
                        "--base-file-name new_file "
                        "%s"
-                       % (self.script_upload_path,
+                       % (sys.version_info.major,
+                          self.script_upload_path,
                           number_of_files_one_brick_off,
                           mount_obj.mountpoint))
 
@@ -237,12 +243,13 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files "
+            command = ("/usr/bin/env python%d %s create_files "
                        "-f %s "
                        "--fixed-file-size 1k "
                        "--base-file-name new_new_file "
                        "%s"
-                       % (self.script_upload_path,
+                       % (sys.version_info.major,
+                          self.script_upload_path,
                           number_of_files_two_brick_off,
                           mount_obj.mountpoint))
 

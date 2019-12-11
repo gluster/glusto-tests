@@ -1,6 +1,9 @@
 import calendar
+import sys
 import time
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.brick_libs import (bring_bricks_offline,
@@ -26,7 +29,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -49,7 +52,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -92,7 +95,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_brick_process_not_started_on_read_only_node_disks(self):
         """
@@ -111,10 +114,10 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
+        bricks_to_bring_offline = list(filter(None, (
             bricks_to_bring_offline_dict['hot_tier_bricks'] +
             bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['volume_bricks'])))
 
         # Bring brick offline
         g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
@@ -133,9 +136,10 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
-            cmd = ("python %s create_files -f 100 %s/%s/test_dir"
-                   % (self.script_upload_path, mount_obj.mountpoint,
-                      mount_obj.client_system))
+            cmd = ("/usr/bin/env python%d %s create_files -f 100 "
+                   "%s/%s/test_dir" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint, mount_obj.client_system))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)

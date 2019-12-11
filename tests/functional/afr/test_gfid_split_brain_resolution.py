@@ -47,7 +47,7 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override replica count to be 3
         if cls.volume_type == "replicated":
@@ -65,7 +65,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -92,7 +92,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def toggle_bricks_and_perform_io(self, file_list, brick_list):
         """

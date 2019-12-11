@@ -41,7 +41,7 @@ class AssignGfidOnLookup(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes
         if cls.volume_type == "replicated":
@@ -82,7 +82,7 @@ class AssignGfidOnLookup(GlusterBaseClass):
             raise ExecutionError("Failed to create volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def verify_gfid(self, dirname):
         dir_gfids = dict()

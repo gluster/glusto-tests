@@ -41,7 +41,7 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         which is used in tests
         """
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         cls.default_volume_type_config = {
             'replicated': {
@@ -118,7 +118,7 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         g.log.info("Successfully Cleanedup all Volumes")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_glustershd_on_all_volume_types(self):
         """
@@ -219,7 +219,7 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
                     (volume_type_info_for_replicate_after_adding_bricks
                      ['volume_type_info']['typeStr'])
 
-                self.assertEquals(
+                self.assertEqual(
                     volume_type_for_replicate_after_adding_bricks,
                     'Distributed-Replicate',
                     ("Replicate volume type is not converted to "

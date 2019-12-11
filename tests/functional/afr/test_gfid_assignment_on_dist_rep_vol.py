@@ -22,8 +22,11 @@
         volume when lookup comes on that directory from the mount point.
 """
 
+import sys
 import time
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -40,7 +43,7 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -73,7 +76,7 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
             raise ExecutionError("Failed to create volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def verify_gfid(self, dirname):
         dir_gfids = dict()
@@ -113,8 +116,9 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
 
         # Create a directory on the mount
         g.log.info("Creating a directory")
-        cmd = ("python %s create_deep_dir -d 0 -l 0 %s/dir1 "
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python%d %s create_deep_dir -d 0 -l 0 %s/dir1 " % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
         ret, _, _ = g.run(self.clients[0], cmd)
         self.assertEqual(ret, 0, "Failed to create directory on mountpoint")
         g.log.info("Directory created successfully on mountpoint")
