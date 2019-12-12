@@ -41,7 +41,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volumes
         if self.volume_type == "distributed-replicated":
@@ -93,7 +93,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_resolving_meta_data(self):
         """

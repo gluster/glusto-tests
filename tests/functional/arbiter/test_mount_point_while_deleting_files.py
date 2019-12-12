@@ -14,9 +14,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
 import os
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import setup_volume, cleanup_volume
@@ -38,7 +40,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -125,7 +127,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -178,7 +180,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        cls.volname, cls.client)
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_mount_point_not_go_to_rofs(self):
         """
@@ -197,11 +199,12 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files "
+            command = ("/usr/bin/env python%d %s create_files "
                        "-f 100 "
                        "--fixed-file-size 1M "
-                       "%s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+                       "%s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
@@ -218,10 +221,10 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         for volname in volume_list:
             bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
                 self.mnode, volname))
-            bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline = list(filter(None, (
                 bricks_to_bring_offline_dict['hot_tier_bricks'] +
                 bricks_to_bring_offline_dict['cold_tier_bricks'] +
-                bricks_to_bring_offline_dict['volume_bricks']))
+                bricks_to_bring_offline_dict['volume_bricks'])))
 
             # bring bricks offline
             g.log.info("Going to bring down the brick process for %s",
@@ -240,8 +243,9 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Delete files
             g.log.info('Deleting files...')
-            command = ("python %s delete %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = "/usr/bin/env python%d %s delete %s" % (
+                sys.version_info.major, self.script_upload_path,
+                mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

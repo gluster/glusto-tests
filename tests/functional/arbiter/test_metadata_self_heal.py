@@ -75,7 +75,7 @@ class TestMetadataSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Overriding the volume type to specifically test the volume type
         # Change from distributed-replicated to arbiter
@@ -103,7 +103,7 @@ class TestMetadataSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Create user qa
         for mount_object in self.mounts:
@@ -139,7 +139,7 @@ class TestMetadataSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_metadata_self_heal(self):
         """
@@ -218,10 +218,10 @@ class TestMetadataSelfHeal(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
+        bricks_to_bring_offline = list(filter(None, (
             bricks_to_bring_offline_dict['hot_tier_bricks'] +
             bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['volume_bricks'])))
 
         # Bring brick offline
         g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)

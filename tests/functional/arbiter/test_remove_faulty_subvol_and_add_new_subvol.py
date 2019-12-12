@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import (expand_volume, shrink_volume,
@@ -41,7 +44,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -59,7 +62,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volumes
         if self.volume_type == "distributed-replicated":
@@ -113,7 +116,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_remove_faulty_subvol_and_add_new_subvol(self):
         """
@@ -132,13 +135,14 @@ class TestArbiterSelfHeal(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("python %s create_deep_dirs_with_files "
+            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                        "-d 2 "
                        "-l 2 "
                        "-n 2 "
                        "-f 20 "
-                       "%s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+                       "%s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)

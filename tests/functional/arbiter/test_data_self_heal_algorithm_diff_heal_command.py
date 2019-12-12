@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -47,7 +50,7 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Overriding the volume type to specifically test the volume type
         # Change from distributed-replicated to arbiter
@@ -75,7 +78,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -97,7 +100,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_data_self_heal_algorithm_diff_heal_command(self):
         """
@@ -148,8 +151,9 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Creating files
-        command = ("python %s create_files -f 100 %s"
-                   % (self.script_upload_path, self.mounts[0].mountpoint))
+        command = "/usr/bin/env python%d %s create_files -f 100 %s" % (
+            sys.version_info.major, self.script_upload_path,
+            self.mounts[0].mountpoint)
 
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)
@@ -171,10 +175,10 @@ class TestSelfHeal(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
+        bricks_to_bring_offline = list(filter(None, (
             bricks_to_bring_offline_dict['hot_tier_bricks'] +
             bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['volume_bricks'])))
 
         # Bring brick offline
         g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
@@ -193,8 +197,10 @@ class TestSelfHeal(GlusterBaseClass):
         all_mounts_procs = []
         g.log.info("Modifying data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = ("python %s create_files -f 100 --fixed-file-size 1M %s"
-                   % (self.script_upload_path, self.mounts[0].mountpoint))
+        command = ("/usr/bin/env python%d %s create_files -f 100 "
+                   "--fixed-file-size 1M %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       self.mounts[0].mountpoint))
 
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)

@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -48,7 +51,7 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Overriding the volume type to specifically test the volume type
         # Change from distributed-replicated to arbiter
@@ -76,7 +79,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -97,7 +100,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_entry_self_heal_heal_command(self):
         """
@@ -145,12 +148,13 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("python %s create_deep_dirs_with_files "
+        cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                "--dir-length 2 "
                "--dir-depth 2 "
                "--max-num-of-dirs 2 "
-               "--num-of-files 20 %s/files" % (self.script_upload_path,
-                                               self.mounts[0].mountpoint))
+               "--num-of-files 20 %s/files" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd,
                             user=self.mounts[0].user)
         self.assertFalse(ret, 'Failed to create the data for %s: %s'
@@ -160,13 +164,14 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Command list to do different operations with data -
         # create, rename, copy and delete
-        cmd_list = ["python %s create_files -f 20 %s/files",
-                    "python %s mv %s/files",
-                    # 'copy' command works incorrect. disable until fixed
-                    # "python %s copy --dest-dir %s/new_dir %s/files",
-                    "python %s delete %s"]
-
-        for cmd in cmd_list:
+        cmds = (
+            "/usr/bin/env python%d %s create_files -f 20 %s/files",
+            "/usr/bin/env python%d %s mv %s/files",
+            # 'copy' command works incorrect. disable until fixed
+            # "/usr/bin/env python%d %s copy --dest-dir %s/new_dir %s/files",
+            "/usr/bin/env python%d %s delete %s",
+        )
+        for cmd in cmds:
             # Get arequal before getting bricks offline
             g.log.info('Getting arequal before getting bricks offline...')
             ret, arequals = collect_mounts_arequal(self.mounts)
@@ -186,10 +191,10 @@ class TestSelfHeal(GlusterBaseClass):
             # Select bricks to bring offline
             bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
                 self.mnode, self.volname))
-            bricks_to_bring_offline = filter(None, (
+            bricks_to_bring_offline = list(filter(None, (
                 bricks_to_bring_offline_dict['hot_tier_bricks'] +
                 bricks_to_bring_offline_dict['cold_tier_bricks'] +
-                bricks_to_bring_offline_dict['volume_bricks']))
+                bricks_to_bring_offline_dict['volume_bricks'])))
 
             # Bring brick offline
             g.log.info('Bringing bricks %s offline...',
@@ -225,11 +230,13 @@ class TestSelfHeal(GlusterBaseClass):
             g.log.info("Modifying IO on %s:%s", self.mounts[0].client_system,
                        self.mounts[0].mountpoint)
             if 'copy --dest-dir' in cmd:
-                parsed_cmd = cmd % (self.script_upload_path,
+                parsed_cmd = cmd % (sys.version_info.major,
+                                    self.script_upload_path,
                                     self.mounts[0].mountpoint,
                                     self.mounts[0].mountpoint)
             else:
-                parsed_cmd = cmd % (self.script_upload_path,
+                parsed_cmd = cmd % (sys.version_info.major,
+                                    self.script_upload_path,
                                     self.mounts[0].mountpoint)
             ret, _, err = g.run(self.mounts[0].client_system, parsed_cmd,
                                 user=self.mounts[0].user)

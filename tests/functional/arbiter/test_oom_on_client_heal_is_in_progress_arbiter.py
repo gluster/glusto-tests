@@ -14,8 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.brick_libs import (bring_bricks_offline,
@@ -38,7 +40,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -59,7 +61,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -101,7 +103,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_oom_on_client_heal_in_progress(self):
         """
@@ -120,11 +122,12 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files "
+            command = ("/usr/bin/env python%d %s create_files "
                        "-f 1000 "
                        "--fixed-file-size 10k "
-                       "%s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+                       "%s" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
