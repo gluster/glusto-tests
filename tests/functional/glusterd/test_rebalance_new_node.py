@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume)
@@ -33,8 +36,7 @@ from glustolibs.gluster.mount_ops import is_mounted
 class TestRebalanceStatus(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -87,13 +89,7 @@ class TestRebalanceStatus(GlusterBaseClass):
             raise ExecutionError("Peer probe failed to all the servers from "
                                  "the node.")
 
-        GlusterBaseClass.tearDown.im_func(self)
-
-    @classmethod
-    def tearDownClass(cls):
-
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()
 
     def test_rebalance_status_from_newly_probed_node(self):
 
@@ -131,12 +127,13 @@ class TestRebalanceStatus(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 10 "
                    "--dir-length 5 "
                    "--max-num-of-dirs 3 "
-                   "--num-of-files 100 %s" % (self.script_upload_path,
+                   "--num-of-files 100 %s" % (sys.version_info.major,
+                                              self.script_upload_path,
                                               self.counter,
                                               mount_obj.mountpoint))
             ret = g.run(mount_obj.client_system, cmd)

@@ -20,7 +20,10 @@
 """
 
 import random
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -34,7 +37,7 @@ class VolumeStatusFdWhenIOInProgress(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.counter = 1
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -55,7 +58,7 @@ class VolumeStatusFdWhenIOInProgress(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -85,7 +88,7 @@ class VolumeStatusFdWhenIOInProgress(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_status_fd(self):
 
@@ -112,12 +115,13 @@ class VolumeStatusFdWhenIOInProgress(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 15 %s" % (self.script_upload_path,
+                   "--num-of-files 15 %s" % (sys.version_info.major,
+                                             self.script_upload_path,
                                              self.counter,
                                              mount_obj.mountpoint))
 

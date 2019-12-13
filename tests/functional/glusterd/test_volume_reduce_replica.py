@@ -29,7 +29,7 @@ class TestVolumeReduceReplicaCount(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes
         cls.volume['voltype'] = {
@@ -60,7 +60,7 @@ class TestVolumeReduceReplicaCount(GlusterBaseClass):
                 raise ExecutionError("Failed to delete the brick "
                                      "dir's of deleted volume")
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_reduce_replica_count(self):
         """

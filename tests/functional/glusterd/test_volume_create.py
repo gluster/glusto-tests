@@ -41,7 +41,7 @@ class TestVolumeCreate(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         ret = cls.validate_peers_are_connected()
         if not ret:
@@ -73,7 +73,7 @@ class TestVolumeCreate(GlusterBaseClass):
                 raise ExecutionError("Unable to delete volume % s" % volume)
             g.log.info("Volume deleted successfully : %s", volume)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_create(self):
         '''

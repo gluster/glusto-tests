@@ -29,8 +29,7 @@ from glustolibs.gluster.peer_ops import (peer_probe_servers, peer_detach,
 class TestVolumeStatusxml(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -60,7 +59,7 @@ class TestVolumeStatusxml(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to probe detached "
                                  "servers %s" % self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_status_xml(self):
 

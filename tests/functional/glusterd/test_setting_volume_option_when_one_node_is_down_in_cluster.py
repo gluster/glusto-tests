@@ -34,8 +34,7 @@ from glustolibs.gluster.peer_ops import (peer_probe_servers,
 class VolumeInfoSync(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -67,7 +66,7 @@ class VolumeInfoSync(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_sync_functinality(self):
 

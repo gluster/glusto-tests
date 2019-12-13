@@ -19,8 +19,11 @@ Test Cases in this module related to Glusterd volume status while
 IOs in progress
 """
 import random
+import sys
 from time import sleep
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -34,7 +37,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.counter = 1
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # checking for peer status from every node
         ret = cls.validate_peers_are_connected()
@@ -63,7 +66,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -100,7 +103,7 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
             raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_status_inode_while_io_in_progress(self):
         '''
@@ -129,12 +132,13 @@ class VolumeStatusWhenIOInProgress(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 15 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 25 %s" % (self.script_upload_path,
+                   "--num-of-files 25 %s" % (sys.version_info.major,
+                                             self.script_upload_path,
                                              self.counter,
                                              mount_obj.mountpoint))
 

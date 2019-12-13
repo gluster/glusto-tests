@@ -35,7 +35,7 @@ class TestVolumeDelete(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # check whether peers are in connected state
         ret = cls.validate_peers_are_connected()
@@ -68,13 +68,13 @@ class TestVolumeDelete(GlusterBaseClass):
                 raise ExecutionError("Unable to delete volume % s" % volume)
             g.log.info("Volume deleted successfully : %s", volume)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_vol_delete_when_one_of_nodes_is_down(self):
 

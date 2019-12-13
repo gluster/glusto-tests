@@ -19,7 +19,10 @@
 #        of the volume.
 
 import re
+import sys
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -36,7 +39,7 @@ from glustolibs.io.utils import collect_mounts_arequal
 class CheckVolumeChecksumAfterChangingNetworkPingTimeOut(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s ", cls.__name__)
 
         # Uploading file_dir script in all client direcotries
@@ -58,7 +61,7 @@ class CheckVolumeChecksumAfterChangingNetworkPingTimeOut(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -80,7 +83,7 @@ class CheckVolumeChecksumAfterChangingNetworkPingTimeOut(GlusterBaseClass):
             raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_checksum_after_changing_network_ping_timeout(self):
 
@@ -112,8 +115,10 @@ class CheckVolumeChecksumAfterChangingNetworkPingTimeOut(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_files -f 10 --base-file-name newfile %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python%d %s create_files -f 10 "
+                   "--base-file-name newfile %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)

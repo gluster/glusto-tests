@@ -35,7 +35,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
     '''
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s ", cls.__name__)
 
         # Creating Volume
@@ -51,7 +51,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # command for volume reset
         g.log.info("started resetting volume")
@@ -67,7 +67,7 @@ class GlusterdVolumeReset(GlusterBaseClass):
         tearDown for every test
         """
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):

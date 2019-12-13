@@ -86,7 +86,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
                                          "dir's of deleted volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_replace_brick_quorum(self):
 

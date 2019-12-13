@@ -32,7 +32,7 @@ from glustolibs.gluster.gluster_init import is_glusterd_running
 @runs_on([['replicated', 'distributed-replicated'], ['glusterfs']])
 class TestSelfHealDeamonQuotaDeamonAfterReboot(GlusterBaseClass):
     def setUp(self):
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # checking for peer status from every node
         ret = self.validate_peers_are_connected()
@@ -69,12 +69,10 @@ class TestSelfHealDeamonQuotaDeamonAfterReboot(GlusterBaseClass):
         # Getting self-heal daemon and quota daemon pids of every host from
         # gluster volume status
         for server in self.servers:
-            shd_pid = \
-                (vol_status[self.volname][server]['Self-heal Daemon']['pid'])
-            quota_pid = \
-                (vol_status[self.volname][server]['Quota Daemon']['pid'])
-            vol_status_quotad_pid_list.append(quota_pid)
-            vol_status_shd_pid_list.append(shd_pid)
+            vol_status_quotad_pid_list.append(
+                vol_status[self.volname][server]['Quota Daemon']['pid'])
+            vol_status_shd_pid_list.append(
+                vol_status[self.volname][server]['Self-heal Daemon']['pid'])
 
         g.log.info("shd list from get volume status: %s",
                    vol_status_shd_pid_list)
@@ -87,13 +85,20 @@ class TestSelfHealDeamonQuotaDeamonAfterReboot(GlusterBaseClass):
         # Finding and Storing all hosts self heal daemon
         # in to sh_daemon_list, all
         # host quota daemon into quotad_list list using ps command
-        for host in self.servers:
-            ret, out, _ = g.run(host, "ps -eaf | grep glustershd | "
-                                      "grep -v grep | awk '{ print $2 }'")
-            sh_daemon_list.append(out.strip())
-            ret, out, _ = g.run(host, "ps -eaf | grep quotad | grep -v grep |"
-                                      " awk '{ print $2 }'")
-            quotad_list.append(out.strip())
+        for daemon_name, daemon_list in (('glustershd', sh_daemon_list),
+                                         ('quotad', quotad_list)):
+            for host in self.servers:
+                cmd = "ps -eaf |grep %s |grep -v grep | awk '{ print $2 }'" % (
+                    daemon_name)
+                ret, out, err = g.run(host, cmd)
+                err_msg = (
+                    "Failed to find '%s' daemon on the '%s' host using "
+                    "'ps -eaf' command.\nret: %s\nout: %s\nerr: %s" % (
+                        daemon_name, host, ret, out, err)
+                )
+                self.assertEqual(ret, 0, err_msg)
+                daemon_list.append(out.strip())
+
         g.log.info("shd list :%s", sh_daemon_list)
         g.log.info("quotad list :%s", quotad_list)
 
@@ -102,14 +107,9 @@ class TestSelfHealDeamonQuotaDeamonAfterReboot(GlusterBaseClass):
         # Here comparing the list of daemons got from ps command and
         # list of daemons got from vol status command,
         # all daemons should match from both the list
-        ret = cmp(sorted(sh_daemon_list + quotad_list),
-                  sorted(vol_status_shd_pid_list + vol_status_quotad_pid_list))
-        if ret == 0:
-            ps_daemon_len = len(sh_daemon_list + quotad_list)
-            vol_status_daemon_len = len((vol_status_shd_pid_list +
-                                         vol_status_quotad_pid_list))
-            return bool(ps_daemon_len == len(self.servers) * 2 |
-                        vol_status_daemon_len == len(self.servers) * 2)
+        if sorted(sh_daemon_list + quotad_list) == sorted(
+                vol_status_shd_pid_list + vol_status_quotad_pid_list):
+            return len(sh_daemon_list + quotad_list) == len(self.servers) * 2
 
         return False
 

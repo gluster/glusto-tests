@@ -38,7 +38,7 @@ class TestServerQuorumNotMet(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         ret = self.setup_volume()
@@ -76,7 +76,7 @@ class TestServerQuorumNotMet(GlusterBaseClass):
                                  % self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_rebalance_quorum(self):
         '''

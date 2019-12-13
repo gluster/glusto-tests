@@ -28,8 +28,7 @@ from glustolibs.gluster.gluster_init import (restart_glusterd,
 class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -56,7 +55,7 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_setting_vol_option_with_max_characters(self):
 

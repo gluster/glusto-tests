@@ -35,7 +35,7 @@ class TestQuorumRelatedMessagesInSyslog(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # checking for peer status from every node
         ret = cls.validate_peers_are_connected()
@@ -47,7 +47,8 @@ class TestQuorumRelatedMessagesInSyslog(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
+
         self.volume_list = []
         # create a volume
         ret = setup_volume(self.mnode, self.all_servers_info,
@@ -119,7 +120,7 @@ class TestQuorumRelatedMessagesInSyslog(GlusterBaseClass):
             g.log.info("Volume deleted successfully : %s", volume)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_quorum_messages_in_syslog_with_more_volumes(self):
         """

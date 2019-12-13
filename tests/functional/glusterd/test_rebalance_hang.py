@@ -46,7 +46,7 @@ class TestRebalanceHang(GlusterBaseClass):
             raise ExecutionError("Failed to detach servers %s"
                                  % self.servers)
         g.log.info("Peer detach SUCCESSFUL.")
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
 
@@ -76,7 +76,7 @@ class TestRebalanceHang(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_rebalance_hang(self):
         """

@@ -18,8 +18,11 @@
       Test restart glusterd while rebalance is in progress
 """
 
+import sys
 from time import sleep
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import form_bricks_list_to_add_brick
@@ -40,7 +43,7 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.counter = 1
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -83,7 +86,7 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
                    self.volname)
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         """
@@ -127,12 +130,13 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 4 "
                    "--dir-length 6 "
                    "--max-num-of-dirs 3 "
-                   "--num-of-files 25 %s" % (self.script_upload_path,
+                   "--num-of-files 25 %s" % (sys.version_info.major,
+                                             self.script_upload_path,
                                              self.counter,
                                              mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,

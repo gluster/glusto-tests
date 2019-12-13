@@ -30,8 +30,7 @@ from glustolibs.gluster.brick_ops import remove_brick
 class TestRemoveBrickWhenQuorumNotMet(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -72,7 +71,7 @@ class TestRemoveBrickWhenQuorumNotMet(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_remove_brick_when_quorum_not_met(self):
 

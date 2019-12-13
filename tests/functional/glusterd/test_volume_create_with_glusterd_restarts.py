@@ -44,7 +44,7 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
             raise ExecutionError("Unable to delete volume % s" % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_create_with_glusterd_restarts(self):
         # pylint: disable=too-many-statements
