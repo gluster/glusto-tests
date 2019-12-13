@@ -28,7 +28,7 @@ from glustolibs.gluster.lib_utils import (form_bricks_list,
 class TestConcurrentSet(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s ", cls.__name__)
         ret = cls.validate_peers_are_connected()
         if not ret:
@@ -44,7 +44,7 @@ class TestConcurrentSet(GlusterBaseClass):
             self.assertTrue(ret, "Failed to Cleanup the Volume %s" % volume)
             g.log.info("Volume deleted successfully : %s", volume)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_concurrent_set(self):
         # time stamp of current test case

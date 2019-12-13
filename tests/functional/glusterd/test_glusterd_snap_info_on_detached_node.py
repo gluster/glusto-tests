@@ -37,7 +37,7 @@ class TestSnapInfoOnPeerDetachedNode(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_snap_info_from_detached_node(self):
         # pylint: disable=too-many-statements

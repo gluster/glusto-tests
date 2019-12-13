@@ -26,24 +26,6 @@ from glustolibs.gluster.gluster_init import is_glusterd_running
 
 
 class PeerProbeInvalidIpNonExistingHost(GlusterBaseClass):
-    @classmethod
-    def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
-        g.log.info("Starting %s ", cls.__name__)
-
-    def setUp(self):
-        """
-        setUp method for every test
-        """
-        # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
-
-    def tearDown(self):
-        """
-        tearDown for every test
-        """
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
 
     def test_peer_probe_invalid_ip_nonexist_host_nonexist_ip(self):
         '''

@@ -30,7 +30,7 @@ from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 class TestRemoveCientLogDirAndMount(GlusterBaseClass):
 
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume and mounting volume.
         ret = self.setup_volume(self.mounts)
@@ -75,7 +75,7 @@ class TestRemoveCientLogDirAndMount(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_mount_after_removing_client_logs_dir(self):
 

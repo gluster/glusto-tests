@@ -44,7 +44,7 @@ class TestBrickPortAfterModifyVolume(GlusterBaseClass):
             raise ExecutionError("Failed to probe detached "
                                  "servers %s" % self.servers)
         g.log.info("Peer detach SUCCESSFUL.")
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         """
@@ -68,7 +68,7 @@ class TestBrickPortAfterModifyVolume(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_brick_port(self):
         # pylint: disable=too-many-statements, too-many-branches

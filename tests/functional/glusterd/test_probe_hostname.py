@@ -39,7 +39,7 @@ class TestPeerProbe(GlusterBaseClass):
                 raise ExecutionError("Peer detach failed")
             g.log.info("Peer detach SUCCESSFUL.")
 
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
 
@@ -64,7 +64,7 @@ class TestPeerProbe(GlusterBaseClass):
                    "servers %s", self.servers)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_peer_probe_validation(self):
         # pylint: disable=too-many-statements

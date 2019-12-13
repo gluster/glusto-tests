@@ -31,7 +31,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s ", cls.__name__)
 
         # checking for peer status from every node
@@ -44,7 +44,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -64,7 +64,7 @@ class TestNfsMountAndServerQuorumSettings(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_nfs_mount_quorum_settings(self):
         """

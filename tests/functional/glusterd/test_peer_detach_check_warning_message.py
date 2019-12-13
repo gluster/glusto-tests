@@ -31,7 +31,7 @@ class TestPeerDetachWarningMessage(GlusterBaseClass):
             raise ExecutionError("Failed to detach %s" % self.servers[1])
         g.log.info("Peer detach successful %s", self.servers[1])
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_peer_detach_check_warning_message(self):
         # pylint: disable=too-many-statements

@@ -56,7 +56,7 @@ class TestEnableBrickMuxCreateAndStopThreevolumes(GlusterBaseClass):
             raise ExecutionError("Failed to disable cluster.brick-multiplex")
         g.log.info("Successfully set cluster.brick-multiplex to disable.")
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_enable_brickmux_create_and_stop_three_volumes(self):
 

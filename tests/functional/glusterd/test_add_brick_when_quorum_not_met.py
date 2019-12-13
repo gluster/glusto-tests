@@ -78,7 +78,7 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
         g.log.info("Able to set server quorum ratio successfully on %s",
                    self.servers)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_brick_when_quorum_not_met(self):
 

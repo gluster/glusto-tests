@@ -33,7 +33,7 @@ class PeerDetachVerification(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # checking for peer status from every node
         ret = cls.validate_peers_are_connected()

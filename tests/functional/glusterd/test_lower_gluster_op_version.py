@@ -32,7 +32,7 @@ class LowerGlusterOpVersion(GlusterBaseClass):
     def setUp(self):
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         # Creating Volume
         g.log.info("Started creating volume")
         ret = self.setup_volume()
@@ -43,7 +43,7 @@ class LowerGlusterOpVersion(GlusterBaseClass):
     def tearDown(self):
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
         # stopping the volume and Cleaning up the volume
         ret = cleanup_volume(self.mnode, self.volname)
         if not ret:

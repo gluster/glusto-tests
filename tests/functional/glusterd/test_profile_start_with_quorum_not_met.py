@@ -31,7 +31,7 @@ class TestProfileStartWithQuorumNotMet(GlusterBaseClass):
     def setUp(self):
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -59,7 +59,7 @@ class TestProfileStartWithQuorumNotMet(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_profile_start_with_quorum_not_met(self):
         # pylint: disable=too-many-statements

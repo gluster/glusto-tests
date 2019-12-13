@@ -34,7 +34,7 @@ class TestMaxSupportedOpVersion(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -52,7 +52,7 @@ class TestMaxSupportedOpVersion(GlusterBaseClass):
             raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_op_version(self):
         '''

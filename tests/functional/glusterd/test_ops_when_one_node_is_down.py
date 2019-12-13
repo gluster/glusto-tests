@@ -30,7 +30,7 @@ class TestOpsWhenOneNodeIsDown(GlusterBaseClass):
 
     def setUp(self):
 
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Create and start a volume.
         ret = setup_volume(self.mnode, self.all_servers_info, self.volume)
@@ -63,7 +63,7 @@ class TestOpsWhenOneNodeIsDown(GlusterBaseClass):
             raise ExecutionError("Unable to delete volume % s" % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_ops_when_one_node_is_down(self):
 

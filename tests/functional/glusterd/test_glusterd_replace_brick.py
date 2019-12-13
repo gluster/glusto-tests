@@ -31,7 +31,7 @@ from glustolibs.gluster.brick_libs import are_bricks_online
            'distributed-dispersed'], ['glusterfs']])
 class TestReplaceBrick(GlusterBaseClass):
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         self.test_method_complete = False
         # Creating a volume and starting it
         ret = setup_volume(self.mnode, self.all_servers_info, self.volume)
@@ -40,7 +40,7 @@ class TestReplaceBrick(GlusterBaseClass):
         g.log.info("Volume created successfully")
 
     def tearDown(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'tearDown')()
         self.test_method_complete = False
         ret = self.cleanup_volume()
         if not ret:

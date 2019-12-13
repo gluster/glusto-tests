@@ -40,7 +40,7 @@ class GlusterdLogsWhilePeerDetach(GlusterBaseClass):
         g.log.info("peer probe is successful for %s", self.random_server)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_logs_while_peer_detach(self):
         '''

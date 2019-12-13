@@ -32,7 +32,7 @@ from glustolibs.gluster.gluster_init import (is_glusterd_running,
 class GlusterdSplitBrainQuorumValidation(GlusterBaseClass):
 
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Overriding the volume type to specifically test the volume type
         if self.volume_type == "distributed-replicated":
@@ -58,7 +58,7 @@ class GlusterdSplitBrainQuorumValidation(GlusterBaseClass):
 
     def tearDown(self):
         # stopping the volume and Cleaning up the volume
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
         vol_list = get_volume_list(self.mnode)
         if vol_list is None:
             raise ExecutionError("Failed to get the volume list")

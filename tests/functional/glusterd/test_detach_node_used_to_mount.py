@@ -39,7 +39,7 @@ class TestChangeReservcelimit(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
 
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes setup
         cls.volume['voltype'] = {
@@ -85,7 +85,7 @@ class TestChangeReservcelimit(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Unable to delete volume %s" % self.volname)
         g.log.info("Volume deleted successfully  %s", self.volname)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_detach_node_used_to_mount(self):
         # pylint: disable=too-many-statements

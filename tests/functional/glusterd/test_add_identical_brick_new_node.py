@@ -41,7 +41,7 @@ class TestAddIdenticalBrick(GlusterBaseClass):
             if ret != 0:
                 raise ExecutionError("Peer detach failed")
             g.log.info("Peer detach SUCCESSFUL.")
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         """
@@ -65,7 +65,7 @@ class TestAddIdenticalBrick(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_identical_brick(self):
         """

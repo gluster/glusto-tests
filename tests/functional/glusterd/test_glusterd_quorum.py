@@ -37,7 +37,7 @@ class TestServerQuorum(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         ret = volume_exists(cls.mnode, cls.volname)
         if ret:
             ret = cleanup_volume(cls.mnode, cls.volname)
@@ -90,7 +90,7 @@ class TestServerQuorum(GlusterBaseClass):
                         "Peer probe failed to one of the node")
                 g.log.info("Peer probe successful")
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     @pytest.mark.test_glusterd_quorum_validation
     def test_glusterd_quorum_validation(self):
