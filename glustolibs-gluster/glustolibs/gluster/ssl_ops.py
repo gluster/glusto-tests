@@ -20,7 +20,8 @@
     validating basic ssl cases
 """
 
-from StringIO import StringIO
+from io import StringIO
+
 from glusto.core import Glusto as g
 
 

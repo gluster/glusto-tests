@@ -96,7 +96,7 @@ def get_dir_contents(host, path):
     ret, out, _ = g.run(host, ' ls '+path)
     if ret != 0:
         return None
-    file_dir_list = filter(None, out.split("\n"))
+    file_dir_list = list(filter(None, out.split("\n")))
     return file_dir_list
 
 
