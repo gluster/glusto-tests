@@ -45,7 +45,7 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
     """
 
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -211,9 +211,9 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
             command = 'ln -s {src} {dst}'.format(dst=linked_folder_name,
                                                  src=folder_name)
             ret, _, _ = g.run(mount_point.client_system, command)
-            self.assertEquals(0, ret,
-                              'Failed to create link %s to directory %s' % (
-                                  linked_folder_name, folder_name))
+            self.assertEqual(0, ret,
+                             'Failed to create link %s to directory %s' % (
+                                 linked_folder_name, folder_name))
             self.assertTrue(file_exists(mount_point.client_system,
                                         linked_folder_name),
                             'Link does not exists on %s:%s' %
@@ -359,4 +359,4 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

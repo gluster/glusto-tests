@@ -42,7 +42,7 @@ class TestCreateFile(GlusterBaseClass):
         """
         Setup and mount volume or raise ExecutionError
         """
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -162,5 +162,5 @@ class TestCreateFile(GlusterBaseClass):
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Calling GlusterBaseClass tearDownClass
+        cls.get_super_method(cls, 'tearDownClass')()

@@ -16,6 +16,8 @@
 
 """Positive test - Exercise Add-brick command"""
 
+import sys
+
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.brick_libs import get_all_bricks
@@ -37,7 +39,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
     def setUp(self):
         """Setup Volume"""
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume Volume
         g.log.info("Starting to Setup Volume")
@@ -134,14 +136,14 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         for index, mount_obj in enumerate(self.mounts, start=1):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 10 %s" % (script_location,
-                                             index + 10,
-                                             mount_obj.mountpoint))
+                   "--num-of-files 10 %s" % (
+                       sys.version_info.major, script_location, index + 10,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             # Expand volume
@@ -180,4 +182,4 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
             g.log.info("Volume deleted successfully : %s", volume)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

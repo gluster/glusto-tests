@@ -48,7 +48,8 @@ class TestDhtClass(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
+
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
         ret = cls.setup_volume_and_mount_volume(cls.mounts)
@@ -66,7 +67,7 @@ class TestDhtClass(GlusterBaseClass):
             raise ExecutionError("Failed to clean-up volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_create_directory(self):
 

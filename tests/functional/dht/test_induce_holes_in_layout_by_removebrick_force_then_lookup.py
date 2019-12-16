@@ -36,7 +36,7 @@ class RebalanceValidation(GlusterBaseClass):
     def setUp(self):
 
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
