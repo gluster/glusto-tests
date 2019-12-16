@@ -414,7 +414,7 @@ class GlusterBaseClass(TestCase):
             cmd = ('rm -rf %s' % mount_obj.mountpoint)
             ret, _, err = g.run(
                 mount_obj.client_system, cmd, user=mount_obj.user)
-            if not ret:
+            if ret:
                 g.log.error(
                     "failed to delete the directory path used for "
                     "mounting %s: %s" % (mount_obj.mountpoint, err))
