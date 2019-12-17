@@ -304,7 +304,7 @@ def get_snap_status_by_snapname(mnode, snapname):
     return None
 
 
-def get_snap_status_by_volname(mnode, volname):
+def snap_status_by_volname(mnode, volname):
     """Parse the output of 'gluster snapshot status' command
         for the given volume.
 
@@ -313,59 +313,18 @@ def get_snap_status_by_volname(mnode, volname):
         volname (str): snapshot name
 
     Returns:
-        NoneType: None if command execution fails, parse errors.
-        list: list of dicts on success.
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
 
-    Examples:
-        >>> get_snap_status_by_volname('abc.lab.eng.xyz.com',
-                                       'testvol')
-        [{'volCount': '1', 'volume': {'brick': [{'path': '10.70.47.11:
-        testvol_brick0', 'pid': '26747', 'lvUsage': '3.52', 'volumeGroup':
-        'RHS_vg0', 'lvSize': '9.95g'}, {'path': '10.70.47.16:/testvol_brick1',
-        'pid': '25497', 'lvUsage': '3.52', 'volumeGroup': 'RHS_vg0',
-        'lvSize': '9.95g'}], 'brickCount': '2'}, 'name': 'snap2', 'uuid':
-        '56a39a92-c339-47cc-a8b2-9e54bb2a6324'}, {'volCount': '1', 'volume':
-        {'brick': [{'path': '10.70.47.11:testvol_next_brick0', 'pid': '26719',
-        'lvUsage': '4.93', 'volumeGroup': 'RHS_vg1', 'lvSize': '9.95g'}],
-        'brickCount': '1'}, 'name': 'next_snap1',
-        'uuid': 'dcf0cd31-c0db-47ad-92ec-f72af2d7b385'}]
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
     """
-
-    cmd = "gluster snapshot status volume %s --xml" % volname
-    ret, out, _ = g.run(mnode, cmd)
-    if ret != 0:
-        g.log.error("Failed to execute 'snapshot status' on node %s. "
-                    "Hence failed to get the snapshot status.", mnode)
-        return None
-
-    try:
-        root = etree.XML(out)
-    except etree.ParseError:
-        g.log.error("Failed to parse the gluster snapshot "
-                    "status xml output.")
-        return None
-
-    snap_status_list = []
-    for snap in root.findall("snapStatus/snapshots/snapshot"):
-        snap_status = {}
-        for element in snap.getchildren():
-            if element.tag == "volume":
-                status = {}
-                status["brick"] = []
-                for elmt in element.getchildren():
-                    if elmt.tag == "brick":
-                        brick_info = {}
-                        for el in elmt.getchildren():
-                            brick_info[el.tag] = el.text
-                        status["brick"].append(brick_info)
-                    else:
-                        status[elmt.tag] = elmt.text
-
-                snap_status[element.tag] = status
-            else:
-                snap_status[element.tag] = element.text
-        snap_status_list.append(snap_status)
-    return snap_status_list
+    cmd = "gluster snapshot status volume %s" % volname
+    return g.run(mnode, cmd)
 
 
 def snap_info(mnode, snapname="", volname=""):
