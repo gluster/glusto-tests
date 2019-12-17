@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,20 +17,18 @@
 """ Test Arbiter Specific Cases"""
 
 import sys
-
 from glusto.core import Glusto as g
-
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.volume_libs import (
-    log_volume_info_and_status, replace_brick_from_volume,
-    expand_volume, wait_for_volume_process_to_be_online,
-    verify_all_process_of_volume_are_online, shrink_volume)
+    replace_brick_from_volume, expand_volume, shrink_volume,
+    wait_for_volume_process_to_be_online,
+    verify_all_process_of_volume_are_online)
 from glustolibs.gluster.rebalance_ops import (
     rebalance_start, rebalance_status, wait_for_rebalance_to_complete)
-from glustolibs.gluster.heal_libs import monitor_heal_completion
+from glustolibs.gluster.heal_libs import (monitor_heal_completion,
+                                          is_heal_complete)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.io.utils import (validate_io_procs,
-                                 list_all_files_and_dirs_mounts,
                                  wait_for_io_to_complete)
 from glustolibs.misc.misc_libs import upload_scripts
 
@@ -121,13 +119,6 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                 raise ExecutionError("IO failed on some of the clients")
             g.log.info("IO is successful on all mounts")
 
-            # List all files and dirs created
-            g.log.info("List all files and directories:")
-            ret = list_all_files_and_dirs_mounts(self.mounts)
-            if not ret:
-                raise ExecutionError("Failed to list all files and dirs")
-            g.log.info("Listing all files and directories is successful")
-
         # Unmount Volume and Cleanup Volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
@@ -148,29 +139,25 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
         # pylint: disable=too-many-statements
 
         # Start IO on mounts
-        g.log.info("Starting IO on all mounts...")
         self.all_mounts_procs = []
-        for mount_obj in self.mounts:
-            g.log.info("Starting IO on %s:%s", mount_obj.client_system,
-                       mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                   "--dirname-start-num %d "
-                   "--dir-depth 2 "
-                   "--dir-length 15 "
-                   "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (
-                       sys.version_info.major, self.script_upload_path,
-                       self.counter, mount_obj.mountpoint))
-            proc = g.run_async(mount_obj.client_system, cmd,
-                               user=mount_obj.user)
-            self.all_mounts_procs.append(proc)
-            self.counter = self.counter + 10
+        g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
+                   self.mounts[0].mountpoint)
+        cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+               "--dirname-start-num 10 --dir-depth 1 --dir-length 1 "
+               "--max-num-of-dirs 1 --num-of-files 5 %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, cmd,
+                           user=self.mounts[0].user)
+        self.all_mounts_procs.append(proc)
         self.io_validation_complete = False
 
         # Validate IO
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts[0]),
+            "IO failed on some of the clients"
+        )
         self.io_validation_complete = True
-        self.assertTrue(ret, "IO failed on some of the clients")
 
         # Adding bricks to make an Arbiter Volume
         g.log.info("Adding bricks to convert to Arbiter Volume")
@@ -179,16 +166,6 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                             arbiter_count=1)
         self.assertTrue(ret, ("Failed to expand the volume  %s", self.volname))
         g.log.info("Changing volume to arbiter volume is successful %s",
-                   self.volname)
-
-        # Log Volume Info and Status after changing the volume type from
-        # replicated to arbitered
-        g.log.info("Logging volume info and Status after changing to "
-                   "arbitered volume")
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
                    self.volname)
 
         # Wait for volume processes to be online
@@ -216,33 +193,24 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
         g.log.info("self-heal is successful after changing the volume type "
                    "from replicated to arbitered volume")
 
-        # Start IO on mounts
-        g.log.info("Starting IO on all mounts...")
-        self.all_mounts_procs = []
-        for mount_obj in self.mounts:
-            g.log.info("Starting IO on %s:%s", mount_obj.client_system,
-                       mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                   "--dirname-start-num %d "
-                   "--dir-depth 2 "
-                   "--dir-length 35 "
-                   "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (
-                       sys.version_info.major, self.script_upload_path,
-                       self.counter, mount_obj.mountpoint))
-            proc = g.run_async(mount_obj.client_system, cmd,
-                               user=mount_obj.user)
-            self.all_mounts_procs.append(proc)
-            self.counter = self.counter + 10
-        self.io_validation_complete = False
+        # Check if heal is completed
+        ret = is_heal_complete(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not complete')
+        g.log.info('Heal is completed successfully')
 
-        # Log Volume Info and Status before expanding the volume.
-        g.log.info("Logging volume info and Status before expanding volume")
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
-                   self.volname)
+        # Start IO on mounts
+        self.all_mounts_procs = []
+        g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
+                   self.mounts[0].mountpoint)
+        cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+               "--dirname-start-num 10 --dir-depth 1 --dir-length 1 "
+               "--max-num-of-dirs 1 --num-of-files 5 %s" % (
+                   sys.version_info.major, self.script_upload_path,
+                   self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, cmd,
+                           user=self.mounts[0].user)
+        self.all_mounts_procs.append(proc)
+        self.io_validation_complete = False
 
         # Start add-brick (subvolume-increase)
         g.log.info("Start adding bricks to volume when IO in progress")
@@ -252,14 +220,6 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                               "progress on volume %s", self.volname))
         g.log.info("Expanding volume when IO in progress is successful on "
                    "volume %s", self.volname)
-
-        # Log Volume Info and Status after expanding the volume
-        g.log.info("Logging volume info and Status after expanding volume")
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
-                   self.volname)
 
         # Wait for volume processes to be online
         g.log.info("Wait for volume processes to be online")
@@ -296,30 +256,12 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
         g.log.info("Rebalance is successfully complete on the volume %s",
                    self.volname)
 
-        # Log Volume Info and Status before replacing brick from the volume.
-        g.log.info("Logging volume info and Status before replacing brick "
-                   "from the volume %s", self.volname)
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
-                   self.volname)
-
         # Replace brick from a sub-volume
         g.log.info("Replace a faulty brick from the volume")
         ret = replace_brick_from_volume(self.mnode, self.volname,
                                         self.servers, self.all_servers_info)
         self.assertTrue(ret, "Failed to replace faulty brick from the volume")
         g.log.info("Successfully replaced faulty brick from the volume")
-
-        # Log Volume Info and Status after replacing the brick
-        g.log.info("Logging volume info and Status after replacing brick "
-                   "from the volume %s", self.volname)
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
-                   self.volname)
 
         # Wait for volume processes to be online
         g.log.info("Wait for volume processes to be online")
@@ -344,13 +286,10 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                         "current test workload")
         g.log.info("self-heal is successful after replace-brick operation")
 
-        # Log Volume Info and Status before shrinking the volume.
-        g.log.info("Logging volume info and Status before shrinking volume")
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
-                   self.volname)
+        # Check if heal is completed
+        ret = is_heal_complete(self.mnode, self.volname)
+        self.assertTrue(ret, 'Heal is not complete')
+        g.log.info('Heal is completed successfully')
 
         # Shrinking volume by removing bricks from volume when IO in progress
         g.log.info("Start removing bricks from volume when IO in progress")
@@ -359,14 +298,6 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
                               "progress on volume %s", self.volname))
         g.log.info("Shrinking volume when IO in progress is successful on "
                    "volume %s", self.volname)
-
-        # Log Volume Info and Status after shrinking the volume
-        g.log.info("Logging volume info and Status after shrinking volume")
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
-        g.log.info("Successful in logging volume info and status of volume %s",
-                   self.volname)
 
         # Wait for volume processes to be online
         g.log.info("Wait for volume processes to be online")
@@ -387,7 +318,7 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
 
         # Validate IO
         self.assertTrue(
-            validate_io_procs(self.all_mounts_procs, self.mounts),
+            validate_io_procs(self.all_mounts_procs, self.mounts[0]),
             "IO failed on some of the clients"
         )
         self.io_validation_complete = True
