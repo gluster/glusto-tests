@@ -39,7 +39,7 @@ class TestBrickMultiplexing(GlusterBaseClass):
             g.log.info("Disabled brick multiplexing successfully")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_enabling_brick_mux(self):
         """

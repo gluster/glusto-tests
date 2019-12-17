@@ -31,9 +31,12 @@
         TODO:
             - attach-tier, detach-tier
 """
+import sys
 import time
-import pytest
+
 from glusto.core import Glusto as g
+import pytest
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.volume_libs import enable_and_validate_volume_options
 from glustolibs.gluster.volume_libs import (
@@ -123,14 +126,14 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 15 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path,
-                                            self.counter,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       sys.version_info.major, self.script_upload_path,
+                       self.counter, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
@@ -711,10 +714,10 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
+        bricks_to_bring_offline = list(filter(None, (
             bricks_to_bring_offline_dict['hot_tier_bricks'] +
             bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline_dict['volume_bricks'])))
 
         # Bring bricks offline
         g.log.info("Bringing bricks: %s offline", bricks_to_bring_offline)

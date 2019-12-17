@@ -21,9 +21,12 @@ Test Description:
     or commit to reset a brick with source and destination defined
 """
 from os import getcwd
-from time import sleep
 from random import choice
+import sys
+from time import sleep
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.heal_libs import (monitor_heal_completion)
@@ -46,7 +49,7 @@ class TestBrickReset(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
@@ -62,7 +65,7 @@ class TestBrickReset(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -90,7 +93,7 @@ class TestBrickReset(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_brickreset_ec_volume(self):
         # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -165,9 +168,10 @@ class TestBrickReset(GlusterBaseClass):
 
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("python %s create_deep_dirs_with_files "
-                       "-d 2 -l 2 -n 2 -f 20 %s/dir2"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+                       "-d 2 -l 2 -n 2 -f 20 %s/dir2" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
@@ -337,9 +341,10 @@ class TestBrickReset(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("python %s create_deep_dirs_with_files "
-                       "-d 2 -l 2 -n 2 -f 20 %s/dir1"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+                       "-d 2 -l 2 -n 2 -f 20 %s/dir1" % (
+                           sys.version_info.major, self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
