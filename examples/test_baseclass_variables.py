@@ -1,10 +1,16 @@
 """ This Module demostrates how to use functions available in volume_ops
 """
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import (GlusterBaseClass)
+
+from glustolibs.gluster.gluster_base_class import (
+    GlusterBaseClass,
+    runs_on,
+)
 
 
-class DemoGlusyerBaseClassVariables(GlusterBaseClass):
+@runs_on([['distributed-replicated', 'replicated'],
+          ['glusterfs', 'nfs']])
+class DemoGlusterBaseClassVariables(GlusterBaseClass):
     """Demonstrating all the functions available in volume_ops module
     """
     @classmethod
@@ -13,7 +19,7 @@ class DemoGlusyerBaseClassVariables(GlusterBaseClass):
         """
         # Read all the cluster config from the g.config and assign it to
         # class variables
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Servers (list)
         g.log.info("Servers:\n %s\n\n", cls.servers)

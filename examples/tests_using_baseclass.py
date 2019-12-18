@@ -14,7 +14,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
+from glustolibs.gluster.gluster_base_class import (
+    GlusterBaseClass,
+    runs_on,
+)
 
 """ Example1: Using GlusterBaseClass
 """
@@ -33,7 +36,7 @@ class TestUsingGlusterBaseClass(GlusterBaseClass):
         # Calling GlusterBaseClass setUpClass. This will read all the
         # Variables from the g.config and will assign values to variables to
         # Use in the tests
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Add test class setup code here.
 
@@ -41,7 +44,7 @@ class TestUsingGlusterBaseClass(GlusterBaseClass):
         """setUp before the test
         """
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Add test setup code here
 
@@ -60,13 +63,16 @@ class TestUsingGlusterBaseClass(GlusterBaseClass):
         # Add test teardown code here
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
         """tearDownClass. This will be executed once per class.
+
+        Define it when you need to execute something else than super's
+        tearDownClass method.
         """
         # Add test class teardown code here
 
         # Calling GlusterBaseClass tearDownClass.
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
