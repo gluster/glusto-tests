@@ -56,11 +56,9 @@ class SnapshotSelfheal(GlusterBaseClass):
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients")
         g.log.info("Successfully uploaded IO scripts to clients ")
