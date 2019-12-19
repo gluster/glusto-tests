@@ -59,10 +59,9 @@ class SnapshotUssSnap(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", self.clients)
-        script_abs_path = "/usr/share/glustolibs/io/scripts/file_dir_ops.py"
         self.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                    "file_dir_ops.py")
-        ret = upload_scripts(self.clients, script_abs_path)
+        ret = upload_scripts(self.clients, self.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients")
 
