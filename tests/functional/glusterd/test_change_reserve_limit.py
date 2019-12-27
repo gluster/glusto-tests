@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -51,15 +51,6 @@ class TestChangeReservcelimit(GlusterBaseClass):
                    cls.clients)
 
     def tearDown(self):
-
-        # Setting storage.reserve to Default
-        ret = set_volume_options(self.mnode, self.volname,
-                                 {'storage.reserve': '0'})
-        if not ret:
-            raise ExecutionError("Failed to reset storage reserve on %s"
-                                 % self.mnode)
-        g.log.info("Able to reset storage reserve successfully on %s",
-                   self.mnode)
 
         # Unmounting the volume.
         ret, _, _ = umount_volume(mclient=self.mounts[0].client_system,

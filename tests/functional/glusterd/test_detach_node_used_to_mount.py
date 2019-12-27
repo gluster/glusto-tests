@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,19 +14,18 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from time import sleep
 from random import randint
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume,
                                             form_bricks_list_to_add_brick)
-from glustolibs.gluster.glusterdir import mkdir
+from glustolibs.gluster.glusterdir import mkdir, rmdir
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               rebalance_stop)
 from glustolibs.gluster.peer_ops import (peer_detach,
                                          peer_probe,
-                                         is_peer_connected)
+                                         wait_for_peers_to_connect)
 from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 from glustolibs.gluster.glusterfile import (get_fattr, file_exists,
@@ -66,13 +65,10 @@ class TestChangeReservcelimit(GlusterBaseClass):
         g.log.info("Peer probe successful %s", self.servers[4])
 
         # Wait till peers are in connected state
-        count = 0
-        while count < 60:
-            ret = is_peer_connected(self.mnode, self.servers)
-            if ret:
-                break
-            sleep(3)
-            count += 1
+        for server in self.servers:
+            ret = wait_for_peers_to_connect(self.mnode, server)
+            self.assertTrue(ret, "glusterd is not connected %s with peer %s"
+                            % (self.mnode, server))
 
         # Unmounting and cleaning volume
         ret, _, _ = umount_volume(mclient=self.mounts[0].client_system,
@@ -80,6 +76,10 @@ class TestChangeReservcelimit(GlusterBaseClass):
         if ret:
             raise ExecutionError("Unable to unmount volume %s" % self.volname)
         g.log.info("Volume unmounted successfully  %s", self.volname)
+        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
+        if not ret:
+            raise ExecutionError("Failed to remove directory mount directory.")
+        g.log.info("Mount directory is removed successfully")
 
         ret = cleanup_volume(self.mnode, self.volname)
         if not ret:

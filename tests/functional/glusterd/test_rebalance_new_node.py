@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ import sys
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume)
 from glustolibs.gluster.volume_ops import (get_volume_list)
@@ -67,6 +68,12 @@ class TestRebalanceStatus(GlusterBaseClass):
         # unmount the volume
         ret = self.unmount_volume(self.mounts)
         self.assertTrue(ret, "Volume unmount failed for %s" % self.volname)
+        for mount_obj in self.mounts:
+            ret = rmdir(mount_obj.client_system, mount_obj.mountpoint)
+            if not ret:
+                raise ExecutionError("Failed to remove directory "
+                                     "mount directory.")
+            g.log.info("Mount directory is removed successfully")
 
         # get volumes list and clean up all the volumes
         vol_list = get_volume_list(self.mnode)

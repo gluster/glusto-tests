@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 import random
-from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -22,13 +21,19 @@ from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (volume_create,
                                            set_volume_options, volume_start)
 from glustolibs.gluster.snap_ops import snap_create, snap_activate
-from glustolibs.gluster.peer_ops import peer_detach_servers, peer_probe
+from glustolibs.gluster.peer_ops import (
+    peer_detach_servers,
+    peer_probe_servers)
 
 
 @runs_on([['distributed'], ['glusterfs']])
 class TestSnapInfoOnPeerDetachedNode(GlusterBaseClass):
 
     def tearDown(self):
+
+        ret = peer_probe_servers(self.mnode, self.servers)
+        if not ret:
+            raise ExecutionError("Failed to peer probe servers")
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
@@ -124,20 +129,3 @@ class TestSnapInfoOnPeerDetachedNode(GlusterBaseClass):
         g.log.info("Expected: %s path doesn't exist on peer detached node %s",
                    self.pathname, self.random_node_peer_detach)
         g.rpyc_close_deployed_servers()
-
-        # Peer probe the detached node
-        ret, _, _ = peer_probe(self.mnode, self.random_node_peer_detach)
-        self.assertEqual(ret, 0, "Peer probe of node: %s failed" %
-                         self.random_node_peer_detach)
-        g.log.info("Peer probe succeeded")
-
-        # Validating peers are in connected state
-        count = 0
-        while count < 10:
-            sleep(2)
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            count += 1
-        self.assertTrue(ret, "Peers are not in connected state")
-        g.log.info("Peer are in connected state")

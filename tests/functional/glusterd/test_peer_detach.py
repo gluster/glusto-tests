@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -43,14 +43,20 @@ class PeerDetachVerification(GlusterBaseClass):
             g.log.info("All server peers are already in connected state "
                        "%s:", cls.servers)
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
+
+        ret = peer_probe_servers(self.mnode, self.servers)
+        if not ret:
+            raise ExecutionError("Failed to peer probe servers")
+
         # stopping the volume and Cleaning up the volume
-        ret = cls.cleanup_volume()
-        if ret:
-            g.log.info("Volume deleted successfully : %s", cls.volname)
-        else:
-            raise ExecutionError("Failed Cleanup the Volume %s" % cls.volname)
+        ret = self.cleanup_volume()
+        if not ret:
+            raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
+        g.log.info("Volume deleted successfully : %s", self.volname)
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_peer_detach_host(self):
         # peer Detaching specified server from cluster

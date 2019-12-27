@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,10 @@ from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
-from glustolibs.io.utils import validate_io_procs
+from glustolibs.io.utils import (
+    wait_for_io_to_complete,
+    validate_io_procs)
+from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.gluster_init import restart_glusterd
 
 
@@ -54,6 +57,10 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
                             self.mounts[0].mountpoint, mtype=self.mount_type)
         self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
         g.log.info("Successfully Unmounted Volume %s", self.volname)
+        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
+        if not ret:
+            raise ExecutionError("Failed to remove directory mount directory.")
+        g.log.info("Mount directory is removed successfully")
 
         # Clean up all volumes and peer probe to form cluster
         vol_list = get_volume_list(self.mnode)
@@ -165,6 +172,12 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
                            user=self.mounts[0].user)
         self.all_mounts_procs.append(proc)
         self.io_validation_complete = False
+
+        # wait for io to complete
+        self.assertTrue(
+            wait_for_io_to_complete(self.all_mounts_procs, self.mounts),
+            "Io failed to complete on some of the clients")
+
         # Validate IO
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True

@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.brick_libs import get_all_bricks
+from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
@@ -108,12 +109,14 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         g.log.info("Bricks added successfully to the volume %s", self.volname)
 
         # Mounting the volume.
-        ret, _, _ = mount_volume(self.volname, mtype=self.mount_type,
-                                 mpoint=self.mounts[0].mountpoint,
-                                 mserver=self.mnode,
-                                 mclient=self.mounts[0].client_system)
-        self.assertEqual(ret, 0, ("Volume %s is not mounted") % self.volname)
-        g.log.info("Volume mounted successfully : %s", self.volname)
+        for mount_obj in self.mounts:
+            ret, _, _ = mount_volume(self.volname, mtype=self.mount_type,
+                                     mpoint=mount_obj.mountpoint,
+                                     mserver=self.mnode,
+                                     mclient=mount_obj.client_system)
+            self.assertEqual(ret, 0, ("Volume %s is not mounted") % (
+                self.volname))
+            g.log.info("Volume mounted successfully : %s", self.volname)
 
         # run IOs
         g.log.info("Starting IO on all mounts...")
@@ -122,10 +125,8 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
             cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                   "--dirname-start-num %d "
-                   "--dir-depth 2 "
-                   "--dir-length 5 "
-                   "--max-num-of-dirs 3 "
+                   "--dirname-start-num %d --dir-depth 2 "
+                   "--dir-length 5 --max-num-of-dirs 3 "
                    "--num-of-files 10 %s" % (sys.version_info.major,
                                              self.script_upload_path,
                                              self.counter,
@@ -139,14 +140,18 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
         # Validate IO
         self.assertTrue(
             validate_io_procs(self.all_mounts_procs, self.mounts),
-            "IO failed on some of the clients"
-        )
+            "IO failed on some of the clients")
 
         # Unmouting the volume.
-        ret, _, _ = umount_volume(mclient=self.mounts[0].client_system,
-                                  mpoint=self.mounts[0].mountpoint)
-        self.assertEqual(ret, 0, ("Volume %s is not unmounted") % self.volname)
-        g.log.info("Volume unmounted successfully : %s", self.volname)
+        for mount_obj in self.mounts:
+            ret, _, _ = umount_volume(mclient=mount_obj.client_system,
+                                      mpoint=mount_obj.mountpoint)
+            self.assertEqual(ret, 0, "Volume %s is not unmounted" % (
+                self.volname))
+            g.log.info("Volume unmounted successfully : %s", self.volname)
+            ret = rmdir(mount_obj.client_system, mount_obj.mountpoint)
+            self.assertTrue(ret, "Failed to remove directory mount directory.")
+            g.log.info("Mount directory is removed successfully")
 
         # Getting brick list
         self.brick_list = get_all_bricks(self.mnode, self.volname)

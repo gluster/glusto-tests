@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,11 +23,12 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import set_volume_options
-from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
-                                             is_glusterd_running)
+from glustolibs.gluster.gluster_init import (
+    is_glusterd_running, start_glusterd, stop_glusterd)
 from glustolibs.gluster.brick_libs import (are_bricks_offline,
                                            get_all_bricks)
 from glustolibs.gluster.volume_ops import get_volume_status
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -56,15 +57,7 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
             if not ret:
                 raise ExecutionError("Glusterd not started on some of "
                                      "the servers")
-        # checking for peer status from every node
-        count = 0
-        while count < 80:
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            sleep(2)
-            count += 1
-
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
         if not ret:
             raise ExecutionError("Servers are not in peer probed state")
 
@@ -143,7 +136,7 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         # immediately after glusterd start, that's why verifying that all
         # glusterd started nodes available in gluster volume status or not
         count = 0
-        while count < 50:
+        while count < 80:
             vol_status = get_volume_status(self.mnode, self.volname)
             servers_count = len(vol_status[self.volname].keys())
             if servers_count == 5:

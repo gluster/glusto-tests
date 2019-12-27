@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 """
 
 import sys
-from time import sleep
 
+from time import sleep
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -30,7 +30,7 @@ from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               get_rebalance_status)
 from glustolibs.gluster.gluster_init import (restart_glusterd,
-                                             is_glusterd_running)
+                                             wait_for_glusterd_to_start)
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.glusterdir import get_dir_contents
@@ -178,13 +178,7 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
         g.log.info("Glusterd restarted successfully on %s", self.servers)
 
         # Checking glusterd status
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(self.servers)
-            if not ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 0, "Glusterd is not running on some of the "
-                                 "servers")
+        ret = wait_for_glusterd_to_start(self.servers)
+        self.assertTrue(ret, "Glusterd is not running on some of the "
+                        "servers")
         g.log.info("Glusterd is running on all servers %s", self.servers)

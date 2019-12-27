@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,13 +14,13 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from time import sleep
 from random import randint
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_init import stop_glusterd, start_glusterd
-from glustolibs.gluster.peer_ops import peer_status, is_peer_connected
+from glustolibs.gluster.gluster_init import (
+    start_glusterd, stop_glusterd, wait_for_glusterd_to_start)
+from glustolibs.gluster.peer_ops import peer_status, wait_for_peers_to_connect
 from glustolibs.gluster.volume_ops import volume_list, volume_info
 from glustolibs.gluster.volume_libs import (cleanup_volume, setup_volume)
 
@@ -45,14 +45,13 @@ class TestOpsWhenOneNodeIsDown(GlusterBaseClass):
             ExecutionError("Failed to start glusterd.")
         g.log.info("Successfully started glusterd.")
 
+        ret = wait_for_glusterd_to_start(self.servers)
+        if not ret:
+            ExecutionError("glusterd is not running on %s" % self.servers)
+        g.log.info("Glusterd start on the nodes succeeded")
+
         # Checking if peer is connected.
-        counter = 0
-        while counter < 30:
-            ret = is_peer_connected(self.mnode, self.servers)
-            counter += 1
-            if ret:
-                break
-            sleep(3)
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
         if not ret:
             ExecutionError("Peer is not in connected state.")
         g.log.info("Peers is in connected state.")

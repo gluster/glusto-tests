@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 from random import randint
 import sys
-from time import sleep
 
 from glusto.core import Glusto as g
 
@@ -33,8 +32,8 @@ from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.gluster.brick_libs import get_online_bricks_list
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
-                                             is_glusterd_running)
-from glustolibs.gluster.peer_ops import is_peer_connected
+                                             wait_for_glusterd_to_start)
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 
 
 @runs_on([['distributed-replicated', 'dispersed', 'distributed-dispersed'],
@@ -77,16 +76,11 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         g.log.info("Successfully started glusterd.")
 
         # Checking if peer is connected
-        counter = 0
-        while counter < 30:
-            ret = is_peer_connected(self.mnode, self.servers)
-            counter += 1
-            if ret:
-                break
-            sleep(3)
-        if not ret:
-            ExecutionError("Peers are not in connected state.")
-        g.log.info("Peers are in connected state.")
+        for server in self.servers:
+            ret = wait_for_peers_to_connect(self.mnode, server)
+            if not ret:
+                ExecutionError("Peers are not in connected state.")
+            g.log.info("Peers are in connected state.")
 
         # Unmounting and cleaning volume.
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)
@@ -144,13 +138,11 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         ret = stop_glusterd(self.servers[self.random_server])
         self.assertTrue(ret, "Failed to stop glusterd on one node.")
         g.log.info("Successfully stopped glusterd on one node.")
-        counter = 0
-        while counter > 20:
-            ret = is_glusterd_running(self.servers[self.random_server])
-            if ret:
-                break
-            counter += 1
-            sleep(3)
+        ret = wait_for_glusterd_to_start(self.servers[self.random_server])
+        self.assertFalse(ret, "glusterd is still running on %s"
+                         % self.servers[self.random_server])
+        g.log.info("Glusterd stop on the nodes : %s "
+                   "succeeded", self.servers[self.random_server])
 
         # Getting and checking output of profile info.
         ret, out, _ = profile_info(self.mnode, self.volname)
@@ -197,13 +189,7 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         g.log.info("Successfully started glusterd.")
 
         # Checking if peer is connected
-        counter = 0
-        while counter < 30:
-            ret = is_peer_connected(self.mnode, self.servers)
-            counter += 1
-            if ret:
-                break
-            sleep(3)
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
         self.assertTrue(ret, "Peers are not in connected state.")
         g.log.info("Peers are in connected state.")
 
