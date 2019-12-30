@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@ from glustolibs.gluster.volume_libs import (
     wait_for_volume_process_to_be_online,
     get_subvols)
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.io.utils import collect_mounts_arequal
+from glustolibs.io.utils import (
+    collect_mounts_arequal,
+    validate_io_procs)
 
 
 @runs_on([['distributed-replicated', 'replicated'],
@@ -118,21 +120,20 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create dirs with file
+        all_mounts_procs = []
         g.log.info('Creating dirs with file...')
         command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                   "-d 2 "
-                   "-l 2 "
-                   "-n 2 "
-                   "-f 20 "
-                   "%s" % (
+                   "-d 2 -l 2 -n 2 -f 20 %s" % (
                        sys.version_info.major, self.script_upload_path,
                        self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, command,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
 
-        ret, _, err = g.run(self.mounts[0].client_system, command,
-                            user=self.mounts[0].user)
-
-        self.assertFalse(ret, err)
-        g.log.info("IO is successful")
+        # Validate IO
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")
 
         # Get arequal before snapshot
         g.log.info('Getting arequal before snapshot...')
@@ -151,21 +152,20 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create dirs with file
+        all_mounts_procs = []
         g.log.info('Adding dirs with file...')
         command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                   "-d 2 "
-                   "-l 2 "
-                   "-n 2 "
-                   "-f 20 "
-                   "%s" % (
+                   "-d 2 -l 2 -n 2 -f 20 %s" % (
                        sys.version_info.major, self.script_upload_path,
                        self.mounts[0].mountpoint+'/new_files'))
+        proc = g.run_async(self.mounts[0].client_system, command,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
 
-        ret, _, err = g.run(self.mounts[0].client_system, command,
-                            user=self.mounts[0].user)
-
-        self.assertFalse(ret, err)
-        g.log.info("IO is successful")
+        # Validate IO
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")
 
         # Stop the volume
         g.log.info("Stopping %s ...", self.volname)

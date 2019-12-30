@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ import sys
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import setup_volume, cleanup_volume
 from glustolibs.gluster.volume_ops import get_volume_list
@@ -90,7 +91,6 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
 
             # Create and mount volumes
             cls.mount_points = []
-            cls.client = cls.clients[0]
             for volume_config in cls.volume_configs:
                 # Setup volume
                 ret = setup_volume(mnode=cls.mnode,
@@ -102,22 +102,22 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                                          % volume_config['name'])
                 g.log.info("Successful in setting volume %s",
                            volume_config['name'])
-
-                # Mount volume
-                mount_point = (os.path.join("/mnt", '_'.join(
-                    [volume_config['name'], cls.mount_type])))
-                cls.mount_points.append(mount_point)
-                ret, _, _ = mount_volume(volume_config['name'],
-                                         cls.mount_type,
-                                         mount_point,
-                                         cls.mnode,
-                                         cls.client)
-                if ret:
-                    raise ExecutionError(
-                        "Failed to do gluster mount on volume %s "
-                        % cls.volname)
-                g.log.info("Successfully mounted %s on client %s",
-                           cls.volname, cls.client)
+                for mount_obj in cls.mounts:
+                    # Mount volume
+                    mount_point = (os.path.join("/mnt", '_'.join(
+                        [volume_config['name'], cls.mount_type])))
+                    cls.mount_points.append(mount_point)
+                    ret, _, _ = mount_volume(volume_config['name'],
+                                             cls.mount_type,
+                                             mount_point,
+                                             cls.mnode,
+                                             mount_obj.client_system)
+                    if ret:
+                        raise ExecutionError(
+                            "Failed to do gluster mount on volume %s "
+                            % cls.volname)
+                    g.log.info("Successfully mounted %s on client %s",
+                               cls.volname, mount_obj.client_system)
 
     def setUp(self):
         """
@@ -157,6 +157,22 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         """
         Clean up the volume and umount volume from client
         """
+        # umount all volumes
+        for mount_obj in cls.mounts:
+            ret, _, _ = umount_volume(
+                mount_obj.client_system, mount_obj.mountpoint)
+            if ret:
+                raise ExecutionError(
+                    "Failed to umount on volume %s "
+                    % cls.volname)
+            g.log.info("Successfully umounted %s on client %s",
+                       cls.volname, mount_obj.client_system)
+            ret = rmdir(mount_obj.client_system, mount_obj.mountpoint)
+            if not ret:
+                raise ExecutionError(
+                    ret, "Failed to remove directory mount directory.")
+            g.log.info("Mount directory is removed successfully")
+
         # stopping all volumes
         g.log.info("Starting to Cleanup all Volumes")
         volume_list = get_volume_list(cls.mnode)
@@ -166,16 +182,6 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                 raise ExecutionError("Failed to cleanup Volume %s" % volume)
             g.log.info("Volume: %s cleanup is done", volume)
         g.log.info("Successfully Cleanedup all Volumes")
-
-        # umount all volumes
-        for mount_point in cls.mount_points:
-            ret, _, _ = umount_volume(cls.client, mount_point)
-            if ret:
-                raise ExecutionError(
-                    "Failed to umount on volume %s "
-                    % cls.volname)
-            g.log.info("Successfully umounted %s on client %s",
-                       cls.volname, cls.client)
 
         # calling GlusterBaseClass tearDownClass
         cls.get_super_method(cls, 'tearDownClass')()
@@ -189,9 +195,9 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         - Check if all the files are deleted from the mount point
         from both the servers
         """
+        # pylint: disable=too-many-locals,too-many-statements
         # create files on all mounts
         g.log.info("Starting IO on all mounts...")
-        all_mounts_procs = []
         for mount_obj in self.mounts:
             g.log.info("Generating data for %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
@@ -206,13 +212,12 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
-            all_mounts_procs.append(proc)
+            self.all_mounts_procs.append(proc)
 
         # Validate IO
         self.assertTrue(
-            validate_io_procs(all_mounts_procs, self.mounts),
-            "IO failed on some of the clients"
-        )
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")
 
         # select bricks to bring offline
         volume_list = get_volume_list(self.mnode)
@@ -235,7 +240,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
 
         # delete files on all mounts
         g.log.info("Deleting IO on all mounts...")
-        all_mounts_procs = []
+        self.all_mounts_procs = []
         for mount_obj in self.mounts:
             g.log.info("Deleting data for %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
@@ -246,10 +251,9 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                 mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
-            all_mounts_procs.append(proc)
+            self.all_mounts_procs.append(proc)
 
         # Validate IO
         self.assertTrue(
-            validate_io_procs(all_mounts_procs, self.mounts),
-            "IO failed on some of the clients"
-        )
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")

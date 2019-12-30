@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@ from glustolibs.gluster.heal_libs import (monitor_heal_completion,
                                           is_volume_in_split_brain,
                                           is_shd_daemonized)
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs)
+from glustolibs.io.utils import (
+    collect_mounts_arequal, validate_io_procs,
+    wait_for_io_to_complete)
 
 
 @runs_on([['replicated', 'distributed-replicated'],
@@ -145,11 +147,10 @@ class TestSelfHeal(GlusterBaseClass):
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
 
-        # Validate IO
+        # wait for io to complete
         self.assertTrue(
-            validate_io_procs(all_mounts_procs, self.mounts),
-            "IO failed on some of the clients"
-        )
+            wait_for_io_to_complete(all_mounts_procs, self.mounts),
+            "Io failed to complete on some of the clients")
 
         # Get arequal before getting bricks offline
         g.log.info('Getting arequal before getting bricks offline...')
