@@ -975,7 +975,7 @@ def add_user(servers, username, group=None):
     else:
         cmd = "useradd -G %s %s" % (group, username)
 
-    if servers != list:
+    if not isinstance(servers, list):
         servers = [servers]
 
     results = g.run_parallel(servers, cmd)
@@ -1019,7 +1019,7 @@ def group_add(servers, groupname):
             False otherwise.
 
     """
-    if servers != list:
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "groupadd %s" % groupname
@@ -1093,7 +1093,7 @@ def set_passwd(servers, username, passwd):
             False otherwise.
 
     """
-    if servers != list:
+    if not isinstance(servers, list):
         servers = [servers]
     cmd = "echo %s:%s | chpasswd" % (username, passwd)
     results = g.run_parallel(servers, cmd)
