@@ -24,6 +24,7 @@ import subprocess
 from glusto.core import Glusto as g
 from glustolibs.gluster.mount_ops import GlusterMount
 from glustolibs.gluster.volume_libs import get_subvols
+from glustolibs.misc.misc_libs import upload_scripts
 
 
 def collect_mounts_arequal(mounts):
@@ -954,4 +955,31 @@ def run_cthon(mnode, volname, clients, dir_name):
                     return False
                 else:
                     g.log.info("%s test successfully passed" % test_type)
+    return True
+
+
+def upload_file_dir_ops(clients):
+    """Upload file_dir_ops.py to all the clients.
+
+    Args:
+      clients(list): List of client machines where we need to upload
+                     the script.
+
+    Returns:
+        bool: True if script is uploaded successfully
+              False otherwise.
+    """
+
+    g.log.info("Upload io scripts to clients %s for running IO on "
+               "mounts", clients)
+    file_dir_ops_path = ("/usr/share/glustolibs/io/scripts/"
+                         "file_dir_ops.py")
+
+    if not upload_scripts(clients, file_dir_ops_path):
+        g.log.error("Failed to upload IO scripts to clients %s" %
+                    clients)
+        return False
+
+    g.log.info("Successfully uploaded IO scripts to clients %s",
+               clients)
     return True
