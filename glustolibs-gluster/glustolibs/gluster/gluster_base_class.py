@@ -553,6 +553,17 @@ class GlusterBaseClass(TestCase):
             cls.num_of_nfs_ganesha_nodes = None
             cls.vips = []
 
+        # Geo-rep Cluster information
+        try:
+            cls.geo_rep_info = (g.config['gluster']['geo_rep']
+                                ['cluster_config'])
+        except KeyError:
+            cls.geo_rep_info = {}
+            cls.geo_rep_info['root']['password'] = ''
+            cls.geo_rep_info['user']['name'] = ''
+            cls.geo_rep_info['user']['password'] = ''
+            cls.geo_rep_info['user']['group'] = ''
+
         # Defining default volume_types configuration.
         cls.default_volume_type_config = {
             'replicated': {

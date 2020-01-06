@@ -128,9 +128,9 @@ gluster:
         # Defaults: []
         files: []
 
-    # This section defines the details about 'nfs-ganesha' or 'samba' clusters
-    # to be created. Define this section for setting up nfs-ganesha or
-    # samba clusters.
+    # This section defines the details about 'nfs-ganesha' or 'samba'
+    # or 'geo-rep' clusters to be created. Define this section for
+    #  setting up nfs-ganesha or samba or geo-rep clusters.
     cluster_config:
         smb:
             enable: False
@@ -159,6 +159,14 @@ gluster:
             enable: False
             num_of_nfs_ganesha_nodes: 4
             vips: []
+
+        geo_rep:
+            root:
+              password: 'foobar'
+            user:
+              name: 'geoaccount'
+              group: 'geogroup'
+              password: 'non-root foobar'
 
     # 'volume_types' defines different volume types that we can create in
     # gluster and we have default values assigned to each of the volume
@@ -330,12 +338,7 @@ gluster:
                 enable: False
             nfs_ganesha:
                 enable: False
-            geo_rep:
-                create_geo_rep_session: False
-                slave_volumes: [ *slave_vol1 ]
-                user: 'root'
-                group: 'geogroup'
-                sync_mode: 'rsync'
+
 
     # 'mounts' is list of all mount points info.Each item in the list is the
     # details about the mountpoint. i.e 'protocol', 'server', 'volname',
