@@ -19,6 +19,7 @@
     Description: This file contains the methods for starting/stopping glusterd
         and other initial gluster environment setup helpers.
 """
+from time import sleep
 from glusto.core import Glusto as g
 
 
@@ -222,3 +223,31 @@ def get_glusterd_pids(nodes):
             glusterd_pids[node] = ['-1']
 
     return _rc, glusterd_pids
+
+
+def wait_for_glusterd_to_start(servers, glusterd_start_wait_timeout=80):
+    """Checks glusterd is running on nodes with timeout.
+
+    Args:
+        servers (str|list): A server|List of server hosts on which glusterd
+            status has to be checked.
+        glusterd_start_wait_timeout: timeout to retry glusterd running
+            check in node.
+
+    Returns:
+    bool : True if glusterd is running on servers.
+        False otherwise.
+
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+    count = 0
+    while count <= glusterd_start_wait_timeout:
+        ret = is_glusterd_running(servers)
+        if not ret:
+            g.log.info("glusterd is running on %s", servers)
+            return True
+        sleep(1)
+        count += 1
+    g.log.error("glusterd is not running on %s", servers)
+    return False

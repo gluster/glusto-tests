@@ -20,10 +20,10 @@
 """
 
 
-from glusto.core import Glusto as g
 import re
-import time
 import socket
+from time import sleep
+from glusto.core import Glusto as g
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
@@ -166,7 +166,7 @@ def peer_probe_servers(mnode, servers, validate=True, time_delay=10):
 
     # Validating whether peer is in connected state after peer probe
     if validate:
-        time.sleep(time_delay)
+        sleep(time_delay)
         if not is_peer_connected(mnode, servers):
             g.log.error("Validation after peer probe failed.")
             return False
@@ -212,7 +212,7 @@ def peer_detach_servers(mnode, servers, force=False, validate=True,
 
     # Validating whether peer detach is successful
     if validate:
-        time.sleep(time_delay)
+        sleep(time_delay)
         nodes_in_pool = nodes_from_pool_list(mnode)
         rc = True
         for server in servers:
@@ -421,3 +421,32 @@ def is_peer_connected(mnode, servers):
     g.log.info("Servers: '%s' are all 'Peer in Cluster' and 'Connected' "
                "state.", servers)
     return True
+
+
+def wait_for_peers_to_connect(mnode, servers, wait_timeout=30):
+    """Checks nodes are peer connected with timeout.
+
+    Args:
+        mnode: node on which cmd has to be executed.
+        servers (str|list): A server|List of server hosts on which peer
+            status has to be checked.
+        wait_timeout: timeout to retry connected status check in node.
+
+    Returns:
+    bool : True if all the peers are connected.
+        False otherwise.
+
+    """
+    if not isinstance(servers, str):
+        servers = [servers]
+
+    count = 0
+    while count <= wait_timeout:
+        ret = is_peer_connected(mnode, servers)
+        if ret:
+            g.log.info("peers in connected state: %s", servers)
+            return True
+        sleep(1)
+        count += 1
+    g.log.error("Peers are not in connected state: %s", servers)
+    return False

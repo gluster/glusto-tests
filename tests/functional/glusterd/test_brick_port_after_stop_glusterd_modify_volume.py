@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
@@ -23,14 +22,14 @@ from glustolibs.gluster.volume_ops import (volume_create, volume_start,
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.volume_libs import (cleanup_volume)
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
-                                         is_peer_connected,
                                          peer_probe_servers,
                                          peer_detach_servers,
-                                         nodes_from_pool_list)
+                                         nodes_from_pool_list,
+                                         wait_for_peers_to_connect)
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_init import (start_glusterd, stop_glusterd,
-                                             is_glusterd_running)
+                                             wait_for_glusterd_to_start)
 
 
 @runs_on([['distributed'], ['glusterfs']])
@@ -131,14 +130,8 @@ class TestBrickPortAfterModifyVolume(GlusterBaseClass):
 
         ret = stop_glusterd(self.servers[1])
         self.assertTrue(ret, "Failed to stop glusterd on one of the node")
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(self.servers[1])
-            if ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 1, "glusterd is still running on %s"
+        ret = wait_for_glusterd_to_start(self.servers[1])
+        self.assertFalse(ret, "glusterd is still running on %s"
                          % self.servers[1])
         g.log.info("Glusterd stop on the nodes : %s "
                    "succeeded", self.servers[1])
@@ -155,28 +148,15 @@ class TestBrickPortAfterModifyVolume(GlusterBaseClass):
         self.assertTrue(ret, "Failed to start glusterd on one of the node")
         g.log.info("Glusterd start on the nodes : %s "
                    "succeeded", self.servers[1])
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(self.servers[1])
-            if not ret:
-                break
-            sleep(2)
-            count += 1
-
-        self.assertEqual(ret, 0, "glusterd is not running on %s"
-                         % self.servers[1])
+        ret = wait_for_glusterd_to_start(self.servers[1])
+        self.assertTrue(ret, "glusterd is not running on %s"
+                        % self.servers[1])
         g.log.info("Glusterd start on the nodes : %s "
                    "succeeded", self.servers[1])
 
-        count = 0
-        while count < 60:
-            ret = is_peer_connected(self.servers[0], self.servers[1])
-            if ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 1, "glusterd is not connected %s with peer %s"
-                         % (self.servers[0], self.servers[1]))
+        ret = wait_for_peers_to_connect(self.servers[0], self.servers[1])
+        self.assertTrue(ret, "glusterd is not connected %s with peer %s"
+                        % (self.servers[0], self.servers[1]))
 
         vol_status = get_volume_status(self.mnode, self.volname)
         self.assertIsNotNone(vol_status, "Failed to get volume "
