@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ def start_glusterd(servers):
         bool : True if starting glusterd is successful on all servers.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "pgrep glusterd || service glusterd start"
@@ -62,7 +62,7 @@ def stop_glusterd(servers):
         bool : True if stopping glusterd is successful on all servers.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "service glusterd stop"
@@ -91,7 +91,7 @@ def restart_glusterd(servers):
         bool : True if restarting glusterd is successful on all servers.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "service glusterd restart"
@@ -122,7 +122,7 @@ def is_glusterd_running(servers):
            -1  : if glusterd not running and PID is alive
 
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd1 = "service glusterd status"
@@ -157,7 +157,7 @@ def env_setup_servers(servers):
             False otherwise.
 
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     g.log.info("The function isn't implemented fully")
@@ -175,7 +175,7 @@ def get_glusterd_pids(nodes):
     return the process id's in dictionary format
 
     Args:
-        nodes ( str|list ) : Node/Nodes of the cluster
+        nodes (str|list) : Node(s) of the cluster
 
     Returns:
         tuple : Tuple containing two elements (ret, gluster_pids).
@@ -190,7 +190,7 @@ def get_glusterd_pids(nodes):
     """
     glusterd_pids = {}
     _rc = True
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     cmd = "pidof glusterd"
