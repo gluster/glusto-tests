@@ -75,12 +75,12 @@ Best Practices
     class GlusterTestClass(GlusterBaseClass):
         @classmethod
         def setUpClass(cls):
-            GlusterBaseClass.setUpClass.im_func(cls)
+            cls.get_super_method(cls, 'setUpClass')()
             # Your code here
             # Remove this function if you don't have set up steps to do
 
         def setUp(self):
-            GlusterBaseClass.setUp.im_func(self)
+            self.get_super_method(self, 'setUp')()
             # Your code here
             # Remove this function if you don't have set up steps to do
 
@@ -97,13 +97,13 @@ Best Practices
             pass
 
         def tearDown(self):
-            GlusterBaseClass.tearDown.im_func(self)
+             self.get_super_method(self, 'tearDown')()
             # Your code here
             # Remove this function if you don't have set up steps to do
 
         @classmethod
         def tearDownClass(cls):
-            GlusterBaseClass.tearDownClass.im_func(cls)
+            cls.get_super_method(cls, 'tearDownClass')()
             # Your code here
             # Remove this function if you don't have set up steps to do
 
