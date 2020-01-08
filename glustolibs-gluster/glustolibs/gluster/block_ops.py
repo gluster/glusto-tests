@@ -56,7 +56,7 @@ def block_create(mnode, volname, blockname, servers, size=None,
         block_create(mnode, volname, blockname, servers, size,
         **block_args_info)
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     ha = auth = prealloc = storage = ring_buffer = ''

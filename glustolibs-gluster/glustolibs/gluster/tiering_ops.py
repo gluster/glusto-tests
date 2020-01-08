@@ -48,7 +48,7 @@ def add_extra_servers_to_cluster(mnode, extra_servers):
         add_extra_servers_to_cluster("abc.com", ['peer_node1','peer_node2'])
     """
 
-    if isinstance(extra_servers, str):
+    if not isinstance(extra_servers, list):
         extra_servers = [extra_servers]
 
     ret = start_glusterd(servers=extra_servers)
@@ -97,7 +97,7 @@ def tier_attach(mnode, volname, num_bricks_to_add, extra_servers,
         tier_attach("abc.com", testvol, '2', ['extra_server1','extra_server2'],
                     extra_server_info)
     """
-    if isinstance(extra_servers, str):
+    if not isinstance(extra_servers, list):
         extra_servers = [extra_servers]
 
     replica = int(replica)

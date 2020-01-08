@@ -97,7 +97,7 @@ def quota_fetch_daemon_pid(nodes):
     """
     quotad_pids = {}
     _rc = True
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
     cmd = r"pgrep -f quotad | grep -v ^$$\$"
     g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))

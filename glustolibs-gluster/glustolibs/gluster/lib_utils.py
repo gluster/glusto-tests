@@ -308,7 +308,7 @@ def get_servers_bricks_dict(servers, servers_info):
         get_servers_bricks_dict(g.config['servers'], g.config['servers_info'])
     """
     servers_bricks_dict = OrderedDict()
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     for server in servers:
         server_info = servers_info[server]
@@ -342,7 +342,7 @@ def get_servers_used_bricks_dict(mnode, servers):
         get_servers_used_bricks_dict(g.config['servers'][0]['host'],
                                      g.config['servers'])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     servers_used_bricks_dict = OrderedDict()
@@ -389,7 +389,7 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
                                        g.config['servers'],
                                        g.config['servers_info'])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     dict1 = get_servers_bricks_dict(servers, servers_info)
     dict2 = get_servers_used_bricks_dict(mnode, servers)
@@ -429,7 +429,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
         form_bricks_path(g.config['servers'](0), "testvol", 6,
                          g.config['servers'], g.config['servers_info'])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     dict_index = 0
     bricks_list = []
@@ -483,7 +483,7 @@ def is_rhel6(servers):
     Returns:
     bool:Returns True, if its RHEL-6 else returns false
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
@@ -509,7 +509,7 @@ def is_rhel7(servers):
     Returns:
     bool:Returns True, if its RHEL-7 else returns false
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
@@ -680,7 +680,7 @@ def install_epel(servers):
     Example:
         install_epel(["abc.com", "def.com"])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     rt = True
@@ -734,7 +734,7 @@ def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
     Returns:
         bool: True if successfully injected msg on all log files.
     """
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     if list_of_dirs is None:
@@ -858,10 +858,10 @@ def remove_service_from_firewall(nodes, firewall_service, permanent=False):
             bool: True|False(Firewall removed or Failed)
     """
 
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
-    if isinstance(firewall_service, str):
+    if not isinstance(firewall_service, list):
         firewall_service = [firewall_service]
 
     _rc = True
@@ -902,10 +902,10 @@ def add_services_to_firewall(nodes, firewall_service, permanent=False):
         bool: True|False(Firewall Enabled or Failed)
     """
 
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
-    if isinstance(firewall_service, str):
+    if not isinstance(firewall_service, list):
         firewall_service = [firewall_service]
 
     _rc = True

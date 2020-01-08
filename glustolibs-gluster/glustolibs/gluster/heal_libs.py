@@ -341,7 +341,7 @@ def get_self_heal_daemon_pid(nodes):
     """
     glustershd_pids = {}
     _rc = True
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
     cmd = r"pgrep -f glustershd | grep -v ^$$\$"
     g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
@@ -447,7 +447,7 @@ def is_shd_daemonized(nodes, timeout=120):
     """
     counter = 0
     flag = 0
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
     while counter < timeout:
         ret, pids = get_self_heal_daemon_pid(nodes)
@@ -483,7 +483,7 @@ def bring_self_heal_daemon_process_offline(nodes):
         bool : True on successfully bringing self-heal daemon process offline.
                False otherwise
     """
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     failed_nodes = []

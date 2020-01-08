@@ -179,10 +179,10 @@ def bring_bricks_offline(volname, bricks_list,
     """
     if bring_bricks_offline_methods is None:
         bring_bricks_offline_methods = ['service_kill']
-    elif isinstance(bring_bricks_offline_methods, str):
+    elif not isinstance(bring_bricks_offline_methods, list):
         bring_bricks_offline_methods = [bring_bricks_offline_methods]
 
-    if isinstance(bricks_list, str):
+    if not isinstance(bricks_list, list):
         bricks_list = [bricks_list]
 
     node_list = []
@@ -281,7 +281,7 @@ def bring_bricks_online(mnode, volname, bricks_list,
     if bring_bricks_online_methods is None:
         bring_bricks_online_methods = ['glusterd_restart',
                                        'volume_start_force']
-    elif isinstance(bring_bricks_online_methods, str):
+    elif not isinstance(bring_bricks_online_methods, list):
         bring_bricks_online_methods = [bring_bricks_online_methods]
 
     g.log.info("Bringing bricks '%s' online with '%s'",

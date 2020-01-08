@@ -161,7 +161,7 @@ class GlusterBaseClass(TestCase):
             list: List of IP's corresponding to the hostnames of nodes.
         """
         nodes_ips = []
-        if isinstance(nodes, str):
+        if not isinstance(nodes, list):
             nodes = [nodes]
         for node in nodes:
             try:

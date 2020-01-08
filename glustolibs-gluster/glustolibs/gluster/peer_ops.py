@@ -139,7 +139,7 @@ def peer_probe_servers(mnode, servers, validate=True, time_delay=10):
     Returns:
         bool: True on success and False on failure.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     else:
         servers = servers[:]
@@ -195,7 +195,7 @@ def peer_detach_servers(mnode, servers, force=False, validate=True,
     Returns:
         bool: True on success and False on failure.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     else:
         servers = servers[:]
@@ -367,7 +367,7 @@ def is_peer_connected(mnode, servers):
         bool : True on success (peer in cluster and connected), False on
             failure.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     else:
         servers = servers[:]

@@ -1143,7 +1143,7 @@ def enable_and_validate_volume_options(mnode, volname, volume_options_list,
         bool: True when enabling and validating all volume options is
             successful. False otherwise
     """
-    if isinstance(volume_options_list, str):
+    if not isinstance(volume_options_list, list):
         volume_options_list = [volume_options_list]
 
     for option in volume_options_list:
@@ -1864,7 +1864,7 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
         bool: True if replacing brick from the volume is successful.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     # Check if volume exists
@@ -2190,7 +2190,7 @@ def get_files_and_dirs_from_brick(brick_node, brick_path,
         raise RuntimeError("Not specified object type to find dir/files")
 
     skip_items = ["'.glusterfs'", "'.trashcan'"]
-    if isinstance(skip, str):
+    if not isinstance(skip, list):
         skip_items.append("'%s'" % skip)
 
     exclude_pattern = ' '.join([' | grep -ve {}'.format(item)

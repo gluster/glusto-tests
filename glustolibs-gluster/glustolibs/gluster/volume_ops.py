@@ -573,7 +573,7 @@ def set_volume_options(mnode, volname, options):
     # Check if group options are specified.
     if 'group' in volume_options:
         group_options = volume_options.pop('group')
-        if isinstance(group_options, str):
+        if not isinstance(group_options, list):
             group_options = [group_options]
         for group_option in group_options:
             cmd = ("gluster volume set %s group %s --mode=script" %
