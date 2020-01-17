@@ -902,3 +902,28 @@ def wait_for_bricks_to_be_online(mnode, volname, timeout=300):
     else:
         g.log.info("All Bricks of the volume '%s' are online ", volname)
     return True
+
+
+def is_broken_symlinks_present_on_bricks(mnode, volname):
+    """ Checks if the backend bricks have broken symlinks.
+
+    Args:
+        mnode(str): Node on which command has to be executed
+        volname(str): Name of the volume
+
+    Retruns:
+        (bool):Returns True if present else returns False.
+    """
+    brick_list = get_all_bricks(mnode, volname)
+    for brick in brick_list:
+        brick_node, brick_path = brick.split(":")
+        cmd = ("find %s -xtype l | wc -l" % brick_path)
+        ret, out, _ = g.run(brick_node, cmd)
+        if ret:
+            g.log.error("Failed to run command on node %s", brick_node)
+            return True
+        if out:
+            g.log.error("Error: Broken symlink found on brick path: "
+                        "%s on node %s.", (brick_path, brick_node))
+            return True
+    return False
