@@ -559,6 +559,8 @@ class GlusterBaseClass(TestCase):
                                 ['cluster_config'])
         except KeyError:
             cls.geo_rep_info = {}
+            cls.geo_rep_info['root'] = {}
+            cls.geo_rep_info['user'] = {}
             cls.geo_rep_info['root']['password'] = ''
             cls.geo_rep_info['user']['name'] = ''
             cls.geo_rep_info['user']['password'] = ''
