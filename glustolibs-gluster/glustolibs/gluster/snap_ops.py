@@ -461,7 +461,7 @@ def get_snap_info_by_volname(mnode, volname):
 
     Args:
         mnode (str): Node on which command has to be executed.
-        volname (str): snapshot name
+        volname (str): volume name
 
     Returns:
         NoneType: None if command execution fails, parse errors.
@@ -552,11 +552,16 @@ def snap_list(mnode):
     return g.run(mnode, cmd)
 
 
-def get_snap_list(mnode):
+def get_snap_list(mnode, volname=""):
     """Parse the output of 'gluster snapshot list' command.
+    If a volname is provided then the output will be specific
+    to that volume.
 
     Args:
         mnode (str): Node on which command has to be executed.
+
+    Kwargs:
+        volname (str): volume name
 
     Returns:
         NoneType: None if command execution fails, parse errors.
@@ -567,7 +572,8 @@ def get_snap_list(mnode):
         ['snap1', 'snap2']
     """
 
-    ret, out, _ = g.run(mnode, "gluster snapshot list --xml")
+    cmd = "gluster snapshot list %s --xml" % volname
+    ret, out, _ = g.run(mnode, cmd)
     if ret != 0:
         g.log.error("Failed to execute 'snapshot list' on node %s. "
                     "Hence failed to get the snapshot list.", mnode)
