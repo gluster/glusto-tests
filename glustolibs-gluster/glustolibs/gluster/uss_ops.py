@@ -154,6 +154,7 @@ def uss_list_snaps(client, mount):
     Args:
         client(str):client on which commands has to be executed
         mount(str): Mount points to be executed
+
     Returns:
         tuple: Tuple containing three elements (ret, out, err).
             The first element 'ret' is of type 'int' and is the return value
@@ -167,3 +168,29 @@ def uss_list_snaps(client, mount):
     """
     cmd = "ls -R %s/.snaps" % (mount)
     return g.run(client, cmd)
+
+
+def get_uss_list_snaps(client, mount):
+    """Fetches the list of snapshots under the .snaps directory
+
+    Args:
+        client(str):client on which commands has to be executed
+        mount(str): Mount points to be executed
+
+    Returns:
+        NoneType: If there are errors
+        list: List of snapshot names present under .snaps directory
+
+    Examples:
+        >>> get_uss_list_snaps('abc.lab.eng.xyz.com', 'mountpoint')
+        ['snap1', 'snap2', 'snap3']
+
+    """
+    cmd = "ls %s/.snaps" % (mount)
+    ret, out, _ = g.run(client, cmd)
+    if ret:
+        g.log.error(".snaps list returned error")
+        return None
+
+    snap_dir_list = out.splitlines()
+    return snap_dir_list
