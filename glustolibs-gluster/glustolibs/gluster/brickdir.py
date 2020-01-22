@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,20 +20,21 @@
 import os
 
 from glusto.core import Glusto as g
+from glustolibs.gluster.gluster_init import get_gluster_version
+from glustolibs.gluster.volume_libs import get_volume_type
 
 
-def get_hashrange(brickdir_path):
-    """Get the int hash range for a brick
+def check_hashrange(brickdir_path):
+    """Check the hash range for a brick
 
     Args:
-        brickdir_url (str): path of the directory as returned from pathinfo
+        brickdir_path (str): path of the directory as returned from pathinfo
             (e.g., server1.example.com:/bricks/brick1/testdir1)
 
     Returns:
         list containing the low and high hash for the brickdir. None on fail.
     """
     (host, fqpath) = brickdir_path.split(':')
-
     command = ("getfattr -n trusted.glusterfs.dht -e hex %s "
                "2> /dev/null | grep -i trusted.glusterfs.dht | "
                "cut -d= -f2" % fqpath)
@@ -51,6 +52,66 @@ def get_hashrange(brickdir_path):
 
     g.log.error('Could not get hashrange: %s' % rerr)
     return None
+
+
+def get_hashrange(brickdir_path):
+    """Check the gluster version and then the volume type.
+       And accordingly, get the int hash range for a brick.
+
+    Note:
+        If the Gluster version is equal to or greater than 6, the hash range
+        can be calculated only for distributed, distributed-dispersed,
+        distributed-arbiter and distributed-replicated volume types because of
+        DHT pass-through option which was introduced in Gluster 6.
+
+        About DHT pass-through option:
+        There are no user controllable changes with this feature.
+        The distribute xlator now skips unnecessary checks and operations when
+        the distribute count is one for a volume, resulting in improved
+        performance.It comes into play when there is only 1 brick or it is a
+        pure-replicate or pure-disperse or pure-arbiter volume.
+
+    Args:
+        brickdir_path (str): path of the directory as returned from pathinfo
+            (e.g., server1.example.com:/bricks/brick1/testdir1)
+
+    Returns:
+        list containing the low and high hash for the brickdir. None on fail.
+
+    """
+
+    (host, _) = brickdir_path.split(':')
+    gluster_version = get_gluster_version(host)
+    # Check for the Gluster version and then volume type
+    """If the GLuster version is lower than 6.0, the hash range
+       can be calculated for all volume types"""
+    if gluster_version < 6.0:
+        ret = check_hashrange(brickdir_path)
+        hash_range_low = ret[0]
+        hash_range_high = ret[1]
+        if ret is not None:
+            return (hash_range_low, hash_range_high)
+        else:
+            g.log.error("Could not get hashrange")
+            return None
+    elif gluster_version >= 6.0:
+        ret = get_volume_type(brickdir_path)
+        if ret in ('replicate', 'disperse', 'arbiter'):
+            g.log.info("Cannot find hash-range for Replicate/Disperse/Arbiter"
+                       " volume type on Gluster 6.0 and higher.")
+            return "Skipping for replicate/disperse/arbiter volume type"
+        else:
+            ret = check_hashrange(brickdir_path)
+            hash_range_low = ret[0]
+            hash_range_high = ret[1]
+            if ret is not None:
+                return (hash_range_low, hash_range_high)
+            else:
+                g.log.error("Could not get hashrange")
+                return None
+    else:
+        g.log.info("Failed to get hash range")
+        return None
 
 
 def file_exists(host, filename):
@@ -80,11 +141,30 @@ class BrickDir(object):
         self._hashrange_low = None
         self._hashrange_high = None
 
-    def _get_hashrange(self):
+    def _check_hashrange(self):
         """get the hash range for a brick from a remote system"""
-        self._hashrange = get_hashrange(self._path)
+        self._hashrange = check_hashrange(self._path)
         self._hashrange_low = self._hashrange[0]
         self._hashrange_high = self._hashrange[1]
+
+    def _get_hashrange(self):
+        """get the hash range for a brick from a remote system"""
+        gluster_version = get_gluster_version(self._host)
+        if gluster_version < 6.0:
+            self._hashrange = get_hashrange(self._path)
+            self._hashrange_low = self._hashrange[0]
+            self._hashrange_high = self._hashrange[1]
+        elif gluster_version >= 6.0:
+            ret = get_volume_type(self._path)
+            if ret in ('replicate', 'disperse', 'arbiter'):
+                g.log.info("Cannot find hash-range as the volume type under"
+                           " test is Replicate/Disperse/Arbiter")
+            else:
+                self._hashrange = get_hashrange(self._path)
+                self._hashrange_low = self._hashrange[0]
+                self._hashrange_high = self._hashrange[1]
+        else:
+            g.log.info("Failed to get hashrange")
 
     @property
     def path(self):
@@ -126,8 +206,15 @@ class BrickDir(object):
         """The high hash of the brick hashrange"""
         if self.hashrange is None or self._hashrange_high is None:
             self._get_hashrange()
-
-        return self._hashrange_high
+            if self._get_hashrange() is None:
+                gluster_version = get_gluster_version(self._host)
+                if gluster_version >= 6.0:
+                    ret = get_volume_type(self._path)
+                    if ret in ('replicate', 'disperse', 'arbiter'):
+                        g.log.info("Cannot find hash-range as the volume type"
+                                   " under test is Replicate/Disperse/Arbiter")
+            else:
+                return self._hashrange_high
 
     def hashrange_contains_hash(self, filehash):
         """Check if a hash number falls between the brick hashrange
