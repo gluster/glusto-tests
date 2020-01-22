@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,32 +21,44 @@ import os
 
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.glusterfile import GlusterFile, calculate_hash
+from glustolibs.gluster.glusterfile import (GlusterFile, calculate_hash,
+                                            get_pathinfo)
 from glustolibs.gluster.glusterdir import GlusterDir
 from glustolibs.gluster.layout import Layout
 import glustolibs.gluster.constants as k
 import glustolibs.gluster.exceptions as gex
 from glustolibs.gluster.brickdir import BrickDir
-from glustolibs.gluster.volume_libs import get_subvols
+from glustolibs.gluster.volume_libs import get_subvols, get_volume_type
+from glustolibs.gluster.gluster_init import get_gluster_version
 
 
-def run_layout_tests(fqpath, layout, test_type):
+def run_layout_tests(mnode, fqpath, layout, test_type):
     """run the is_complete and/or is_balanced tests"""
-    if test_type & k.TEST_LAYOUT_IS_COMPLETE:
-        g.log.info("Testing layout complete for %s" % fqpath)
-        if not layout.is_complete:
-            msg = ("Layout for %s IS NOT COMPLETE" % fqpath)
-            g.log.error(msg)
-            raise gex.LayoutIsNotCompleteError(msg)
-    if test_type & k.TEST_LAYOUT_IS_BALANCED:
-        g.log.info("Testing layout balance for %s" % fqpath)
-        if not layout.is_balanced:
-            msg = ("Layout for %s IS NOT BALANCED" % fqpath)
-            g.log.error(msg)
-            raise gex.LayoutIsNotBalancedError(msg)
+    ret = get_pathinfo(mnode, fqpath)
+    brick_path_list = ret.get('brickdir_paths')
+    for brickdir_path in brick_path_list:
+        (server_ip, _) = brickdir_path.split(':')
+        if (get_gluster_version(server_ip) >= 6.0 and
+                get_volume_type(brickdir_path) in ('Replicate', 'Disperse',
+                                                   'Arbiter')):
+            g.log.info("Cannot check for layout completeness as"
+                       " volume under test is Replicate/Disperse/Arbiter")
+        else:
+            if test_type & k.TEST_LAYOUT_IS_COMPLETE:
+                g.log.info("Testing layout complete for %s" % fqpath)
+                if not layout.is_complete:
+                    msg = ("Layout for %s IS NOT COMPLETE" % fqpath)
+                    g.log.error(msg)
+                    raise gex.LayoutIsNotCompleteError(msg)
+            if test_type & k.TEST_LAYOUT_IS_BALANCED:
+                g.log.info("Testing layout balance for %s" % fqpath)
+                if not layout.is_balanced:
+                    msg = ("Layout for %s IS NOT BALANCED" % fqpath)
+                    g.log.error(msg)
+                    raise gex.LayoutIsNotBalancedError(msg)
 
-    # returning True until logic requires non-exception error check(s)
-    return True
+            # returning True until logic requires non-exception error check(s)
+            return True
 
 
 def run_hashed_bricks_test(gfile):
@@ -62,13 +74,13 @@ def run_hashed_bricks_test(gfile):
     return True
 
 
-def validate_files_in_dir(host, rootdir,
+def validate_files_in_dir(mnode, rootdir,
                           file_type=k.FILETYPE_ALL,
                           test_type=k.TEST_ALL):
     """walk a directory tree and check if layout is_complete.
 
     Args:
-        host (str): The host of the directory being traversed.
+        mnode (str): The host of the directory being traversed.
         rootdir (str): The fully qualified path of the dir being traversed.
         file_type (int): An or'd set of constants defining the file types
                         to test.
@@ -108,8 +120,10 @@ def validate_files_in_dir(host, rootdir,
     """
     layout_cache = {}
 
-    conn = g.rpyc_get_connection(host)
-
+    conn = g.rpyc_get_connection(mnode)
+    if conn is None:
+        g.log.info("Not able to establish connection to node %s" % mnode)
+        return False
     for walkies in conn.modules.os.walk(rootdir):
         g.log.info("TESTING DIRECTORY %s..." % walkies[0])
 
@@ -117,7 +131,7 @@ def validate_files_in_dir(host, rootdir,
         if file_type & k.FILETYPE_DIR:
             for testdir in walkies[1]:
                 fqpath = os.path.join(walkies[0], testdir)
-                gdir = GlusterDir(host, fqpath)
+                gdir = GlusterDir(mnode, fqpath)
 
                 if gdir.parent_dir in layout_cache:
                     layout = layout_cache[gdir.parent_dir]
@@ -125,7 +139,7 @@ def validate_files_in_dir(host, rootdir,
                     layout = Layout(gdir.parent_dir_pathinfo)
                     layout_cache[gdir.parent_dir] = layout
 
-                    run_layout_tests(gdir.parent_dir, layout, test_type)
+                    run_layout_tests(mnode, gdir.parent_dir, layout, test_type)
 
                 if test_type & k.TEST_FILE_EXISTS_ON_HASHED_BRICKS:
                     run_hashed_bricks_test(gdir)
@@ -134,7 +148,7 @@ def validate_files_in_dir(host, rootdir,
         if file_type & k.FILETYPE_FILE:
             for file in walkies[2]:
                 fqpath = os.path.join(walkies[0], file)
-                gfile = GlusterFile(host, fqpath)
+                gfile = GlusterFile(mnode, fqpath)
 
                 if gfile.parent_dir in layout_cache:
                     layout = layout_cache[gfile.parent_dir]
@@ -142,11 +156,13 @@ def validate_files_in_dir(host, rootdir,
                     layout = Layout(gfile.parent_dir_pathinfo)
                     layout_cache[gfile.parent_dir] = layout
 
-                    run_layout_tests(gfile.parent_dir, layout, test_type)
+                    run_layout_tests(mnode, gfile.parent_dir, layout,
+                                     test_type)
 
                 if test_type & k.TEST_FILE_EXISTS_ON_HASHED_BRICKS:
                     run_hashed_bricks_test(gfile)
 
+    g.rpyc_close_connection(mnode)
     return True
 
 
