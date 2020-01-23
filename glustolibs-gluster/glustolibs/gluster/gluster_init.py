@@ -251,3 +251,19 @@ def wait_for_glusterd_to_start(servers, glusterd_start_wait_timeout=80):
         count += 1
     g.log.error("glusterd is not running on %s", servers)
     return False
+
+
+def get_gluster_version(host):
+    """Checks the gluster version on the nodes
+
+    Args:
+        host(str): IP of the host whose gluster version has to be checked.
+
+    Returns:
+        (float): The gluster version value.
+    """
+    command = 'gluster --version'
+    _, out, _ = g.run(host, command)
+    g.log.info("The Gluster verion of the cluster under test is %s",
+               out)
+    return float(out.split(' ')[1])
