@@ -1,4 +1,4 @@
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,10 @@ from unittest import TestCase
 
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.exceptions import ConfigError
+from glustolibs.gluster.exceptions import (
+    ConfigError,
+    ExecutionError,
+)
 from glustolibs.gluster.lib_utils import inject_msg_in_logs
 from glustolibs.gluster.mount_ops import create_mount_objs
 from glustolibs.gluster.nfs_libs import export_volume_through_nfs
@@ -434,6 +437,24 @@ class GlusterBaseClass(TestCase):
         return True
 
     @classmethod
+    def get_unique_lv_list_from_all_servers(cls):
+        """Get all unique lv path from all servers
+
+        Returns: List of all unique lv path in all servers. None otherwise.
+        """
+        cmd = "lvs --noheadings -o lv_path | awk '{if ($1) print $1}'"
+        lv_list = []
+        for server in cls.servers:
+            ret, out, _ = g.run(server, cmd, "root")
+            current_lv_list = out.splitlines()
+            if current_lv_list:
+                lv_list.extend(current_lv_list)
+            if ret:
+                g.log.error("failed to execute command %s" % cmd)
+                raise ExecutionError("Failed to execute %s cmd" % cmd)
+        return list(set(lv_list))
+
+    @classmethod
     def cleanup_volume(cls):
         """Cleanup the volume
 
@@ -450,7 +471,28 @@ class GlusterBaseClass(TestCase):
         g.log.info("Log Volume %s Info and Status", cls.volname)
         log_volume_info_and_status(cls.mnode, cls.volname)
 
-        return ret
+        # compare and remove additional lv created, skip otherwise
+        new_lv_list = cls.get_unique_lv_list_from_all_servers()
+        if cls.lv_list != new_lv_list:
+            cmd = ("for mnt in `mount | grep 'run/gluster/snaps' |"
+                   "awk '{print $3}'`; do umount $mnt; done")
+            for server in cls.servers:
+                ret, _, err = g.run(server, cmd, "root")
+                if ret:
+                    g.log.error("Failed to remove snap "
+                                "bricks from mountpoint %s" % err)
+                    return False
+            new_lv_list = cls.get_unique_lv_list_from_all_servers()
+            lv_remove_list = list(set(new_lv_list) - set(cls.lv_list))
+            for server in cls.servers:
+                for lv in lv_remove_list:
+                    cmd = ("lvremove %s --force" % lv)
+                    ret, _, err = g.run(server, cmd, "root")
+                    if ret:
+                        g.log.error("failed to remove lv: %s" % err)
+                    g.log.info("Expected error msg '%s'" % err)
+        g.log.info("Successfully cleaned-up volumes")
+        return True
 
     @classmethod
     def unmount_volume_and_cleanup_volume(cls, mounts):
@@ -521,6 +563,9 @@ class GlusterBaseClass(TestCase):
         else:
             raise ConfigError("'clients_info' not defined in the global "
                               "config")
+
+        # get lv list
+        cls.lv_list = cls.get_unique_lv_list_from_all_servers()
 
         # Set mnode : Node on which gluster commands are executed
         cls.mnode = cls.all_servers[0]

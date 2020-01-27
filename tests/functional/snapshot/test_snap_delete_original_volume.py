@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@ from glustolibs.gluster.volume_libs import cleanup_volume
 from glustolibs.gluster.volume_ops import (get_volume_info, volume_status,
                                            volume_list, volume_start)
 from glustolibs.io.utils import validate_io_procs
-from glustolibs.gluster.mount_ops import umount_volume
 from glustolibs.gluster.snap_ops import (snap_create,
                                          snap_list,
                                          snap_activate,
@@ -199,12 +198,9 @@ class SnapshotSelfheal(GlusterBaseClass):
             raise ExecutionError("Failed to delete the cloned volume")
         g.log.info("Successful in deleting Cloned volume")
 
-        # Unmount Volume
-        g.log.info("Starting to Unmount Volume")
-        for mount_obj in self.mounts:
-            ret = umount_volume(mount_obj.client_system, self.mpoint,
-                                self.mount_type)
-            if not ret:
-                raise ExecutionError("Failed to umount the vol "
-                                     "& cleanup Volume")
-            g.log.info("Successful in umounting the volume and Cleanup")
+        # Unmount and cleanup-volume
+        g.log.info("Starting to Unmount and cleanup-volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to Unmount and Cleanup Volume")
+        g.log.info("Successful in Unmount Volume and Cleanup Volume")
