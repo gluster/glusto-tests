@@ -437,7 +437,7 @@ def wait_for_peers_to_connect(mnode, servers, wait_timeout=30):
         False otherwise.
 
     """
-    if not isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     count = 0
