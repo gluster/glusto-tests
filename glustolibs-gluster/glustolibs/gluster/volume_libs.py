@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -2215,3 +2215,37 @@ def get_files_and_dirs_from_brick(brick_node, brick_path,
                    brick_node, brick_path)
         result.extend(out.splitlines())
     return result
+
+
+def get_volume_type(brickdir_path):
+    """Checks for the type of volume under test.
+
+    Args:
+        brickdir_path(str): The complete brick path.
+        (e.g., server1.example.com:/bricks/brick1)
+
+    Returns:
+        volume type(str): The volume type in str.
+        NoneType : None on failure
+    """
+    # Adding import here to avoid cyclic imports
+    from glustolibs.gluster.brick_libs import get_all_bricks
+    (host, _) = brickdir_path.split(':')
+    for volume in get_volume_list(host):
+        if brickdir_path in get_all_bricks(host, volume):
+            ret = get_volume_info(host, volume)
+            if ret is None:
+                g.log.error("Failed to get volume type for %s", volume)
+                return None
+            list_of_replica = ('Replicate', 'Distributed-Replicate')
+            if (ret[volume].get('typeStr') in list_of_replica and
+                    int(ret[volume]['arbiterCount']) == 1):
+                if int(ret[volume]['distCount']) >= 2:
+                    return 'Distributed-Arbiter'
+                else:
+                    return 'Arbiter'
+            else:
+                return ret[volume].get('typeStr')
+        else:
+            g.log.info("Failed to find brick-path %s for vol %s",
+                       brickdir_path, volume)
