@@ -79,17 +79,19 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
-
-        # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+    def tearDown(self):
+        """
+        Cleanup and umount volume
+        """
+        # Cleanup and umount volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
-        cls.get_super_method(cls, 'tearDownClass')()
+        # Calling GlusterBaseClass teardown
+        self.get_super_method(self, 'tearDown')()
 
     def test_heal_when_dir_quota_exceeded(self):
         # Create a directory to set the quota_limit_usage

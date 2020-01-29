@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ from glustolibs.gluster.heal_libs import (get_self_heal_daemon_pid,
                                           is_shd_daemonized,
                                           are_all_self_heal_daemons_are_online)
 from glustolibs.gluster.volume_ops import (volume_stop, volume_start)
-from glustolibs.gluster.gluster_init import restart_glusterd
+from glustolibs.gluster.gluster_init import (
+    restart_glusterd, wait_for_glusterd_to_start)
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.misc.misc_libs import upload_scripts
 
@@ -104,7 +105,6 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         """
         Clean up the volume and umount volume from client
         """
-
         # stopping the volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
@@ -357,6 +357,10 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         g.log.info("Successfully restarted glusterd on all nodes %s",
                    nodes)
 
+        self.assertTrue(
+            wait_for_glusterd_to_start(self.servers),
+            "Failed to start glusterd on %s" % self.servers)
+
         # check the self heal daemon process after restarting glusterd process
         g.log.info("Starting to get self-heal daemon process on"
                    " nodes %s", nodes)
@@ -549,6 +553,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
                    bricks_to_bring_offline)
 
         # Creating files for all volumes
+        self.all_mounts_procs = []
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
