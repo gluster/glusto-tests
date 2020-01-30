@@ -29,9 +29,7 @@ from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
-from glustolibs.io.utils import (
-    wait_for_io_to_complete,
-    validate_io_procs)
+from glustolibs.io.utils import validate_io_procs, wait_for_io_to_complete
 from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.gluster_init import restart_glusterd
 
@@ -173,15 +171,13 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
         self.all_mounts_procs.append(proc)
         self.io_validation_complete = False
 
-        # wait for io to complete
-        self.assertTrue(
-            wait_for_io_to_complete(self.all_mounts_procs, self.mounts),
-            "Io failed to complete on some of the clients")
-
         # Validate IO
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
-        self.io_validation_complete = True
         self.assertTrue(ret, "IO failed on some of the clients")
+        if ret:
+            wait_for_io_to_complete(self.all_mounts_procs, self.mounts)
+            g.log.info("wait for io completed")
+        self.io_validation_complete = True
 
         remove_brick_list = bricks_list[2:4]
         ret, _, _ = remove_brick(self.mnode, self.volname, remove_brick_list,

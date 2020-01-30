@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import cleanup_volume
-from glustolibs.gluster.volume_libs import (get_volume_options,
-                                            set_volume_options)
+from glustolibs.gluster.volume_ops import (get_volume_options,
+                                           set_volume_options)
 
 
 @runs_on([['replicated'], ['glusterfs']])

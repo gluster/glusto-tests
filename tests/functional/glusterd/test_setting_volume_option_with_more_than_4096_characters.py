@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,14 +14,14 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.gluster.volume_libs import setup_volume
 from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import (restart_glusterd,
-                                             is_glusterd_running)
+                                             wait_for_glusterd_to_start)
 
 
 @runs_on([['distributed'], ['glusterfs']])
@@ -37,16 +37,9 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
 
     def tearDown(self):
 
-        count = 0
-        while count < 60:
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            sleep(2)
-            count += 1
-
-        if not ret:
-            raise ExecutionError("Peers are not in connected state")
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
+        self.assertTrue(ret, "glusterd is not connected %s with peer %s"
+                        % (self.servers, self.servers))
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
@@ -91,11 +84,9 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
         ret = restart_glusterd(self.mnode)
         self.assertTrue(ret, "Failed to restart the glusterd on %s"
                         % self.mnode)
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(self.mnode)
-            if not ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 0, "glusterd is not running on %s" % self.mnode)
+
+        ret = wait_for_glusterd_to_start(self.servers)
+        self.assertTrue(ret, "glusterd is not running on %s"
+                        % self.servers)
+        g.log.info("Glusterd start on the nodes : %s "
+                   "succeeded", self.servers)

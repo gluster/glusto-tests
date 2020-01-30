@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,17 +17,17 @@
 """ Description:
       Test rebalance operation when quorum not met
 """
-from time import sleep
 import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
                                              is_glusterd_running)
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.gluster.rebalance_ops import rebalance_start
 from glustolibs.gluster.volume_ops import (volume_status,
-                                           volume_stop, volume_start)
+                                           volume_stop, volume_start,
+                                           set_volume_options)
 
 
 @runs_on([['distributed', 'dispersed', 'distributed-dispersed'],
@@ -58,16 +58,9 @@ class TestServerQuorumNotMet(GlusterBaseClass):
                                      % self.random_server)
 
         # checking for peer status from every node
-        count = 0
-        while count < 80:
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            sleep(2)
-            count += 1
-
-        if not ret:
-            raise ExecutionError("Servers are not in peer probed state")
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
+        self.assertTrue(ret, "glusterd is not connected %s with peer %s"
+                        % (self.mnode, self.servers))
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()

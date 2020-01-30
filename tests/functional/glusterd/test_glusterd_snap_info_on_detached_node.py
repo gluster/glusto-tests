@@ -17,6 +17,7 @@ import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.gluster.glusterfile import file_exists
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.gluster.volume_ops import (volume_create,
                                            set_volume_options, volume_start)
@@ -105,12 +106,10 @@ class TestSnapInfoOnPeerDetachedNode(GlusterBaseClass):
         # Validate files /var/lib/glusterd/snaps on all the servers is same
         self.pathname = "/var/lib/glusterd/snaps/%s" % self.snapname
         for server in self.servers:
-            conn = g.rpyc_get_connection(server)
-            ret = conn.modules.os.path.isdir(self.pathname)
+            ret = file_exists(server, self.pathname)
             self.assertTrue(ret, "%s directory doesn't exist on node %s" %
                             (self.pathname, server))
             g.log.info("%s path exists on node %s", self.pathname, server)
-        g.rpyc_close_deployed_servers()
 
         # Peer detach one node
         self.random_node_peer_detach = random.choice(self.servers[1:])
@@ -121,11 +120,10 @@ class TestSnapInfoOnPeerDetachedNode(GlusterBaseClass):
         g.log.info("Peer detach succeeded")
 
         # /var/lib/glusterd/snaps/<snapname> directory should not present
-        conn = g.rpyc_get_connection(self.random_node_peer_detach)
-        ret = conn.modules.os.path.isdir(self.pathname)
+
+        ret = file_exists(self.random_node_peer_detach, self.pathname)
         self.assertFalse(ret, "%s directory should not exist on the peer"
                               "which is detached from cluster%s" % (
                                   self.pathname, self.random_node_peer_detach))
         g.log.info("Expected: %s path doesn't exist on peer detached node %s",
                    self.pathname, self.random_node_peer_detach)
-        g.rpyc_close_deployed_servers()

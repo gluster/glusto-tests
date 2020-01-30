@@ -19,6 +19,7 @@
 """
 
 import sys
+from time import sleep
 
 from glusto.core import Glusto as g
 
@@ -149,6 +150,7 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
             self.assertEqual(ret, 0, "Volume %s is not unmounted" % (
                 self.volname))
             g.log.info("Volume unmounted successfully : %s", self.volname)
+            sleep(2)
             ret = rmdir(mount_obj.client_system, mount_obj.mountpoint)
             self.assertTrue(ret, "Failed to remove directory mount directory.")
             g.log.info("Mount directory is removed successfully")

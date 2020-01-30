@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class BricksOnlineAfterNodeReboot(GlusterBaseClass):
 
     def check_node_after_reboot(self, server):
         count = 0
-        while count < 60:
+        while count < 80:
             ret = is_glusterd_running(server)
             if not ret:
                 ret = self.validate_peers_are_connected()

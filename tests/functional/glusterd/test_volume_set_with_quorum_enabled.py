@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import start_glusterd, stop_glusterd
 
@@ -50,15 +51,9 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
             g.log.info("Successfully started glusterd.")
 
             # Checking if peer is connected.
-            counter = 0
-            while counter < 30:
-                ret = self.validate_peers_are_connected()
-                counter += 1
-                if ret:
-                    break
-                sleep(3)
-            if not ret:
-                raise ExecutionError("Peer is not in connected state.")
+            ret = wait_for_peers_to_connect(self.mnode, self.servers)
+            self.assertTrue(ret, "glusterd is not connected %s with peer %s"
+                            % (self.mnode, self.servers))
             g.log.info("Peers is in connected state.")
 
         # Setting Quorum ratio to 51%
