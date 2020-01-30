@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -46,6 +46,12 @@ class SnapshotDeleteSnapVolume(GlusterBaseClass):
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
+
+        # delete all snapshot created
+        g.log.info("Deleting all snapshots created")
+        ret, _, _ = snap_delete_all(self.mnode)
+        self.assertEqual(ret, 0, "Failed to delete snapshots")
+        g.log.info("All Snapshots deleted successfully")
 
         # Unmount and cleanup-volume
         g.log.info("Unmount and cleanup-volume")
@@ -102,9 +108,3 @@ class SnapshotDeleteSnapVolume(GlusterBaseClass):
                                   "%s" % (self.snap1, self.volname)))
         g.log.info("Snapshot %s created successfully"
                    " for volume %s", self.snap1, self.volname)
-
-        # delete all snapshot created
-        g.log.info("Deleting all snapshots created")
-        ret, _, _ = snap_delete_all(self.mnode)
-        self.assertEqual(ret, 0, "Failed to delete snapshots")
-        g.log.info("All Snapshots deleted successfully")

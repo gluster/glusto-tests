@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,8 @@ from glustolibs.io.utils import (validate_io_procs,
 from glustolibs.gluster.snap_ops import (snap_create,
                                          snap_activate,
                                          snap_list)
-from glustolibs.gluster.uss_ops import (enable_uss, is_uss_enabled,
+from glustolibs.gluster.uss_ops import (disable_uss,
+                                        enable_uss, is_uss_enabled,
                                         is_snapd_running)
 from glustolibs.misc.misc_libs import upload_scripts
 
@@ -70,12 +71,27 @@ class SnapshotUssWhileIo(GlusterBaseClass):
 
     def tearDown(self):
 
+        # Validate USS running
+        g.log.info("Validating USS enabled or disabled")
+        ret = is_uss_enabled(self.mnode, self.volname)
+        if not ret:
+            # Disable USS
+            ret, _, _ = disable_uss(self.mnode, self.volname)
+            if not ret:
+                raise ExecutionError("Failed to disable USS on volume"
+                                     "%s" % self.volname)
+            g.log.info("Successfully disabled USS on volume %s",
+                       self.volname)
+
         # Unmount and cleanup original volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to umount the vol & cleanup Volume")
         g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_snap_uss_while_io(self):
         # pylint: disable=too-many-statements

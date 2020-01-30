@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -54,6 +54,29 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
         """
         tearDown for every test
         """
+
+        # disable snap scheduler
+        g.log.info("disabling snap scheduler")
+        ret, _, _ = scheduler_disable(self.mnode)
+        self.assertEqual(ret, 0, "Unexpected: Failed to disable "
+                         "snapshot scheduler")
+        g.log.info("Successfully disabled snapshot scheduler")
+
+        # Check snapshot scheduler status
+        g.log.info("checking status of snapshot scheduler")
+        for server in self.servers:
+            count = 0
+            while count < 40:
+                ret, status, _ = scheduler_status(server)
+                status = status.strip().split(":")[2]
+                if not ret and status == ' Disabled':
+                    break
+                sleep(2)
+                count += 1
+            self.assertEqual(ret, 0, "Failed to check status of scheduler"
+                             " on node %s" % server)
+            g.log.info("Successfully checked scheduler status on %s nodes",
+                       server)
 
         # Check if shared storage is enabled
         # Disable if true
@@ -134,6 +157,7 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
         # Initialise snap_scheduler on all nodes
         g.log.info("Initialising snapshot scheduler on all nodes")
         count = 0
+        sleep(2)
         while count < 40:
             ret = scheduler_init(self.servers)
             if ret:
@@ -156,33 +180,8 @@ class SnapshotSchedulerStatus(GlusterBaseClass):
             count = 0
             while count < 40:
                 ret, status, _ = scheduler_status(server)
-                if ret == 0:
-                    self.assertEqual(status.strip().split(":")[2], ' Enabled',
-                                     "Failed to check status of scheduler")
-                    break
-                sleep(2)
-                count += 1
-            self.assertEqual(ret, 0, "Failed to check status of scheduler"
-                             " on node %s" % server)
-            g.log.info("Successfully checked scheduler status on %s nodes",
-                       server)
-
-        # disable snap scheduler
-        g.log.info("disabling snap scheduler")
-        ret, _, _ = scheduler_disable(self.mnode)
-        self.assertEqual(ret, 0, "Unexpected: Failed to disable "
-                         "snapshot scheduler")
-        g.log.info("Successfully disabled snapshot scheduler")
-
-        # Check snapshot scheduler status
-        g.log.info("checking status of snapshot scheduler")
-        for server in self.servers:
-            count = 0
-            while count < 40:
-                ret, status, _ = scheduler_status(server)
-                if not ret:
-                    self.assertEqual(status.strip().split(":")[2], ' Disabled',
-                                     "Failed to check status of scheduler")
+                status = status.strip().split(":")[2]
+                if ret == 0 and status == ' Enabled':
                     break
                 sleep(2)
                 count += 1

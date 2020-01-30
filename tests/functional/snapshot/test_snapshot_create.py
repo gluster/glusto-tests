@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -91,20 +91,14 @@ class SnapCreate(GlusterBaseClass):
         ret, _, _ = snap_delete_all(self.mnode)
         if ret != 0:
             raise ExecutionError("Failed to delete all snaps")
-        self.get_super_method(self, 'tearDown')()
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume & mount
-        """
-        g.log.info("Starting volume and  mount cleanup")
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successful for the volume and mount")
-
-        cls.get_super_method(cls, 'tearDownClass')()
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
+        self.get_super_method(self, 'tearDown')()
 
     def test_validate_snaps_create(self):
         """

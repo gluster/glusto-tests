@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,14 +21,13 @@ Test Cases in this module tests the
 snapshot activation and deactivation status
 when glusterd is down.
 """
-import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.peer_ops import is_peer_connected
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.gluster.gluster_init import (stop_glusterd,
                                              start_glusterd,
-                                             is_glusterd_running)
+                                             wait_for_glusterd_to_start)
 from glustolibs.gluster.snap_ops import (snap_create,
                                          get_snap_info_by_snapname,
                                          get_snap_list, snap_deactivate,
@@ -121,15 +120,9 @@ class SnapshotGlusterddown(GlusterBaseClass):
 
         # Check Glusterd status
         g.log.info("Check glusterd running or not")
-        count = 0
-        while count < 80:
-            ret = is_glusterd_running(self.servers[1])
-            if ret == 1:
-                break
-            time.sleep(2)
-            count += 2
-        self.assertEqual(ret, 1, "Unexpected: glusterd running on node %s" %
-                         self.servers[1])
+        self.assertFalse(
+            wait_for_glusterd_to_start(self.servers[1]),
+            "glusterd is still running on %s" % self.servers[1])
         g.log.info("Expected: Glusterd not running on node %s",
                    self.servers[1])
 
@@ -158,15 +151,9 @@ class SnapshotGlusterddown(GlusterBaseClass):
 
         # Check Glusterd status
         g.log.info("Check glusterd running or not")
-        count = 0
-        while count < 80:
-            ret = is_glusterd_running(self.servers[1])
-            if ret:
-                break
-            time.sleep(2)
-            count += 2
-        self.assertEqual(ret, 0, "glusterd not running on node %s "
-                         % self.servers[1])
+        self.assertTrue(
+            wait_for_glusterd_to_start(self.servers[1]),
+            "glusterd is still running on %s" % self.servers[1])
         g.log.info("glusterd is running on %s node",
                    self.servers[1])
 
@@ -183,15 +170,9 @@ class SnapshotGlusterddown(GlusterBaseClass):
 
         # Check all the peers are in connected state
         g.log.info("Validating all the peers are in connected state")
-        for servers in self.servers:
-            count = 0
-            while count < 80:
-                ret = is_peer_connected(self.mnode, servers)
-                if ret:
-                    break
-                time.sleep(2)
-                count += 2
-            self.assertTrue(ret, "All the nodes are not in cluster")
+        self.assertTrue(
+            wait_for_peers_to_connect(self.mnode, self.servers),
+            "glusterd is still running on %s" % self.servers)
         g.log.info("Successfully validated all the peers")
 
     def tearDown(self):
@@ -202,3 +183,6 @@ class SnapshotGlusterddown(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to umount the vol & cleanup Volume")
         g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()

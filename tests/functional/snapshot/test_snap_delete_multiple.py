@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -231,15 +231,15 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
                            self.clone2, ret3)
         self.assertEqual(ret1, 0, "Failed to create snapshots")
 
+    def tearDown(self):
+        # Calling GlusterBaseClass teardown
+        self.get_super_method(self, 'tearDown')()
+
         # delete created snapshots
         g.log.info("starting to delete all created snapshots")
         ret, _, _ = snap_delete_all(self.mnode)
         self.assertEqual(ret, 0, "Failed to delete all snapshots")
         g.log.info("Successfully deleted all snapshots")
-
-    def tearDown(self):
-        # Calling GlusterBaseClass teardown
-        self.get_super_method(self, 'tearDown')()
 
         # Disable Activate on create
         option = {'activate-on-create': 'disable'}
@@ -251,13 +251,13 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
         # umount clone volume
         g.log.info("Unmounting clone volume")
-        ret, _, _ = umount_volume(self.mounts[0].client_system, self.mpoint1)
+        ret, _, _ = umount_volume(self.clients[0], self.mpoint1)
         if ret != 0:
             raise ExecutionError("Failed to unmount clone "
                                  "volume %s" % self.clone1)
         g.log.info("Successfully unmounted clone volume %s", self.clone1)
 
-        ret, _, _ = umount_volume(self.mounts[0].client_system, self.mpoint2)
+        ret, _, _ = umount_volume(self.clients[0], self.mpoint2)
         if ret != 0:
             raise ExecutionError("Failed to unmount clone "
                                  "volume %s" % self.clone2)
