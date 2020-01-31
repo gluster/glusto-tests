@@ -24,6 +24,7 @@ except ImportError:
     import xml.etree.ElementTree as etree
 from glusto.core import Glusto as g
 from glustolibs.gluster.lib_utils import form_bricks_list
+from glustolibs.gluster.brickmux_libs import form_bricks_for_multivol
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            set_volume_options, get_volume_info,
                                            volume_stop, volume_delete,
@@ -65,7 +66,8 @@ def volume_exists(mnode, volname):
         return False
 
 
-def setup_volume(mnode, all_servers_info, volume_config, force=False):
+def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
+                 force=False):
     """Setup Volume with the configuration defined in volume_config
 
     Args:
@@ -106,6 +108,14 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
                                   'transport': 'tcp'}},
                 'options': {'performance.readdir-ahead': True}
                 }
+    Kwargs:
+        multi_vol (bool): True, If bricks need to created for multiple
+                          volumes(more than 5)
+                          False, Otherwise. By default, value is set to False.
+        force (bool): If this option is set to True, then volume creation
+                      command is executed with force option.
+                      False, without force option.
+                      By default, value is set to False
     Returns:
         bool : True on successful setup. False Otherwise
 
@@ -261,10 +271,15 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
         return False
 
     # get bricks_list
-    bricks_list = form_bricks_list(mnode=mnode, volname=volname,
-                                   number_of_bricks=number_of_bricks,
-                                   servers=servers,
-                                   servers_info=all_servers_info)
+    if multi_vol:
+        bricks_list = form_bricks_for_multivol(
+            mnode=mnode, volname=volname, number_of_bricks=number_of_bricks,
+            servers=servers, servers_info=all_servers_info)
+    else:
+        bricks_list = form_bricks_list(mnode=mnode, volname=volname,
+                                       number_of_bricks=number_of_bricks,
+                                       servers=servers,
+                                       servers_info=all_servers_info)
     if not bricks_list:
         g.log.error("Number_of_bricks is greater than the unused bricks on "
                     "servers")
@@ -403,6 +418,60 @@ def setup_volume(mnode, all_servers_info, volume_config, force=False):
                                  options=volume_options)
         if not ret:
             g.log.error("Unable to set few volume options")
+            return False
+    return True
+
+
+def bulk_volume_creation(mnode, number_of_volumes, servers_info,
+                         volume_config, vol_prefix="mult_vol_",
+                         is_force=False):
+    """
+    Creates the number of volumes user has specified
+
+    Args:
+        mnode (str): Node on which commands has to be executed.
+        number_of_volumes (int): Specify the number of volumes
+                                 to be created.
+        servers_info (dict): Information about all servers.
+        volume_config (dict): Dict containing the volume information
+
+    Kwargs:
+        vol_prefix (str): Prefix to be added to the volume name.
+        is_force (bool): True, If volume create command need to be executed
+                         with force, False Otherwise. Defaults to False
+    Returns:
+        bool: True on successful bulk volume creation, False Otherwise.
+
+    example:
+            volume_config = {
+                'name': 'testvol',
+                'servers': ['server-vm1', 'server-vm2', 'server-vm3',
+                            'server-vm4'],
+                'voltype': {'type': 'distributed',
+                            'dist_count': 4,
+                            'transport': 'tcp'},
+                'extra_servers': ['server-vm9', 'server-vm10',
+                                  'server-vm11', 'server-vm12'],
+                'quota': {'limit_usage': {'path': '/', 'percent': None,
+                                          'size': '100GB'},
+                          'enable': False},
+                'uss': {'enable': False},
+                'options': {'performance.readdir-ahead': True}
+                }
+    """
+
+    if not (number_of_volumes > 1):
+        g.log.error("Provide number of volume greater than 1")
+        return False
+
+    volume_name = volume_config['name']
+    for volume in range(number_of_volumes):
+        volume_config['name'] = vol_prefix + volume_name + str(volume)
+        ret = setup_volume(mnode, servers_info, volume_config, multi_vol=True,
+                           force=is_force)
+        if not ret:
+            g.log.error("Volume creation failed for the volume %s"
+                        % volume_config['name'])
             return False
     return True
 
