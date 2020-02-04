@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -1183,3 +1183,49 @@ def is_passwordless_ssh_configured(fromnode, tonode, username):
                     (fromnode, tonode, username))
         return False
     return True
+
+
+def collect_bricks_arequal(bricks_list):
+    """Collects arequal for all bricks in list
+
+    Args:
+        bricks_list (list): List of bricks.
+        Example:
+            bricks_list = 'gluster.blr.cluster.com:/bricks/brick1/vol'
+
+    Returns:
+        tuple(bool, list):
+            On success returns (True, list of arequal-checksums of each brick)
+            On failure returns (False, list of arequal-checksums of each brick)
+            arequal-checksum for a brick would be 'None' when failed to
+            collect arequal for that brick.
+
+    Example:
+        >>> all_bricks = get_all_bricks(self.mnode, self.volname)
+        >>> ret, arequal = collect_bricks_arequal(all_bricks)
+        >>> ret
+        True
+    """
+    # Converting a bricks_list to list if not.
+    if not isinstance(bricks_list, list):
+        bricks_list = [bricks_list]
+
+    return_code, arequal_list = True, []
+    for brick in bricks_list:
+
+        # Running arequal-checksum on the brick.
+        node, brick_path = brick.split(':')
+        cmd = ('arequal-checksum -p {} -i .glusterfs -i .landfill -i .trashcan'
+               .format(brick_path))
+        ret, arequal, _ = g.run(node, cmd)
+
+        # Generating list accordingly
+        if ret:
+            g.log.error('Failed to get arequal on brick %s', brick)
+            return_code = False
+            arequal_list.append(None)
+        else:
+            g.log.info('Successfully calculated arequal for brick %s', brick)
+            arequal_list.append(arequal)
+
+    return (return_code, arequal_list)
