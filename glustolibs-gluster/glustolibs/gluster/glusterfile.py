@@ -480,6 +480,39 @@ def check_if_pattern_in_file(host, pattern, fqpath):
     return 0
 
 
+def occurences_of_pattern_in_file(node, search_pattern, filename):
+    """
+    Get the number of occurences of pattern in the file
+
+    Args:
+        node (str): Host on which the command is executed.
+        search_pattern (str): Pattern to be found in the file.
+        filename (str): File in which the pattern is to be validated
+
+    Returns:
+         (int): (-1), When the file doesn't exists.
+                (0), When pattern doesn't exists in the file.
+                (number), When pattern is found and the number of
+                          occurences of pattern in the file.
+
+    Example:
+    occurences_of_pattern_in_file(node, search_pattern, filename)
+    """
+
+    ret = file_exists(node, filename)
+    if not ret:
+        g.log.error("File %s is not present on the node " % filename)
+        return -1
+
+    cmd = ("grep -c '%s' %s" % (search_pattern, filename))
+    ret, out, _ = g.run(node, cmd)
+    if ret:
+        g.log.error("No occurence of the pattern found in the file %s" %
+                    filename)
+        return 0
+    return int(out.strip('\n'))
+
+
 class GlusterFile(object):
     """Class to handle files specific to Gluster (client and backend)"""
     def __init__(self, host, fqpath):
