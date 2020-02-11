@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,13 +16,7 @@
 
 import sys
 from time import sleep
-
 from glusto.core import Glusto as g
-
-from glustolibs.gluster.constants import \
-    TEST_LAYOUT_IS_COMPLETE as LAYOUT_IS_COMPLETE
-from glustolibs.gluster.constants import FILETYPE_DIRS
-from glustolibs.gluster.dht_test_utils import validate_files_in_dir
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.rebalance_ops import (
@@ -50,34 +44,44 @@ from glustolibs.gluster.brick_ops import add_brick
            'dispersed', 'distributed-dispersed'],
           ['glusterfs']])
 class TestExerciseRebalanceCommand(GlusterBaseClass):
-    @classmethod
-    def setUpClass(cls):
+    """
+    Steps:
+    1) Create a gluster volume and start it.
+    2) create some data on the mount point.
+    3) Calculate arequal checksum on the mount point.
+    4) Add few bricks to the volume.
+    5) Initiate rebalance using command
+        gluster volume rebalance <vol> start
+    6) Check the status of the rebalance using command,
+        gluster volume rebalance <vol> status
+    7) While migration in progress stop the rebalance in the mid
+        gluster volume rebalance <vol> stop.
+    8) check whether migration is stopped or not.
+    9) once rebalance stops , calculate the checksum on the mount point.
+    """
+    def setUp(self):
 
-        # Calling GlusterBaseClass setUpClass
-        cls.get_super_method(cls, 'setUpClass')()
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUpClass')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
-        ret = cls.setup_volume_and_mount_volume(mounts=cls.mounts)
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
-                   "mounts", cls.clients)
-        cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
-                                  "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, cls.script_upload_path)
+                   "mounts", self.clients)
+        self.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
+                                   "file_dir_ops.py")
+        ret = upload_scripts(self.clients, self.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s" %
-                                 cls.clients)
+                                 self.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
-                   cls.clients)
-
-    def setUp(self):
-        # Calling GlusterBaseClass setUp
-        self.get_super_method(self, 'setUp')()
+                   self.clients)
 
         # Start IO on mounts
         g.log.info("Starting IO on all mounts...")
@@ -110,15 +114,6 @@ class TestExerciseRebalanceCommand(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to list all files and dirs")
         g.log.info("Listing all files and directories is successful")
-
-        # DHT Layout validation
-        g.log.debug("Verifying hash layout values %s:%s",
-                    self.clients[0], self.mounts[0].mountpoint)
-        ret = validate_files_in_dir(self.clients[0], self.mounts[0].mountpoint,
-                                    test_type=LAYOUT_IS_COMPLETE,
-                                    file_type=FILETYPE_DIRS)
-        self.assertTrue(ret, "LAYOUT_IS_COMPLETE: FAILED")
-        g.log.info("LAYOUT_IS_COMPLETE: PASS")
 
     def test_fix_layout_start(self):
         # pylint: disable=too-many-statements
@@ -229,6 +224,44 @@ class TestExerciseRebalanceCommand(GlusterBaseClass):
                        brick_node, brick_path)
 
     def test_rebalance_start_status_stop(self):
+        # pylint: disable=too-many-statements
+        # Form brick list for expanding volume
+        add_brick_list = form_bricks_list_to_add_brick(
+            self.mnode, self.volname, self.servers, self.all_servers_info,
+            distribute_count=1)
+        self.assertIsNotNone(add_brick_list, ("Volume %s: Failed to form "
+                                              "bricks list to expand",
+                                              self.volname))
+        g.log.info("Volume %s: Formed bricks list to expand", self.volname)
+
+        # Expanding volume by adding bricks to the volume
+        g.log.info("Volume %s: Expand start")
+        ret, _, _ = add_brick(self.mnode, self.volname, add_brick_list)
+        self.assertEqual(ret, 0, ("Volume %s: Expand failed", self.volname))
+        g.log.info("Volume %s: Expand successful", self.volname)
+
+        # Wait for gluster processes to come online
+        g.log.info("Wait for gluster processes to come online")
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, ("Volume %s: one or more volume process are "
+                              "not up", self.volname))
+        g.log.info("All volume %s processes are online", self.volname)
+
+        # Log Volume Info and Status after expanding the volume
+        g.log.info("Logging volume info and Status after expanding volume")
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, "Logging volume info and status failed on "
+                             "volume %s" % self.volname)
+        g.log.info("Successful in logging volume info and status of volume "
+                   "%s", self.volname)
+
+        # Verify volume's all process are online
+        g.log.info("Verifying volume's all process are online")
+        ret = verify_all_process_of_volume_are_online(self.mnode,
+                                                      self.volname)
+        self.assertTrue(ret, ("Volume %s : All process are not online",
+                              self.volname))
+        g.log.info("Volume %s : All process are online", self.volname)
 
         # Getting arequal checksum before rebalance start
         g.log.info("Getting arequal before rebalance start")
@@ -248,6 +281,7 @@ class TestExerciseRebalanceCommand(GlusterBaseClass):
         self.assertEqual(ret, 0, ("Volume %s: Failed to stop rebalance",
                                   self.volname))
         g.log.info("Checking whether the migration is stopped or not")
+
         # Wait till the on-going file migration completes on all servers
         count = 0
         while count < 80:
@@ -364,14 +398,13 @@ class TestExerciseRebalanceCommand(GlusterBaseClass):
                              each_node['nodeName'])
             g.log.info("No files are skipped on %s", each_node['nodeName'])
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         # Unmount Volume and Cleanup Volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        cls.get_super_method(cls, 'tearDownClass')()
+        self.get_super_method(self, 'tearDown')()
