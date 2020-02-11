@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -452,7 +452,7 @@ def reboot_nodes(nodes):
     return _rc
 
 
-def reboot_nodes_and_wait_to_come_online(nodes, timeout=300):
+def reboot_nodes_and_wait_to_come_online(nodes, timeout=600):
     """Reboot node(s) and wait for it to become online.
 
     Args:
