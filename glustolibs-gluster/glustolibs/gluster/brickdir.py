@@ -96,10 +96,10 @@ def get_hashrange(brickdir_path):
             return None
     elif gluster_version >= 6.0:
         ret = get_volume_type(brickdir_path)
-        if ret in ('replicate', 'disperse', 'arbiter'):
+        if ret in ('Replicate', 'Disperse', 'Arbiter'):
             g.log.info("Cannot find hash-range for Replicate/Disperse/Arbiter"
                        " volume type on Gluster 6.0 and higher.")
-            return "Skipping for replicate/disperse/arbiter volume type"
+            return "Skipping for Replicate/Disperse/Arbiter volume type"
         else:
             ret = check_hashrange(brickdir_path)
             hash_range_low = ret[0]
@@ -156,7 +156,7 @@ class BrickDir(object):
             self._hashrange_high = self._hashrange[1]
         elif gluster_version >= 6.0:
             ret = get_volume_type(self._path)
-            if ret in ('replicate', 'disperse', 'arbiter'):
+            if ret in ('Replicate', 'Disperse', 'Arbiter'):
                 g.log.info("Cannot find hash-range as the volume type under"
                            " test is Replicate/Disperse/Arbiter")
             else:
@@ -210,7 +210,7 @@ class BrickDir(object):
                 gluster_version = get_gluster_version(self._host)
                 if gluster_version >= 6.0:
                     ret = get_volume_type(self._path)
-                    if ret in ('replicate', 'disperse', 'arbiter'):
+                    if ret in ('Replicate', 'Disperse', 'Arbiter'):
                         g.log.info("Cannot find hash-range as the volume type"
                                    " under test is Replicate/Disperse/Arbiter")
             else:
