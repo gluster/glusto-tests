@@ -50,7 +50,10 @@ from glustolibs.gluster.volume_libs import (
     setup_volume,
     wait_for_volume_process_to_be_online,
 )
-from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.gluster.brick_libs import (
+    wait_for_bricks_to_be_online, get_offline_bricks_list)
+from glustolibs.gluster.volume_ops import (
+    set_volume_options, volume_reset, volume_start)
 from glustolibs.io.utils import log_mounts_info
 
 
@@ -385,6 +388,29 @@ class GlusterBaseClass(TestCase):
         return True
 
     @classmethod
+    def bricks_online_and_volume_reset(cls):
+        """
+        reset the volume if any bricks are offline.
+        waits for all bricks to be online and resets
+        volume options set
+        """
+        bricks_offline = get_offline_bricks_list(cls.mnode, cls.volname)
+        if bricks_offline is not None:
+            ret = volume_start(cls.mnode, cls.volname, force=True)
+            if not ret:
+                raise ExecutionError("Failed to force start volume"
+                                     "%s" % cls.volname)
+        ret = wait_for_bricks_to_be_online(cls.mnode, cls.volname)
+        if not ret:
+            raise ExecutionError("Failed to bring bricks online"
+                                 "for volume %s" % cls.volname)
+
+        ret, _, _ = volume_reset(cls.mnode, cls.volname, force=True)
+        if ret:
+            raise ExecutionError("Failed to reset volume %s" % cls.volname)
+        g.log.info("Successful in volume reset %s", cls.volname)
+
+    @classmethod
     def unmount_volume(cls, mounts):
         """Unmount all mounts for the volume
 
@@ -460,6 +486,7 @@ class GlusterBaseClass(TestCase):
 
         Returns (bool): True if cleanup volume is successful. False otherwise.
         """
+        cls.bricks_online_and_volume_reset()
         g.log.info("Cleanup Volume %s", cls.volname)
         ret = cleanup_volume(mnode=cls.mnode, volname=cls.volname)
         if not ret:
