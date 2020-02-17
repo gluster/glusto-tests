@@ -2222,7 +2222,7 @@ def get_volume_type(brickdir_path):
 
     Args:
         brickdir_path(str): The complete brick path.
-        (e.g., server1.example.com:/bricks/brick1)
+        (e.g., server1.example.com:/bricks/brick1/testvol_brick0/)
 
     Returns:
         volume type(str): The volume type in str.
@@ -2230,9 +2230,12 @@ def get_volume_type(brickdir_path):
     """
     # Adding import here to avoid cyclic imports
     from glustolibs.gluster.brick_libs import get_all_bricks
-    (host, _) = brickdir_path.split(':')
+    (host, brick_path_info) = brickdir_path.split(':')
+    path_info = brick_path_info[:-1]
     for volume in get_volume_list(host):
-        if brickdir_path in get_all_bricks(host, volume):
+        brick_paths = [brick.split(':')[1] for brick in get_all_bricks(host,
+                                                                       volume)]
+        if path_info in brick_paths:
             ret = get_volume_info(host, volume)
             if ret is None:
                 g.log.error("Failed to get volume type for %s", volume)
@@ -2247,5 +2250,5 @@ def get_volume_type(brickdir_path):
             else:
                 return ret[volume].get('typeStr')
         else:
-            g.log.info("Failed to find brick-path %s for vol %s",
+            g.log.info("Failed to find brick-path %s for volume %s",
                        brickdir_path, volume)
