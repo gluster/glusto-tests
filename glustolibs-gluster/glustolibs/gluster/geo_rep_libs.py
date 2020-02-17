@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ from glustolibs.gluster.lib_utils import (group_add, ssh_copy_id,
                                           is_group_exists, is_user_exists,
                                           is_passwordless_ssh_configured)
 from glustolibs.gluster.glusterdir import get_dir_contents
+from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.gluster.volume_libs import setup_volume
 
 
 def georep_prerequisites(mnode, snode, passwd, user="root", group=None,
@@ -302,3 +304,58 @@ def georep_create_session(mnode, snode, mastervol, slavevol,
                             (user, mastervol, slavevol))
                 return False
         return True
+
+
+def setup_master_and_slave_volumes(mnode, all_servers_info,
+                                   master_volume_config,
+                                   snode, all_slaves_info,
+                                   slave_volume_config,
+                                   force=False):
+    """Create master and slave volumes for geo-replication.
+
+    Args:
+        mnode(str): The primary master node where the commands are executed.
+        all_servers_info(dict): Information about all master servers.
+        master_volume_config(dict): Dict containing volume information
+                                     of master.
+        snode(str): slave node where the commande are executed.
+        all_slaves_info(dict): Information about all slave servers.
+        slave_volume_config(dict): Dict containing volume information
+                                     of slave.
+    kwargs:
+        force(bool): If set to true then will create volumes
+                     with force option.
+
+    Returns:
+        bool : True if volumes created successfully, false if there are
+              any failures in the middle.
+
+    Example:
+        setup_master_and_slave_volumes(
+            cls.mode, cls.all_servers_info, cls.master_volume,
+            cls.snode, cls.all_slaves_info, cls.slave_volume)
+        >>> True
+    """
+    # Setting up the master and the slave volume.
+    ret = setup_volume(mnode, all_servers_info, master_volume_config,
+                       force)
+    if not ret:
+        g.log.error("Failed to Setup master volume %s",
+                    master_volume_config['name'])
+        return False
+
+    ret = setup_volume(snode, all_slaves_info, slave_volume_config,
+                       force)
+    if not ret:
+        g.log.error("Failed to Setup slave volume %s",
+                    slave_volume_config['name'])
+        return False
+
+    # Setting performance.quick-read to off.
+    ret = set_volume_options(snode, slave_volume_config['name'],
+                             {"performance.quick-read": "off"})
+    if not ret:
+        g.log.error("Failed to performance.quick-read to off on "
+                    "slave volume %s", slave_volume_config['name'])
+        return False
+    return True

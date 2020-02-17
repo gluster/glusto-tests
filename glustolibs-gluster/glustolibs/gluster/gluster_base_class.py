@@ -55,6 +55,7 @@ from glustolibs.gluster.brick_libs import (
 from glustolibs.gluster.volume_ops import (
     set_volume_options, volume_reset, volume_start)
 from glustolibs.io.utils import log_mounts_info
+from glustolibs.gluster.geo_rep_libs import setup_master_and_slave_volumes
 
 
 class runs_on(g.CarteTestClass):
@@ -411,6 +412,30 @@ class GlusterBaseClass(TestCase):
         g.log.info("Successful in volume reset %s", cls.volname)
 
     @classmethod
+    def setup_and_mount_geo_rep_master_and_slave_volumes(cls, force=False):
+        """Setup geo-rep master and slave volumes.
+
+        Returns (bool): True if cleanup volume is successful. False otherwise.
+        """
+        # Creating and starting master and slave volume.
+        ret = setup_master_and_slave_volumes(
+            cls.mode, cls.all_servers_info, cls.master_volume,
+            cls.snode, cls.all_slaves_info, cls.slave_volume,
+            force)
+        if not ret:
+            g.log.error('Failed to create master and slave volumes.')
+            return False
+
+        # Mounting master and slave volumes
+        for mount in [cls.master_mounts, cls.slave_mounts]:
+            ret = cls.mount_volume(cls, mount)
+            if not ret:
+                g.log.error('Failed to mount volume %s.',
+                            mount['volname'])
+                return False
+        return True
+
+    @classmethod
     def unmount_volume(cls, mounts):
         """Unmount all mounts for the volume
 
@@ -756,6 +781,25 @@ class GlusterBaseClass(TestCase):
             cls.mnode = cls.servers[0]
             cls.vol_options = cls.volume['options']
 
+            # Define useful variable for geo-rep volumes.
+            if cls.geo_rep_info:
+                # For master volume
+                cls.master_volume = cls.volume
+                cls.master_volume['name'] = ('master_testvol_%s'
+                                             % cls.volume_type)
+                cls.master_volname = cls.master_volume['name']
+                cls.master_voltype = (cls.master_volume['voltype']
+                                      ['type'])
+
+                # For slave volume
+                cls.slave_volume = deepcopy(cls.volume)
+                cls.slave_volume['name'] = ('slave_testvol_%s'
+                                            % cls.volume_type)
+                cls.slave_volume['servers'] = cls.slaves
+                cls.slave_volname = cls.slave_volume['name']
+                cls.slave_voltype = (cls.slave_volume['voltype']
+                                     ['type'])
+
         # Get the mount configuration.
         cls.mounts = []
         if cls.mount_type:
@@ -803,6 +847,22 @@ class GlusterBaseClass(TestCase):
                             cls.smb_users_info[mount['smbuser']]['password'])
 
             cls.mounts = create_mount_objs(cls.mounts_dict_list)
+
+            # Setting mounts for geo-rep volumes.
+            if cls.geo_rep_info:
+
+                # For master volume mount
+                cls.master_mounts = cls.mounts
+
+                # For slave volume mount
+                slave_mount_dict_list = deepcopy(cls.mounts_dict_list)
+                for mount_dict in slave_mount_dict_list:
+                    mount_dict['volname'] = cls.slave_volume
+                    mount_dict['server'] = cls.snode
+                    mount_dict['mountpoint'] = path_join(
+                            "/mnt", '_'.join([cls.slave_volname,
+                                              cls.mount_type]))
+                cls.slave_mounts = create_mount_objs(slave_mount_dict_list)
 
             # Defining clients from mounts.
             cls.clients = []
