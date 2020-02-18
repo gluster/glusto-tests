@@ -32,7 +32,7 @@ from glustolibs.io.utils import (
     validate_io_procs)
 
 
-@runs_on([['distributed-replicated', 'replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'nfs']])
 class TestArbiterSelfHeal(GlusterBaseClass):
     """
@@ -58,18 +58,6 @@ class TestArbiterSelfHeal(GlusterBaseClass):
     def setUp(self):
         # Calling GlusterBaseClass setUp
         self.get_super_method(self, 'setUp')()
-
-        # Setup Volumes
-        if self.volume_type == "distributed-replicated":
-            self.volume_configs = []
-
-            # Redefine distributed-replicated volume
-            self.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'replica_count': 3,
-                'dist_count': 2,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")

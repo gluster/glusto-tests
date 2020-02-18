@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ from glustolibs.gluster.heal_libs import (monitor_heal_completion,
 from glustolibs.misc.misc_libs import upload_scripts
 
 
-@runs_on([['replicated'],
+@runs_on([['arbiter'],
           ['glusterfs']])
 class ArbiterSelfHealTests(GlusterBaseClass):
     """

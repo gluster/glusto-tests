@@ -35,7 +35,7 @@ from glustolibs.gluster.mount_ops import (mount_volume,
 from glustolibs.misc.misc_libs import upload_scripts
 
 
-@runs_on([['replicated'],
+@runs_on([['arbiter'],
           ['glusterfs']])
 class VolumeSetDataSelfHealTests(GlusterBaseClass):
     @classmethod
@@ -56,68 +56,63 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                    cls.clients)
 
         # Setup Volumes
-        if cls.volume_type == "replicated":
-            cls.volume_configs = []
-            cls.mounts_dict_list = []
-            # Define two replicated volumes
-            for i in range(1, 3):
-                cls.volume['voltype'] = {
-                    'type': 'replicated',
-                    'replica_count': 3,
-                    'arbiter_count': 1,
-                    'transport': 'tcp'}
+        cls.volume_configs = []
+        cls.mounts_dict_list = []
 
-                volume_config = {'name': 'testvol_%s_%d'
-                                         % (cls.volume['voltype']['type'], i),
-                                 'servers': cls.servers,
-                                 'voltype': cls.volume['voltype']}
-                cls.volume_configs.append(volume_config)
+        # Define two replicated volumes
+        for i in range(1, 3):
+            volume_config = {
+                'name': 'testvol_%s_%d' % (cls.volume['voltype']['type'], i),
+                'servers': cls.servers,
+                'voltype': cls.volume['voltype']}
+            cls.volume_configs.append(volume_config)
 
-                # redefine mounts
-                for client in cls.all_clients_info.keys():
-                    mount = {
-                        'protocol': cls.mount_type,
-                        'server': cls.mnode,
-                        'volname': volume_config['name'],
-                        'client': cls.all_clients_info[client],
-                        'mountpoint': (os.path.join(
-                            "/mnt", '_'.join([volume_config['name'],
-                                              cls.mount_type]))),
-                        'options': ''
-                        }
-                    cls.mounts_dict_list.append(mount)
+            # Redefine mounts
+            for client in cls.all_clients_info.keys():
+                mount = {
+                    'protocol': cls.mount_type,
+                    'server': cls.mnode,
+                    'volname': volume_config['name'],
+                    'client': cls.all_clients_info[client],
+                    'mountpoint': (os.path.join(
+                        "/mnt", '_'.join([volume_config['name'],
+                                          cls.mount_type]))),
+                    'options': ''
+                    }
+                cls.mounts_dict_list.append(mount)
 
             cls.mounts = create_mount_objs(cls.mounts_dict_list)
 
-            # Create and mount volumes
-            cls.mount_points = []
-            for volume_config in cls.volume_configs:
-                # Setup volume
-                ret = setup_volume(mnode=cls.mnode,
-                                   all_servers_info=cls.all_servers_info,
-                                   volume_config=volume_config,
-                                   force=False)
-                if not ret:
-                    raise ExecutionError("Failed to setup Volume %s"
-                                         % volume_config['name'])
-                g.log.info("Successful in setting volume %s",
-                           volume_config['name'])
-                for mount_obj in cls.mounts:
-                    # Mount volume
-                    mount_point = (os.path.join("/mnt", '_'.join(
-                        [volume_config['name'], cls.mount_type])))
-                    cls.mount_points.append(mount_point)
-                    ret, _, _ = mount_volume(volume_config['name'],
-                                             cls.mount_type,
-                                             mount_point,
-                                             cls.mnode,
-                                             mount_obj.client_system)
-                    if ret:
-                        raise ExecutionError(
-                            "Failed to do gluster mount on volume %s "
-                            % cls.volname)
-                    g.log.info("Successfully mounted %s on client %s",
-                               cls.volname, mount_obj.client_system)
+        # Create and mount volumes
+        cls.mount_points = []
+        cls.client = cls.clients[0]
+        for volume_config in cls.volume_configs:
+
+            # Setup volume
+            ret = setup_volume(mnode=cls.mnode,
+                               all_servers_info=cls.all_servers_info,
+                               volume_config=volume_config,
+                               force=False)
+            if not ret:
+                raise ExecutionError("Failed to setup Volume %s"
+                                     % volume_config['name'])
+            g.log.info("Successful in setting volume %s",
+                       volume_config['name'])
+
+            # Mount volume
+            mount_point = (os.path.join("/mnt", '_'.join(
+                [volume_config['name'], cls.mount_type])))
+            cls.mount_points.append(mount_point)
+            ret, _, _ = mount_volume(volume_config['name'],
+                                     cls.mount_type,
+                                     mount_point,
+                                     cls.mnode, cls.client)
+            if ret:
+                raise ExecutionError(
+                    "Failed to do gluster mount on volume %s "
+                    % cls.volname)
+            g.log.info("Successfully mounted %s on client %s",
+                       cls.volname, cls.client)
 
     def setUp(self):
         """

@@ -36,7 +36,7 @@ from glustolibs.gluster.heal_ops import trigger_heal
 from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs)
 
 
-@runs_on([['replicated', 'distributed-replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'nfs']])
 class TestSelfHeal(GlusterBaseClass):
     """
@@ -44,22 +44,6 @@ class TestSelfHeal(GlusterBaseClass):
         Arbiter Test cases related to
         healing in default configuration of the volume
     """
-
-    @classmethod
-    def setUpClass(cls):
-        # Calling GlusterBaseClass setUpClass
-        cls.get_super_method(cls, 'setUpClass')()
-
-        # Overriding the volume type to specifically test the volume type
-        # Change from distributed-replicated to arbiter
-        if cls.volume_type == "distributed-replicated":
-            cls.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'dist_count': 2,
-                'replica_count': 3,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
-
     def setUp(self):
         # Calling GlusterBaseClass setUp
         self.get_super_method(self, 'setUp')()

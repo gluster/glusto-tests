@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,19 +30,6 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
     """Class for testing Volume Type Change from replicated to
         Arbitered volume
     """
-    @classmethod
-    def setUpClass(cls):
-        # Calling GlusterBaseClass setUpClass
-        cls.get_super_method(cls, 'setUpClass')()
-
-        # Overriding the volume type to specifically test the volume type
-
-        if cls.volume_type == "replicated":
-            cls.volume['voltype'] = {
-                'type': 'replicated',
-                'replica_count': 3,
-                'transport': 'tcp'}
-
     def setUp(self):
         """
         Setup Volume

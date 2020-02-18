@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs,
 from glustolibs.misc.misc_libs import upload_scripts
 
 
-@runs_on([['replicated'],
+@runs_on([['arbiter'],
           ['glusterfs', 'nfs', 'cifs']])
 class TestArbiterSelfHeal(GlusterBaseClass):
     """

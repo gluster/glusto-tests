@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ from glustolibs.gluster.heal_libs import (get_self_heal_daemon_pid,
                                           is_shd_daemonized)
 
 
-@runs_on([['replicated', 'distributed-replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'nfs']])
 class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
     """
@@ -42,17 +42,6 @@ class ImpactOfReplaceBrickForGlustershdTests(GlusterBaseClass):
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Override Volumes
-        if cls.volume_type == "distributed-replicated":
-            # Define distributed-replicated volume
-            cls.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'dist_count': 2,
-                'replica_count': 3,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
-
         cls.glustershd = "/var/lib/glusterd/glustershd/glustershd-server.vol"
 
     def setUp(self):
