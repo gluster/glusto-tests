@@ -263,7 +263,7 @@ def volume_delete(mnode, volname, xfail=False):
         ret, out, err = g.run(node, "rm -rf %s" % vol_dir)
         if ret != 0:
             if not xfail:
-                g.log.err(
+                g.log.error(
                     "Unexpected: rm -rf {} failed ({}: {})"
                     .format(vol_dir, out, err)
                 )
