@@ -19,7 +19,6 @@
 """
 
 import calendar
-import sys
 import time
 
 from glusto.core import Glusto as g
@@ -557,9 +556,9 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_files -f 100 "
+            cmd = ("/usr/bin/env python %s create_files -f 100 "
                    "%s/test_dir" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

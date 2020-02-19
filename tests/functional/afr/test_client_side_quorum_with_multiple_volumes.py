@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
 """ Description:
         Test Cases in this module tests the client side quorum.
 """
-
-import sys
 import tempfile
 
 from glusto.core import Glusto as g
@@ -228,9 +226,9 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
         for mount_point in self.mount_points:
             self.all_mounts_procs = []
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 50 "
+            command = ("/usr/bin/env python %s create_files -f 50 "
                        "--fixed-file-size 1k %s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_point))
 
             proc = g.run_async(self.mounts[0].client_system, command)

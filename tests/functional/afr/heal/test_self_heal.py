@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,9 +15,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 # pylint: disable=too-many-lines
-
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -172,9 +169,9 @@ class TestSelfHeal(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 100 "
+            command = ("/usr/bin/env python %s create_files -f 100 "
                        "--fixed-file-size 1k %s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
@@ -246,9 +243,9 @@ class TestSelfHeal(GlusterBaseClass):
                        mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 100 "
+            command = ("/usr/bin/env python %s create_files -f 100 "
                        "--fixed-file-size 10k %s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
@@ -343,8 +340,8 @@ class TestSelfHeal(GlusterBaseClass):
                        mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 1000 %s" % (
-                sys.version_info.major, self.script_upload_path,
+            command = ("/usr/bin/env python %s create_files -f 1000 %s" % (
+                self.script_upload_path,
                 mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
@@ -472,8 +469,8 @@ class TestSelfHeal(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create 50k files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 50000 %s" % (
-                sys.version_info.major, self.script_upload_path,
+            command = ("/usr/bin/env python %s create_files -f 50000 %s" % (
+                self.script_upload_path,
                 mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,

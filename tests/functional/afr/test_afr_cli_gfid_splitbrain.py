@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,9 +15,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 # pylint: disable=too-many-statements, too-many-locals
-
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -112,9 +109,9 @@ class TestSelfHeal(GlusterBaseClass):
 
         g.log.info("creating a file from mount point")
         all_mounts_procs = []
-        cmd = ("/usr/bin/env python%d %s create_files "
+        cmd = ("/usr/bin/env python %s create_files "
                "-f 1 --base-file-name test_file --fixed-file-size 1k %s" % (
-                   sys.version_info.major, self.script_upload_path,
+                   self.script_upload_path,
                    self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd)
         all_mounts_procs.append(proc)
@@ -139,9 +136,9 @@ class TestSelfHeal(GlusterBaseClass):
 
         g.log.info("creating a new file of same name from mount point")
         all_mounts_procs = []
-        cmd = ("/usr/bin/env python%d %s create_files "
+        cmd = ("/usr/bin/env python %s create_files "
                "-f 1 --base-file-name test_file --fixed-file-size 1k %s" % (
-                   sys.version_info.major, self.script_upload_path,
+                   self.script_upload_path,
                    self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd)
         all_mounts_procs.append(proc)

@@ -16,8 +16,6 @@
 
 # pylint: disable=too-many-statements, too-many-locals
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -102,9 +100,9 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("creating a file from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files -f 1 "
+            cmd = ("/usr/bin/env python %s create_files -f 1 "
                    "--base-file-name test_file --fixed-file-size 10k %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -135,9 +133,9 @@ class TestSelfHeal(GlusterBaseClass):
                    "from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files -f 1 "
+            cmd = ("/usr/bin/env python %s create_files -f 1 "
                    "--base-file-name test_file --fixed-file-size 1M %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-import sys
 
 from glusto.core import Glusto as g
 
@@ -132,9 +130,9 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 10 "
+            command = ("/usr/bin/env python %s create_files -f 10 "
                        "--fixed-file-size 1M %s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
@@ -170,13 +168,12 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files "
+            command = ("/usr/bin/env python %s create_files "
                        "-f %s "
                        "--fixed-file-size 1k "
                        "--base-file-name new_file "
                        "%s"
-                       % (sys.version_info.major,
-                          self.script_upload_path,
+                       % (self.script_upload_path,
                           number_of_files_one_brick_off,
                           mount_obj.mountpoint))
 
@@ -241,13 +238,12 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files "
+            command = ("/usr/bin/env python %s create_files "
                        "-f %s "
                        "--fixed-file-size 1k "
                        "--base-file-name new_new_file "
                        "%s"
-                       % (sys.version_info.major,
-                          self.script_upload_path,
+                       % (self.script_upload_path,
                           number_of_files_two_brick_off,
                           mount_obj.mountpoint))
 

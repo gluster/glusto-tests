@@ -20,9 +20,6 @@
         Test cases in this module tests whether SHD heals the
         files in a directory when directory quota is exceeded.
 """
-
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -99,8 +96,8 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
         g.log.info("Creating a directory")
         self.all_mounts_procs = []
         for mount_object in self.mounts:
-            cmd = "/usr/bin/env python%d %s create_deep_dir -d 0 -l 0 %s%s" % (
-                sys.version_info.major, self.script_upload_path,
+            cmd = "/usr/bin/env python %s create_deep_dir -d 0 -l 0 %s%s" % (
+                self.script_upload_path,
                 mount_object.mountpoint, path)
             ret = g.run(mount_object.client_system, cmd)
             self.assertTrue(ret, "Failed to create directory on mountpoint")

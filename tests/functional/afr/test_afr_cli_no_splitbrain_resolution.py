@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,9 +15,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 # pylint: disable=too-many-statements, too-many-locals, unused-variable
-
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -116,9 +113,9 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("creating 5 files from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files -f 5 "
+            cmd = ("/usr/bin/env python %s create_files -f 5 "
                    "--base-file-name test_file --fixed-file-size 1k %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -153,9 +150,9 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("creating 5 new files of same name from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files -f 5 "
+            cmd = ("/usr/bin/env python %s create_files -f 5 "
                    "--base-file-name test_file --fixed-file-size 10k %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

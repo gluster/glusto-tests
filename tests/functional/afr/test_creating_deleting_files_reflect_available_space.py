@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
@@ -93,9 +92,8 @@ class VerifyAvaliableSpaceBeforeAfterDelete(GlusterBaseClass):
 
         # Create 1M file on client side
         g.log.info('Creating file on %s', self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_files -f 1"
-               " --fixed-file-size 1M %s" % (sys.version_info.major,
-                                             self.script_upload_path,
+        cmd = ("/usr/bin/env python %s create_files -f 1"
+               " --fixed-file-size 1M %s" % (self.script_upload_path,
                                              self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd)
         self.assertFalse(ret, err)
@@ -110,10 +108,9 @@ class VerifyAvaliableSpaceBeforeAfterDelete(GlusterBaseClass):
 
         # Create 1M file on client side
         g.log.info('Creating file on %s', self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_files -f 1 "
+        cmd = ("/usr/bin/env python %s create_files -f 1 "
                "--fixed-file-size 1M --base-file-name newfile %s/newdir"
-               % (sys.version_info.major,
-                  self.script_upload_path, self.mounts[0].mountpoint))
+               % (self.script_upload_path, self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd)
         self.assertFalse(ret, err)
 
@@ -139,9 +136,8 @@ class VerifyAvaliableSpaceBeforeAfterDelete(GlusterBaseClass):
 
         # Delete file on client side
         g.log.info('Deleting file on %s', self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s delete %s/newdir"
-               % (sys.version_info.major,
-                  self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python %s delete %s/newdir"
+               % (self.script_upload_path, self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd)
         self.assertFalse(ret, err)
 

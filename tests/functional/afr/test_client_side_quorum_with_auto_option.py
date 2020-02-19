@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,9 +17,6 @@
 """ Description:
         Test Cases in this module tests the client side quorum.
 """
-
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -101,9 +98,9 @@ class ClientSideQuorumTests(GlusterBaseClass):
         # write files on all mounts
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mounts)
-        cmd = ("/usr/bin/env python%d %s create_files "
+        cmd = ("/usr/bin/env python %s create_files "
                "-f 10 --base-file-name file %s" % (
-                   sys.version_info.major, self.script_upload_path,
+                   self.script_upload_path,
                    self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd)
         self.assertFalse(ret, "IO failed on %s with %s"

@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 import time
 
 from glusto.core import Glusto as g
@@ -151,8 +150,8 @@ class ClientSideQuorumRestored(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
 
             # Creating files
-            cmd = "/usr/bin/env python%d %s create_files -f 30 %s" % (
-                sys.version_info.major, self.script_upload_path,
+            cmd = "/usr/bin/env python %s create_files -f 30 %s" % (
+                self.script_upload_path,
                 mount_obj.mountpoint)
 
             proc = g.run_async(mount_obj.client_system, cmd,

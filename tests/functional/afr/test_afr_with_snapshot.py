@@ -17,7 +17,6 @@
 Description: Test cases related to afr snapshot.
 """
 from time import sleep
-import sys
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
@@ -119,9 +118,9 @@ class TestAFRSnapshot(GlusterBaseClass):
         # Creating files on client side
         count = 1
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "--base-file-name %d -f 200 %s"
-                   % (sys.version_info.major, self.script_upload_path,
+                   % (self.script_upload_path,
                       count, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -148,8 +147,8 @@ class TestAFRSnapshot(GlusterBaseClass):
         # Modify the data
         self.all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s append %s"
-                   % (sys.version_info.major, self.script_upload_path,
+            cmd = ("/usr/bin/env python %s append %s"
+                   % (self.script_upload_path,
                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -206,9 +205,9 @@ class TestAFRSnapshot(GlusterBaseClass):
         # Creating files on client side
         count = 1
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "--base-file-name %d -f 25 %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        count, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -302,9 +301,9 @@ class TestAFRSnapshot(GlusterBaseClass):
         # Creating files on client side
         count = 1
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "--base-file-name %d -f 25 %s"
-                   % (sys.version_info.major, self.script_upload_path,
+                   % (self.script_upload_path,
                       count, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -319,8 +318,8 @@ class TestAFRSnapshot(GlusterBaseClass):
 
         # Rename files
         self.all_mounts_procs, self.io_validation_complete = [], False
-        cmd = ("/usr/bin/env python%d %s mv -s FirstRename %s"
-               % (sys.version_info.major, self.script_upload_path,
+        cmd = ("/usr/bin/env python %s mv -s FirstRename %s"
+               % (self.script_upload_path,
                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
@@ -345,8 +344,8 @@ class TestAFRSnapshot(GlusterBaseClass):
 
         # Rename files
         self.all_mounts_procs, self.io_validation_complete = [], False
-        cmd = ("/usr/bin/env python%d %s mv -s SecondRename %s"
-               % (sys.version_info.major, self.script_upload_path,
+        cmd = ("/usr/bin/env python %s mv -s SecondRename %s"
+               % (self.script_upload_path,
                   self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)

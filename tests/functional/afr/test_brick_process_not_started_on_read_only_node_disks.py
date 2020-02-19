@@ -1,5 +1,19 @@
+#  Copyright (C) 2020 Red Hat, Inc. <http://www.redhat.com>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 import calendar
-import sys
 import time
 
 from glusto.core import Glusto as g
@@ -134,9 +148,9 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_files -f 100 "
+            cmd = ("/usr/bin/env python %s create_files -f 100 "
                    "%s/%s/test_dir" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint, mount_obj.client_system))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

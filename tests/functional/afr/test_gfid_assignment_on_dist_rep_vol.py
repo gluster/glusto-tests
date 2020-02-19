@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,8 +21,6 @@
         is getting the gfids assigned on both the subvols of a dist-rep
         volume when lookup comes on that directory from the mount point.
 """
-
-import sys
 import time
 
 from glusto.core import Glusto as g
@@ -114,8 +112,8 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
 
         # Create a directory on the mount
         g.log.info("Creating a directory")
-        cmd = "/usr/bin/env python%d %s create_deep_dir -d 0 -l 0 %s/dir1 " % (
-            sys.version_info.major, self.script_upload_path,
+        cmd = "/usr/bin/env python %s create_deep_dir -d 0 -l 0 %s/dir1 " % (
+            self.script_upload_path,
             self.mounts[0].mountpoint)
         ret, _, _ = g.run(self.clients[0], cmd)
         self.assertEqual(ret, 0, "Failed to create directory on mountpoint")
