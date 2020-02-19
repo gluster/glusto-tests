@@ -21,7 +21,7 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.glusterdir import (get_dir_contents, mkdir, rmdir)
+from glustolibs.gluster.glusterdir import (get_dir_contents, mkdir)
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 
 
@@ -67,11 +67,6 @@ class TestRemoveCientLogDirAndMount(GlusterBaseClass):
         if ret:
             raise ExecutionError("Volume %s is not unmounted" % self.volname)
         g.log.info("Volume unmounted successfully : %s", self.volname)
-
-        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
-        if not ret:
-            raise ExecutionError("Failed to remove directory mount directory.")
-        g.log.info("Mount directory is removed successfully")
 
         # clean up all volumes
         ret = self.cleanup_volume()

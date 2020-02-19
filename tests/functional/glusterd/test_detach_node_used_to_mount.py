@@ -20,7 +20,7 @@ from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume,
                                             form_bricks_list_to_add_brick)
-from glustolibs.gluster.glusterdir import mkdir, rmdir
+from glustolibs.gluster.glusterdir import mkdir
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               rebalance_stop)
 from glustolibs.gluster.peer_ops import (peer_detach,
@@ -76,10 +76,6 @@ class TestChangeReservcelimit(GlusterBaseClass):
         if ret:
             raise ExecutionError("Unable to unmount volume %s" % self.volname)
         g.log.info("Volume unmounted successfully  %s", self.volname)
-        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
-        if not ret:
-            raise ExecutionError("Failed to remove directory mount directory.")
-        g.log.info("Mount directory is removed successfully")
 
         ret = cleanup_volume(self.mnode, self.volname)
         if not ret:

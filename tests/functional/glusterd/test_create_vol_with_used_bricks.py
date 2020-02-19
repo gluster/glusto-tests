@@ -19,7 +19,6 @@
 """
 
 import sys
-from time import sleep
 
 from glusto.core import Glusto as g
 
@@ -27,7 +26,6 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.brick_libs import get_all_bricks
-from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.lib_utils import form_bricks_list
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
@@ -150,10 +148,6 @@ class TestCreateVolWithUsedBricks(GlusterBaseClass):
             self.assertEqual(ret, 0, "Volume %s is not unmounted" % (
                 self.volname))
             g.log.info("Volume unmounted successfully : %s", self.volname)
-            sleep(2)
-            ret = rmdir(mount_obj.client_system, mount_obj.mountpoint)
-            self.assertTrue(ret, "Failed to remove directory mount directory.")
-            g.log.info("Mount directory is removed successfully")
 
         # Getting brick list
         self.brick_list = get_all_bricks(self.mnode, self.volname)

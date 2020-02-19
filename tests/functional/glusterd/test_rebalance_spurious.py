@@ -30,7 +30,7 @@ from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_fix_layout_to_complete)
-from glustolibs.gluster.glusterdir import mkdir, rmdir
+from glustolibs.gluster.glusterdir import mkdir
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 from glustolibs.gluster.glusterfile import get_fattr
 
@@ -56,11 +56,6 @@ class TestSpuriousRebalance(GlusterBaseClass):
                             self.mounts[0].mountpoint, mtype=self.mount_type)
         self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
         g.log.info("Successfully Unmounted Volume %s", self.volname)
-
-        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
-        if not ret:
-            raise ExecutionError("Failed to remove directory mount directory.")
-        g.log.info("Mount directory is removed successfully")
 
         # Clean up all volumes and peer probe to form cluster
         vol_list = get_volume_list(self.mnode)

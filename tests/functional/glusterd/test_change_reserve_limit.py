@@ -27,7 +27,6 @@ from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.brick_ops import remove_brick
-from glustolibs.gluster.glusterdir import rmdir
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -58,10 +57,6 @@ class TestChangeReservcelimit(GlusterBaseClass):
         if ret:
             raise ExecutionError("Volume %s is not unmounted" % self.volname)
         g.log.info("Volume unmounted successfully : %s", self.volname)
-        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
-        if not ret:
-            raise ExecutionError("Failed to remove directory mount directory.")
-        g.log.info("Mount directory is removed successfully")
 
         # clean up all volumes
         vol_list = get_volume_list(self.mnode)

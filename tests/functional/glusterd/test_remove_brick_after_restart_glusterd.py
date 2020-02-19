@@ -30,7 +30,6 @@ from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 from glustolibs.io.utils import validate_io_procs, wait_for_io_to_complete
-from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.gluster_init import restart_glusterd
 
 
@@ -54,11 +53,6 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
         ret = umount_volume(self.mounts[0].client_system,
                             self.mounts[0].mountpoint, mtype=self.mount_type)
         self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
-        g.log.info("Successfully Unmounted Volume %s", self.volname)
-        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
-        if not ret:
-            raise ExecutionError("Failed to remove directory mount directory.")
-        g.log.info("Mount directory is removed successfully")
 
         # Clean up all volumes and peer probe to form cluster
         vol_list = get_volume_list(self.mnode)

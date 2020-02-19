@@ -19,7 +19,6 @@ from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            get_volume_list, get_volume_status)
 from glustolibs.gluster.brick_libs import get_all_bricks
-from glustolibs.gluster.glusterdir import rmdir
 from glustolibs.gluster.volume_libs import (cleanup_volume)
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
                                          peer_probe_servers,
@@ -57,11 +56,6 @@ class TestRebalanceHang(GlusterBaseClass):
                             self.mounts[0].mountpoint, mtype=self.mount_type)
         self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
         g.log.info("Successfully Unmounted Volume %s", self.volname)
-
-        ret = rmdir(self.mounts[0].client_system, self.mounts[0].mountpoint)
-        if not ret:
-            raise ExecutionError("Failed to remove directory mount directory.")
-        g.log.info("Mount directory is removed successfully")
 
         # Clean up all volumes and peer probe to form cluster
         vol_list = get_volume_list(self.mnode)
