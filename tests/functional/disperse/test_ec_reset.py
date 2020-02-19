@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ Test Description:
 """
 from os import getcwd
 from random import choice
-import sys
 from time import sleep
 
 from glusto.core import Glusto as g
@@ -168,9 +167,9 @@ class TestBrickReset(GlusterBaseClass):
 
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+            command = ("/usr/bin/env python %s create_deep_dirs_with_files "
                        "-d 2 -l 2 -n 2 -f 20 %s/dir2" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
@@ -341,9 +340,9 @@ class TestBrickReset(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+            command = ("/usr/bin/env python %s create_deep_dirs_with_files "
                        "-d 2 -l 2 -n 2 -f 20 %s/dir1" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,

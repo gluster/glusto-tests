@@ -14,8 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -315,8 +313,8 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Start heal for %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
-            command = "/usr/bin/env python%d %s read %s" % (
-                sys.version_info.major, self.script_upload_path,
+            command = "/usr/bin/env python %s read %s" % (
+                self.script_upload_path,
                 self.mounts[0].mountpoint)
             ret, _, err = g.run(mount_obj.client_system, command)
             self.assertFalse(ret, err)

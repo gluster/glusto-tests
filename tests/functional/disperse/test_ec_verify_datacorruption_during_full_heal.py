@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 from time import sleep
 
 from glusto.core import Glusto as g
@@ -123,13 +122,9 @@ class TestHealFullNodeReboot(GlusterBaseClass):
 
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                       "-d 2 "
-                       "-l 2 "
-                       "-n 2 "
-                       "-f 20 "
-                       "%s" % (
-                           sys.version_info.major, self.script_upload_path,
+            command = ("/usr/bin/env python %s create_deep_dirs_with_files "
+                       "-d 2 -l 2 -n 2 -f 20 %s" % (
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,

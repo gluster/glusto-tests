@@ -14,8 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -110,9 +108,9 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         # Create dirs with file
         all_mounts_procs = []
         g.log.info('Creating dirs with file...')
-        command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+        command = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "-d 2 -l 2 -n 2 -f 20 %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)
@@ -142,9 +140,9 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         # Create dirs with file
         all_mounts_procs = []
         g.log.info('Adding dirs with file...')
-        command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+        command = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "-d 2 -l 2 -n 2 -f 20 %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        self.mounts[0].mountpoint+'/new_files'))
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)

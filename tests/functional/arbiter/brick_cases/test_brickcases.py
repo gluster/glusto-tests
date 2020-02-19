@@ -16,7 +16,6 @@
 
 """ Test Arbiter Specific Cases"""
 
-import sys
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.volume_libs import (
@@ -126,10 +125,10 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
         self.all_mounts_procs = []
         g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+        cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                "--dirname-start-num 10 --dir-depth 1 --dir-length 1 "
                "--max-num-of-dirs 1 --num-of-files 5 %s" % (
-                   sys.version_info.major, self.script_upload_path,
+                   self.script_upload_path,
                    self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)
@@ -186,10 +185,10 @@ class GlusterArbiterVolumeTypeChangeClass(GlusterBaseClass):
         self.all_mounts_procs = []
         g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+        cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                "--dirname-start-num 10 --dir-depth 1 --dir-length 1 "
                "--max-num-of-dirs 1 --num-of-files 5 %s" % (
-                   sys.version_info.major, self.script_upload_path,
+                   self.script_upload_path,
                    self.mounts[0].mountpoint))
         proc = g.run_async(self.mounts[0].client_system, cmd,
                            user=self.mounts[0].user)

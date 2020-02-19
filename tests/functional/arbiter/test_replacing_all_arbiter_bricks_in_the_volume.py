@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 
 from glusto.core import Glusto as g
 
@@ -147,14 +146,9 @@ class TestArbiterSelfHeal(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create dirs with file
             g.log.info('Creating dirs with file...')
-            command = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
-                       "-d 3 "
-                       "-l 3 "
-                       "-n 3 "
-                       "-f 20 "
-                       "%s" % (
-                           sys.version_info.major, self.script_upload_path,
-                           mount_obj.mountpoint))
+            command = ("/usr/bin/env python %s create_deep_dirs_with_files "
+                       "-d 3 -l 3 -n 3 -f 20 %s"
+                       % (self.script_upload_path, mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)

@@ -15,7 +15,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import sys
 
 from glusto.core import Glusto as g
 
@@ -198,11 +197,11 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files "
+            command = ("/usr/bin/env python %s create_files "
                        "-f 100 "
                        "--fixed-file-size 1M "
                        "%s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
@@ -241,8 +240,8 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Delete files
             g.log.info('Deleting files...')
-            command = "/usr/bin/env python%d %s delete %s" % (
-                sys.version_info.major, self.script_upload_path,
+            command = "/usr/bin/env python %s delete %s" % (
+                self.script_upload_path,
                 mount_obj.mountpoint)
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)

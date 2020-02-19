@@ -14,8 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -117,8 +115,8 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Creating files
-        command = "/usr/bin/env python%d %s create_files -f 100 %s" % (
-            sys.version_info.major, self.script_upload_path,
+        command = "/usr/bin/env python %s create_files -f 100 %s" % (
+            self.script_upload_path,
             self.mounts[0].mountpoint)
 
         proc = g.run_async(self.mounts[0].client_system, command,
@@ -156,9 +154,9 @@ class TestSelfHeal(GlusterBaseClass):
         all_mounts_procs = []
         g.log.info("Modifying data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = ("/usr/bin/env python%d %s create_files -f 100 "
+        command = ("/usr/bin/env python %s create_files -f 100 "
                    "--fixed-file-size 1M %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        self.mounts[0].mountpoint))
 
         proc = g.run_async(self.mounts[0].client_system, command,

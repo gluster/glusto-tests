@@ -14,8 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -131,9 +129,9 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create dir
         g.log.info('Creating dir...')
-        command = ('/usr/bin/env python%d %s create_deep_dir -d 1 -l 0 -n 1 '
+        command = ('/usr/bin/env python %s create_deep_dir -d 1 -l 0 -n 1 '
                    '%s/%s' % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        self.mounts[0].mountpoint, test_dir))
 
         ret, _, err = g.run(self.mounts[0].client_system, command,
@@ -166,8 +164,8 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create file
         g.log.info('Creating file...')
-        command = "/usr/bin/env python%d %s create_files -f 1 %s/%s" % (
-            sys.version_info.major, self.script_upload_path,
+        command = "/usr/bin/env python %s create_files -f 1 %s/%s" % (
+            self.script_upload_path,
             self.mounts[0].mountpoint, test_dir)
 
         ret, _, err = g.run(self.mounts[0].client_system, command,
@@ -214,8 +212,8 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         # Rename file under test_dir
         g.log.info("Renaming file for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = "/usr/bin/env python%d %s mv %s/%s" % (
-            sys.version_info.major, self.script_upload_path,
+        command = "/usr/bin/env python %s mv %s/%s" % (
+            self.script_upload_path,
             self.mounts[0].mountpoint, test_dir)
         ret, _, err = g.run(self.mounts[0].client_system, command)
         self.assertEqual(ret, 0, err)

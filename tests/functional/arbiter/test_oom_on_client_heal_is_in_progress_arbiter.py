@@ -14,8 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -120,11 +118,11 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files "
+            command = ("/usr/bin/env python %s create_files "
                        "-f 1000 "
                        "--fixed-file-size 10k "
                        "%s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,

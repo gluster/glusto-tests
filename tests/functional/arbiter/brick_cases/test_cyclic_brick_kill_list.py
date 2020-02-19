@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 import time
 
 from glusto.core import Glusto as g
@@ -135,14 +134,13 @@ class ListMount(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s "
+            cmd = ("/usr/bin/env python %s "
                    "--file-sizes-list 1G "
                    "--chunk-sizes-list 128 "
                    "--write-time 900 "
                    "--num-of-files 2 "
                    "--base-file-name test_brick_down_from_client_%s.txt "
-                   "--dir %s " % (sys.version_info.major,
-                                  self.script_upload_path,
+                   "--dir %s " % (self.script_upload_path,
                                   mount_obj.client_system,
                                   mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,

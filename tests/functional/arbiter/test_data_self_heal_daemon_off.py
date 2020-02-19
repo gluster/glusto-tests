@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -136,9 +135,9 @@ class TestSelfHeal(GlusterBaseClass):
         # Creating files on client side
         g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_files -f 100"
+        cmd = ("/usr/bin/env python %s create_files -f 100"
                " --fixed-file-size 1k %s"
-               % (sys.version_info.major, self.script_upload_path,
+               % (self.script_upload_path,
                   self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd,
                             user=self.mounts[0].user)
@@ -202,9 +201,9 @@ class TestSelfHeal(GlusterBaseClass):
         # Modify the data
         g.log.info("Modifying data for %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_files -f 100"
+        cmd = ("/usr/bin/env python %s create_files -f 100"
                " --fixed-file-size 10k %s"
-               % (sys.version_info.major, self.script_upload_path,
+               % (self.script_upload_path,
                   self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd,
                             user=self.mounts[0].user)
@@ -290,7 +289,8 @@ class TestSelfHeal(GlusterBaseClass):
         all_mounts_procs = []
         g.log.info("Modifying data for %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        command = ("python %s create_files -f 1000 --base-file-name newfile %s"
+        command = ("/usr/bin/env python %s create_files -f 1000"
+                   " --base-file-name newfile %s"
                    % (self.script_upload_path, self.mounts[0].mountpoint))
 
         proc = g.run_async(self.mounts[0].client_system, command,

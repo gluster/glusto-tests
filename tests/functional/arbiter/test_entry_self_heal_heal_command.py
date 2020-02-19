@@ -14,8 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
@@ -136,12 +134,12 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+        cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                "--dir-length 2 "
                "--dir-depth 2 "
                "--max-num-of-dirs 2 "
                "--num-of-files 20 %s/files" % (
-                   sys.version_info.major, self.script_upload_path,
+                   self.script_upload_path,
                    self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd,
                             user=self.mounts[0].user)
@@ -153,11 +151,11 @@ class TestSelfHeal(GlusterBaseClass):
         # Command list to do different operations with data -
         # create, rename, copy and delete
         cmds = (
-            "/usr/bin/env python%d %s create_files -f 20 %s/files",
-            "/usr/bin/env python%d %s mv %s/files",
+            "/usr/bin/env python %s create_files -f 20 %s/files",
+            "/usr/bin/env python %s mv %s/files",
             # 'copy' command works incorrect. disable until fixed
-            # "/usr/bin/env python%d %s copy --dest-dir %s/new_dir %s/files",
-            "/usr/bin/env python%d %s delete %s",
+            # "/usr/bin/env python %s copy --dest-dir %s/new_dir %s/files",
+            "/usr/bin/env python %s delete %s",
         )
         for cmd in cmds:
             # Get arequal before getting bricks offline
@@ -218,13 +216,11 @@ class TestSelfHeal(GlusterBaseClass):
             g.log.info("Modifying IO on %s:%s", self.mounts[0].client_system,
                        self.mounts[0].mountpoint)
             if 'copy --dest-dir' in cmd:
-                parsed_cmd = cmd % (sys.version_info.major,
-                                    self.script_upload_path,
+                parsed_cmd = cmd % (self.script_upload_path,
                                     self.mounts[0].mountpoint,
                                     self.mounts[0].mountpoint)
             else:
-                parsed_cmd = cmd % (sys.version_info.major,
-                                    self.script_upload_path,
+                parsed_cmd = cmd % (self.script_upload_path,
                                     self.mounts[0].mountpoint)
             ret, _, err = g.run(self.mounts[0].client_system, parsed_cmd,
                                 user=self.mounts[0].user)
