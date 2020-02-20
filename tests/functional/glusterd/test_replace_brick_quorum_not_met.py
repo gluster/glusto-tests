@@ -60,15 +60,6 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Servers are not in peer probed state")
 
-        # Setting Quorum ratio to 51%
-        ret = set_volume_options(self.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
-        if not ret:
-            raise ExecutionError("Failed to set server quorum ratio on %s"
-                                 % self.servers)
-        g.log.info("Able to set server quorum ratio successfully on %s",
-                   self.servers)
-
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:

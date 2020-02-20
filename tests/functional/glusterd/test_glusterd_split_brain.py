@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,11 +14,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import time
+from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.peer_ops import is_peer_connected
+from glustolibs.gluster.peer_ops import is_peer_connected, peer_probe_servers
 from glustolibs.gluster.volume_libs import (cleanup_volume,
                                             setup_volume)
 from glustolibs.gluster.volume_ops import (get_volume_list,
@@ -59,6 +59,24 @@ class GlusterdSplitBrainQuorumValidation(GlusterBaseClass):
     def tearDown(self):
         # stopping the volume and Cleaning up the volume
         self.get_super_method(self, 'tearDown')()
+        ret = is_glusterd_running(self.servers)
+        if ret:
+            ret = start_glusterd(self.servers)
+            if not ret:
+                raise ExecutionError("Failed to start glusterd on %s"
+                                     % self.servers)
+        # Takes 5 seconds to restart glusterd into peer connected state
+        sleep(5)
+        g.log.info("Glusterd started successfully on %s", self.servers)
+
+        # checking for peer status from every node
+        ret = is_peer_connected(self.mnode, self.servers)
+        if not ret:
+            ret = peer_probe_servers(self.mnode, self.servers)
+            if not ret:
+                raise ExecutionError("Failed to peer probe failed in "
+                                     "servers %s" % self.servers)
+        g.log.info("All peers are in connected state")
         vol_list = get_volume_list(self.mnode)
         if vol_list is None:
             raise ExecutionError("Failed to get the volume list")
@@ -138,7 +156,7 @@ class GlusterdSplitBrainQuorumValidation(GlusterBaseClass):
             if not ret:
                 g.log.info("Peers are not connected state,"
                            " Retry after 2 seconds .......")
-                time.sleep(2)
+                sleep(2)
                 counter = counter + 2
             else:
                 _rc = True

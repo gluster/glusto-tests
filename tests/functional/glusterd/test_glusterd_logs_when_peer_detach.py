@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.peer_ops import (peer_detach_servers,
-                                         peer_probe_servers)
+                                         peer_probe_servers,
+                                         is_peer_connected)
 
 
 class GlusterdLogsWhilePeerDetach(GlusterBaseClass):
@@ -33,11 +34,14 @@ class GlusterdLogsWhilePeerDetach(GlusterBaseClass):
         """
         tearDown for every test
         """
-        # Peer probe detached server
-        ret = peer_probe_servers(self.mnode, self.random_server)
+        # checking for peer status from every node
+        ret = is_peer_connected(self.mnode, self.servers)
         if not ret:
-            raise ExecutionError(ret, "Failed to probe detached server")
-        g.log.info("peer probe is successful for %s", self.random_server)
+            ret = peer_probe_servers(self.mnode, self.random_server)
+            if not ret:
+                raise ExecutionError("Failed to peer probe failed in "
+                                     "servers %s" % self.random_server)
+        g.log.info("All peers are in connected state")
 
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()

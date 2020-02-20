@@ -24,6 +24,7 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            volume_status)
+from glustolibs.gluster.volume_libs import cleanup_volume
 from glustolibs.gluster.lib_utils import form_bricks_list
 
 
@@ -36,10 +37,10 @@ class TestVolumeStatusWithAbsentBricks(GlusterBaseClass):
         tearDown for every test
         """
         # stopping the volume and Cleaning up the volume
-        ret = self.cleanup_volume()
+        ret = cleanup_volume(self.mnode, self.volname)
         if not ret:
-            raise ExecutionError("Failed Cleanup the Volume %s"
-                                 % self.volname)
+            raise ExecutionError("Failed to cleanup volume")
+        g.log.info("Volume deleted successfully : %s", self.volname)
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
 

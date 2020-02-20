@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
                                              is_glusterd_running)
+from glustolibs.gluster.peer_ops import peer_probe_servers, is_peer_connected
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.volume_libs import form_bricks_list_to_remove_brick
@@ -56,29 +57,18 @@ class TestServerQuorumNotMet(GlusterBaseClass):
             if not ret:
                 raise ExecutionError("Failed to start glusterd on %s"
                                      % self.random_server)
+        # Takes 5 seconds to restart glusterd into peer connected state
+        sleep(5)
         g.log.info("Glusterd started successfully on %s", self.random_server)
 
         # checking for peer status from every node
-        count = 0
-        while count < 80:
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            sleep(2)
-            count += 1
-
+        ret = is_peer_connected(self.mnode, self.servers)
         if not ret:
-            raise ExecutionError("Servers are not in peer probed state")
+            ret = peer_probe_servers(self.mnode, self.random_server)
+            if not ret:
+                raise ExecutionError("Failed to peer probe failed in "
+                                     "servers %s" % self.random_server)
         g.log.info("All peers are in connected state")
-
-        # Setting server-quorum-ratio to 51%
-        ret = set_volume_options(self.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
-        if not ret:
-            raise ExecutionError("Failed to set server quorum ratio for %s"
-                                 % self.servers)
-        g.log.info("Able to set server quorum ratio successfully for %s",
-                   self.servers)
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
