@@ -1,4 +1,4 @@
-#  Copyright (C) 2019 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from random import choice
-import sys
 from time import sleep
 
 from glusto.core import Glusto as g
@@ -70,13 +69,13 @@ class RebalanceValidation(GlusterBaseClass):
         for index, mount_obj in enumerate(cls.mounts, start=1):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 1 "
                    "--dir-length 1 "
                    "--max-num-of-dirs 1 "
                    "--num-of-files 1 %s" % (
-                       sys.version_info.major, cls.script_upload_path,
+                       cls.script_upload_path,
                        index + 10, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

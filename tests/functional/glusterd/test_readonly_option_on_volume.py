@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
 """ Description:
       Test read-only option on volumes
 """
-
-import sys
 
 from glusto.core import Glusto as g
 
@@ -100,13 +98,12 @@ class TestReadOnlyOptionOnVolume(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 5 %s" % (sys.version_info.major,
-                                            self.script_upload_path,
+                   "--num-of-files 5 %s" % (self.script_upload_path,
                                             self.counter,
                                             mount_obj.mountpoint))
 
@@ -138,13 +135,12 @@ class TestReadOnlyOptionOnVolume(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 5 %s" % (sys.version_info.major,
-                                            self.script_upload_path,
+                   "--num-of-files 5 %s" % (self.script_upload_path,
                                             self.counter,
                                             mount_obj.mountpoint))
 

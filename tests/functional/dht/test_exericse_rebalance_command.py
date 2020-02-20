@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
@@ -89,14 +88,14 @@ class TestExerciseRebalanceCommand(GlusterBaseClass):
         for index, mount_obj in enumerate(self.mounts, start=1):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 10 %s" % (
-                       sys.version_info.major, self.script_upload_path,
-                       index + 10, mount_obj.mountpoint))
+                   "--num-of-files 10 %s" % (self.script_upload_path,
+                                             index + 10,
+                                             mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
