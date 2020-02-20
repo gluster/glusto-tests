@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-import sys
 
 from glusto.core import Glusto as g
 
@@ -102,8 +100,8 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
 
         g.log.info("Creating Directories on %s:%s",
                    client, mount_dir)
-        cmd = "/usr/bin/env python%d %s create_deep_dir -d 0 -l 10 %s" % (
-            sys.version_info.major, self.script_upload_path, mount_dir)
+        cmd = "/usr/bin/env python %s create_deep_dir -d 0 -l 10 %s" % (
+            self.script_upload_path, mount_dir)
 
         proc = g.run_async(client, cmd, user=mount_obj.user)
         self.all_mounts_procs.append(proc)
@@ -151,9 +149,9 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Creating Files on %s:%s", client, mount_dir)
         for i in range(1, 11):
             dir_name = "/user" + str(i)
-            cmd = ("/usr/bin/env python%d %s create_files -f 10 "
+            cmd = ("/usr/bin/env python %s create_files -f 10 "
                    "--fixed-file-size 1M %s/%s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_dir, dir_name))
 
             ret, _, _ = g.run(client, cmd)

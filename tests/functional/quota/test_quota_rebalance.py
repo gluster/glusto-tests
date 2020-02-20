@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -127,10 +126,9 @@ class TestQuotaRebalance(GlusterBaseClass):
 
         # Do some IO  until hard limit is reached
         cmd = (
-            "/usr/bin/env python%d %s create_files "
+            "/usr/bin/env python %s create_files "
             "-f 100 --fixed-file-size 1M --base-file-name file %s"
-            % (sys.version_info.major,
-               self.script_upload_path,
+            % (self.script_upload_path,
                self.mounts[0].mountpoint))
         proc = g.run_async(
             self.mounts[0].client_system, cmd, user=self.mounts[0].user)
@@ -184,10 +182,9 @@ class TestQuotaRebalance(GlusterBaseClass):
         # Perform some more IO and check if hard limit is honoured
         self.all_mounts_procs = []
         cmd = (
-            "/usr/bin/env python%d %s create_files "
+            "/usr/bin/env python %s create_files "
             "-f 100 --fixed-file-size 1M --base-file-name newfile %s"
-            % (sys.version_info.major,
-               self.script_upload_path,
+            % (self.script_upload_path,
                self.mounts[0].mountpoint))
         proc = g.run_async(
             self.mounts[0].client_system, cmd, user=self.mounts[0].user)

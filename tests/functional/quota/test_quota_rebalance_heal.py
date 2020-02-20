@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 from time import sleep
 
 from glusto.core import Glusto as g
@@ -124,9 +123,9 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
         for mount_object in self.mounts:
             g.log.info("Creating Directories on %s:%s",
                        mount_object.client_system, mount_object.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_deep_dirs_with_files -d 0 "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files -d 0 "
                    "-f 1024 -l 4 --fixed-file-size 1k %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_object.mountpoint))
 
             proc = g.run_async(mount_object.client_system, cmd,
@@ -184,9 +183,9 @@ class TestQuotaRebalanceHeal(GlusterBaseClass):
         # Do some more IO and check if hard limit is honoured
         all_mounts_procs = []
         for mount_object in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "-f 100 --base-file-name file %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_object.mountpoint))
             proc = g.run_async(mount_object.client_system, cmd,
                                user=mount_object.user)

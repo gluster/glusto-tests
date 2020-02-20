@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import random
-import sys
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
@@ -180,9 +179,9 @@ class LimitUsageDeepDir(GlusterBaseClass):
             # Data creation
             # Creates one file of rand[0] size in each dir
             rand = random.sample([1, 10, 512], 1)
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "--fixed-file-size %sk %s/%s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        rand[0], mount_object.mountpoint, dir_list[0]))
 
             ret, _, _ = g.run(mount_object.client_system, cmd)

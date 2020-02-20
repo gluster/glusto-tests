@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,9 +21,6 @@ Description:
         set stat-prefetch off-on this should fail the
         IO running on the mount point.
 """
-
-import sys
-
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.mount_ops import mount_volume
@@ -101,10 +98,10 @@ class TestValidateCifs(GlusterBaseClass):
             self.assertEqual(ret, 0, "Cifs Mount Failed")
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_files -f 10000"
+            cmd = ("/usr/bin/env python %s create_files -f 10000"
                    " --base-file-name ctdb-cifs "
                    " --fixed-file-size 10k %s/samba/"
-                   % (sys.version_info.major, self.script_upload_path,
+                   % (self.script_upload_path,
                       mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, cmd,
