@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,14 +19,16 @@
         Test Cases in this module related to test self heal
         deamon and quota daemon status after reboot.
 """
-from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.quota_ops import quota_enable, quota_limit_usage
 from glustolibs.gluster.volume_ops import get_volume_status
 from glustolibs.misc.misc_libs import reboot_nodes_and_wait_to_come_online
-from glustolibs.gluster.gluster_init import is_glusterd_running
+from glustolibs.gluster.gluster_init import (is_glusterd_running,
+                                             start_glusterd,
+                                             wait_for_glusterd_to_start)
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 
 
 @runs_on([['replicated', 'distributed-replicated'], ['glusterfs']])
@@ -47,6 +49,19 @@ class TestSelfHealDeamonQuotaDeamonAfterReboot(GlusterBaseClass):
         g.log.info("Volume created successfully : %s", self.volname)
 
     def tearDown(self):
+        ret = is_glusterd_running(self.servers)
+        if ret:
+            ret = start_glusterd(self.servers)
+            if not ret:
+                raise ExecutionError("Failed to start glusterd on %s"
+                                     % self.servers)
+        g.log.info("Glusterd started successfully on %s", self.servers)
+
+        # checking for peer status from every node
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
+        if not ret:
+            raise ExecutionError("Peers are not in connected state")
+
         # stopping the volume and Cleaning up the volume
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
@@ -144,20 +159,14 @@ class TestSelfHealDeamonQuotaDeamonAfterReboot(GlusterBaseClass):
         g.log.info("Node %s rebooted successfully", self.servers[1])
 
         # Checking glusterd status and peer status afte reboot of server
-        count = 0
-        while count < 100:
-            ret = is_glusterd_running(self.servers[1])
-            if not ret:
-                ret = self.validate_peers_are_connected()
-                if ret:
-                    g.log.info("glusterd is running and all peers are in "
-                               "connected state")
-                    break
-            count += 1
-            sleep(5)
-        self.assertEqual(count, 100,
-                         "Either glusterd is not runnig or peers are "
-                         "not in connected state ")
+        self.assertTrue(
+            wait_for_glusterd_to_start(self.servers[1]),
+            "Failed to start glusterd on %s" % self.servers[1])
+        self.assertTrue(
+            wait_for_peers_to_connect(self.mnode, self.servers),
+            "some peers are not in connected state")
+        g.log.info("glusterd is running and all peers are in "
+                   "connected state")
 
         # Checks self heal daemon and quota daemon process running or not
         ret = self.is_daemon_process_running()

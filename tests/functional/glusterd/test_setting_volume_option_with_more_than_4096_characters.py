@@ -21,7 +21,9 @@ from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.gluster.volume_libs import setup_volume
 from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import (restart_glusterd,
-                                             wait_for_glusterd_to_start)
+                                             wait_for_glusterd_to_start,
+                                             is_glusterd_running,
+                                             start_glusterd)
 
 
 @runs_on([['distributed'], ['glusterfs']])
@@ -36,6 +38,14 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
             raise ExecutionError("Peers are not in connected state")
 
     def tearDown(self):
+
+        ret = is_glusterd_running(self.servers)
+        if ret:
+            ret = start_glusterd(self.servers)
+            if not ret:
+                raise ExecutionError("Failed to start glusterd on %s"
+                                     % self.servers)
+        g.log.info("Glusterd started successfully on %s", self.servers)
 
         ret = wait_for_peers_to_connect(self.mnode, self.servers)
         self.assertTrue(ret, "glusterd is not connected %s with peer %s"

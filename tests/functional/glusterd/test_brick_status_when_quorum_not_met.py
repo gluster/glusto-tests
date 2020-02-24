@@ -28,7 +28,8 @@ from glustolibs.gluster.gluster_init import (
 from glustolibs.gluster.brick_libs import (are_bricks_offline,
                                            get_all_bricks)
 from glustolibs.gluster.volume_ops import get_volume_status
-from glustolibs.gluster.peer_ops import peer_probe_servers, is_peer_connected
+from glustolibs.gluster.peer_ops import (
+    peer_probe_servers, is_peer_connected, wait_for_peers_to_connect)
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -131,12 +132,16 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         g.log.info("Glusterd started successfully on all servers except "
                    "last node %s", self.servers[1:5])
 
+        self.assertTrue(
+            wait_for_peers_to_connect(self.mnode, self.servers[1:5]),
+            "Peers are not in connected state")
+
         # Verfiying node count in volume status after glusterd
         # started on servers, Its not possible to check the brick status
         # immediately after glusterd start, that's why verifying that all
         # glusterd started nodes available in gluster volume status or not
         count = 0
-        while count < 200:
+        while count < 80:
             vol_status = get_volume_status(self.mnode, self.volname)
             servers_count = len(vol_status[self.volname].keys())
             if servers_count == 5:

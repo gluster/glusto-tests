@@ -20,7 +20,6 @@
 
 import sys
 
-from time import sleep
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
@@ -30,7 +29,10 @@ from glustolibs.gluster.brick_ops import add_brick
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               get_rebalance_status)
 from glustolibs.gluster.gluster_init import (restart_glusterd,
-                                             wait_for_glusterd_to_start)
+                                             wait_for_glusterd_to_start,
+                                             is_glusterd_running,
+                                             start_glusterd)
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.gluster.glusterdir import get_dir_contents
@@ -90,18 +92,19 @@ class TestRestartGlusterdWhileRebalance(GlusterBaseClass):
         """
         tearDown for every test
         """
+        ret = is_glusterd_running(self.servers)
+        if ret:
+            ret = start_glusterd(self.servers)
+            if not ret:
+                raise ExecutionError("Failed to start glusterd on %s"
+                                     % self.servers)
+        g.log.info("Glusterd started successfully on %s", self.servers)
 
         # checking for peer status from every node
-        count = 0
-        while count < 80:
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            sleep(2)
-            count += 1
-
-        if not ret:
-            raise ExecutionError("Servers are not in peer probed state")
+        for server in self.servers:
+            ret = wait_for_peers_to_connect(server, self.servers)
+            if not ret:
+                raise ExecutionError("Servers are not in peer probed state")
 
         # unmounting the volume and Cleaning up the volume
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)

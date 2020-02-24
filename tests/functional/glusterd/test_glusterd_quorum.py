@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -60,37 +60,36 @@ class TestServerQuorum(GlusterBaseClass):
             raise ExecutionError("Minimun four nodes required for this "
                                  " testcase to execute")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
 
-        # Setting quorum ratio to 51%
-        ret = set_volume_options(cls.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
-        if not ret:
-            raise ExecutionError("Failed to set server quorum ratio on %s"
-                                 % cls.volname)
-
-        vol_list = get_volume_list(cls.mnode)
+        vol_list = get_volume_list(self.mnode)
         if vol_list is None:
             raise ExecutionError("Failed to get volume list")
 
         for volume in vol_list:
-            ret = cleanup_volume(cls.mnode, volume)
+            ret = cleanup_volume(self.mnode, volume)
             if not ret:
                 raise ExecutionError("Failed Cleanup the volume")
             g.log.info("Volume deleted successfully %s", volume)
 
+        # Setting quorum ratio to 51%
+        ret = set_volume_options(self.mnode, 'all',
+                                 {'cluster.server-quorum-ratio': '51%'})
+        if not ret:
+            raise ExecutionError("Failed to set server quorum ratio on %s"
+                                 % self.volname)
+
         # Peer probe servers since we are doing peer detach in setUpClass
-        for server in cls.servers:
-            ret = is_peer_connected(server, cls.servers)
+        for server in self.servers:
+            ret = is_peer_connected(server, self.servers)
             if not ret:
-                ret = peer_probe_servers(server, cls.servers)
+                ret = peer_probe_servers(server, self.servers)
                 if not ret:
                     raise ExecutionError(
                         "Peer probe failed to one of the node")
                 g.log.info("Peer probe successful")
 
-        cls.get_super_method(cls, 'tearDownClass')()
+        self.get_super_method(self, 'tearDown')()
 
     @pytest.mark.test_glusterd_quorum_validation
     def test_glusterd_quorum_validation(self):
