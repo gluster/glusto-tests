@@ -195,7 +195,7 @@ class TestHealFullNodeReboot(GlusterBaseClass):
 
         # Check if nodes are online
         counter = 0
-        timeout = 350
+        timeout = 700
         _rc = False
         while counter < timeout:
             ret, reboot_results = are_nodes_online(nodes_to_reboot)
