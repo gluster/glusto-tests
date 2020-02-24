@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (get_volume_options,
                                            set_volume_options)
 from glustolibs.gluster.lib_utils import is_core_file_created
+from glustolibs.gluster.gluster_init import get_gluster_version
 
 
 @runs_on([['distributed', 'replicated', 'distributed-replicated',
@@ -175,8 +176,12 @@ class TestVolumeGet(GlusterBaseClass):
         ret = get_volume_options(self.mnode, self.volname, "io-cache")
         self.assertIsNotNone(ret, "gluster volume get %s io-cache command "
                                   "failed" % self.volname)
-        self.assertIn("on", ret['performance.io-cache'], "io-cache value "
-                                                         "is not correct")
+        if get_gluster_version(self.mnode) >= 6.0:
+            self.assertIn("off", ret['performance.io-cache'],
+                          "io-cache value is not correct")
+        else:
+            self.assertIn("on", ret['performance.io-cache'],
+                          "io-cache value is not correct")
         g.log.info("io-cache value is correct")
 
         # Performing gluster volume set volname performance.low-prio-threads
