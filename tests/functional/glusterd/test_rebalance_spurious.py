@@ -25,12 +25,13 @@ from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
                                          peer_probe_servers,
                                          nodes_from_pool_list,
                                          is_peer_connected)
-from glustolibs.gluster.lib_utils import form_bricks_list
+from glustolibs.gluster.lib_utils import (
+    form_bricks_list, get_servers_bricks_dict)
 from glustolibs.gluster.brick_ops import remove_brick
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_fix_layout_to_complete)
-from glustolibs.gluster.glusterdir import mkdir
+from glustolibs.gluster.glusterdir import mkdir, get_dir_contents
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 from glustolibs.gluster.glusterfile import get_fattr
 
@@ -76,6 +77,20 @@ class TestSpuriousRebalance(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
+
+        bricks = get_servers_bricks_dict(self.servers,
+                                         self.all_servers_info)
+
+        # Checking brick dir and cleaning it.
+        for server in self.servers:
+            for brick in bricks[server]:
+                if get_dir_contents(server, brick):
+                    cmd = "rm -rf " + brick + "/*"
+                    ret, _, _ = g.run(server, cmd)
+                    if ret:
+                        raise ExecutionError("Failed to delete the brick "
+                                             "dirs of deleted volume.")
+
         self.get_super_method(self, 'tearDown')()
 
     def test_spurious_rebalance(self):

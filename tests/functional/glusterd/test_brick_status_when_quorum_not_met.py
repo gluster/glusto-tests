@@ -141,7 +141,7 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         # immediately after glusterd start, that's why verifying that all
         # glusterd started nodes available in gluster volume status or not
         count = 0
-        while count < 80:
+        while count < 200:
             vol_status = get_volume_status(self.mnode, self.volname)
             servers_count = len(vol_status[self.volname].keys())
             if servers_count == 5:

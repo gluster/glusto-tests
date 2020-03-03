@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,10 +21,11 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import (cleanup_volume, get_volume_list,
                                             setup_volume)
-from glustolibs.gluster.volume_ops import (volume_stop)
+from glustolibs.gluster.volume_ops import (volume_stop, volume_start)
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.gluster_init import stop_glusterd, start_glusterd
-from glustolibs.gluster.peer_ops import peer_probe_servers, is_peer_connected
+from glustolibs.gluster.peer_ops import (
+    peer_probe_servers, wait_for_peers_to_connect)
 
 
 @runs_on([['distributed', 'replicated', 'distributed-replicated', 'dispersed',
@@ -44,13 +45,17 @@ class TestVolumeDelete(GlusterBaseClass):
 
     def tearDown(self):
 
+        # start the volume, it should succeed
+        ret, _, _ = volume_start(self.mnode, self.volname)
+        self.assertEqual(ret, 0, "Volume stop failed")
+
         # start glusterd on all servers
         ret = start_glusterd(self.servers)
         if not ret:
             raise ExecutionError("Failed to start glusterd on all servers")
 
         for server in self.servers:
-            ret = is_peer_connected(server, self.servers)
+            ret = wait_for_peers_to_connect(server, self.servers)
             if not ret:
                 ret = peer_probe_servers(server, self.servers)
                 if not ret:
