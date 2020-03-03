@@ -782,7 +782,7 @@ class GlusterBaseClass(TestCase):
             cls.vol_options = cls.volume['options']
 
             # Define useful variable for geo-rep volumes.
-            if cls.geo_rep_info:
+            if cls.slaves:
                 # For master volume
                 cls.master_volume = cls.volume
                 cls.master_volume['name'] = ('master_testvol_%s'
@@ -849,7 +849,7 @@ class GlusterBaseClass(TestCase):
             cls.mounts = create_mount_objs(cls.mounts_dict_list)
 
             # Setting mounts for geo-rep volumes.
-            if cls.geo_rep_info:
+            if cls.slaves:
 
                 # For master volume mount
                 cls.master_mounts = cls.mounts
@@ -858,7 +858,7 @@ class GlusterBaseClass(TestCase):
                 slave_mount_dict_list = deepcopy(cls.mounts_dict_list)
                 for mount_dict in slave_mount_dict_list:
                     mount_dict['volname'] = cls.slave_volume
-                    mount_dict['server'] = cls.snode
+                    mount_dict['server'] = cls.mnode_slave
                     mount_dict['mountpoint'] = path_join(
                             "/mnt", '_'.join([cls.slave_volname,
                                               cls.mount_type]))
