@@ -309,10 +309,9 @@ def find_new_hashed(subvols, parent_path, oldname):
             count += 1
             ret = brickdir.hashrange_contains_hash(newhash)
             if ret == 1:
-                if oldhashed._host != brickdir._host:
-                    g.log.debug("oldhashed %s new %s count %s",
-                                oldhashed, brickdir._host, str(count))
-                    return NewHashed(item, brickdir, count)
+                g.log.debug("oldhashed %s new %s count %s",
+                            oldhashed, brickdir._host, str(count))
+                return NewHashed(item, brickdir, count)
 
         count = -1
     return None
