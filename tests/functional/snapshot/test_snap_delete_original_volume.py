@@ -23,7 +23,7 @@ and delete snapshot and original volume.
 Validate cloned volume is not affected.
 
 """
-import sys
+from time import sleep
 
 from glusto.core import Glusto as g
 
@@ -38,6 +38,7 @@ from glustolibs.gluster.snap_ops import (snap_create,
                                          snap_activate,
                                          snap_clone)
 from glustolibs.misc.misc_libs import upload_scripts
+from glustolibs.gluster.mount_ops import umount_volume
 
 
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
@@ -82,25 +83,23 @@ class SnapshotSelfheal(GlusterBaseClass):
 
         """
         # Perform I/O
-        g.log.info("Starting to Perform I/O")
         all_mounts_procs = []
-        for mount_obj in self.mounts:
-            g.log.info("Generating data for %s:"
-                       "%s", mount_obj.client_system, mount_obj.mountpoint)
-            # Create files
-            g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 100 "
-                       "--fixed-file-size 1k %s" % (
-                           sys.version_info.major, self.script_upload_path,
-                           mount_obj.mountpoint))
-            proc = g.run_async(mount_obj.client_system, command,
-                               user=mount_obj.user)
-            all_mounts_procs.append(proc)
+        g.log.info("Generating data for %s:"
+                   "%s", self.mounts[0].client_system,
+                   self.mounts[0].mountpoint)
+        # Create files
+        g.log.info('Creating files...')
+        command = ("/usr/bin/env python %s create_files -f 100 "
+                   "--fixed-file-size 1k %s" % (self.script_upload_path,
+                                                self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, command,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
         self.io_validation_complete = False
 
         # Validate IO
         self.assertTrue(
-            validate_io_procs(all_mounts_procs, self.mounts),
+            validate_io_procs(all_mounts_procs, self.mounts[0]),
             "IO failed on some of the clients"
         )
         self.io_validation_complete = True
@@ -140,12 +139,25 @@ class SnapshotSelfheal(GlusterBaseClass):
         g.log.info("Clone Volume %s created successfully from snapshot "
                    "%s", self.clone, self.snap)
 
+        # After cloning a volume wait for 5 second to start the volume
+        sleep(5)
+
         # Validate clone volumes are started:
         g.log.info("starting to Validate clone volumes are started")
         ret, _, _ = volume_start(self.mnode, self.clone)
         self.assertEqual(ret, 0, ("Failed to start cloned volume "
                                   "%s" % self.clone))
         g.log.info("Volume %s started successfully", self.clone)
+
+        for mount_obj in self.mounts:
+            # Unmount Volume
+            g.log.info("Starting to Unmount Volume %s", self.volname)
+            ret = umount_volume(mount_obj.client_system,
+                                mount_obj.mountpoint,
+                                mtype=self.mount_type)
+            self.assertTrue(ret,
+                            ("Failed to Unmount Volume %s" % self.volname))
+        g.log.info("Successfully Unmounted Volume %s", self.volname)
 
         # Delete original volume
         g.log.info("deleting original volume")
@@ -197,10 +209,3 @@ class SnapshotSelfheal(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to delete the cloned volume")
         g.log.info("Successful in deleting Cloned volume")
-
-        # Unmount and cleanup-volume
-        g.log.info("Starting to Unmount and cleanup-volume")
-        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
-        if not ret:
-            raise ExecutionError("Failed to Unmount and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
