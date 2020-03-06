@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,8 +20,6 @@ Description:
 Test Cases in this module tests the
 Creation of clone volume from snapshot.
 """
-
-import sys
 
 from glusto.core import Glusto as g
 
@@ -92,9 +90,9 @@ class SnapshotCloneValidate(GlusterBaseClass):
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "-f 10 --base-file-name file %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run(self.clients[0], cmd)
             all_mounts_procs.append(proc)

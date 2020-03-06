@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #        of the volume.
 
 import re
-import sys
 
 from glusto.core import Glusto as g
 
@@ -113,9 +112,9 @@ class CheckVolumeChecksumAfterChangingNetworkPingTimeOut(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("/usr/bin/env python%d %s create_files -f 10 "
+            cmd = ("/usr/bin/env python %s create_files -f 10 "
                    "--base-file-name newfile %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

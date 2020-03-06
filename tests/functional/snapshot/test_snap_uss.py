@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ Test Cases in this module tests the
 Creation of snapshot and USS feature.
 
 """
-import sys
 
 from glusto.core import Glusto as g
 
@@ -91,9 +90,9 @@ class SnapshotUssSnap(GlusterBaseClass):
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "-f 10 --base-file-name file %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -130,9 +129,9 @@ class SnapshotUssSnap(GlusterBaseClass):
                     ret = mkdir(mount_obj.client_system, self.mpoint)
                     self.assertTrue(ret, "Failed to create .snaps directory")
                     g.log.info("Successfully created .snaps directory")
-            cmd = ("/usr/bin/env python%d %s create_files "
+            cmd = ("/usr/bin/env python %s create_files "
                    "-f 10 --base-file-name foo %s" % (
-                       sys.version_info.major, self.script_upload_path,
+                       self.script_upload_path,
                        self.mpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)

@@ -21,7 +21,6 @@ Test Cases in this module tests the
 uss functionality while io is going on.
 
 """
-import sys
 
 from glusto.core import Glusto as g
 
@@ -141,9 +140,9 @@ class SnapshotUssWhileIo(GlusterBaseClass):
                        "%s", mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("/usr/bin/env python%d %s create_files -f 100 "
+            command = ("/usr/bin/env python %s create_files -f 100 "
                        "--fixed-file-size 1M %s" % (
-                           sys.version_info.major, self.script_upload_path,
+                           self.script_upload_path,
                            mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
