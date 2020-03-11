@@ -29,6 +29,7 @@ from socket import (
     gaierror,
 )
 from unittest import TestCase
+from time import sleep
 
 from glusto.core import Glusto as g
 
@@ -41,8 +42,10 @@ from glustolibs.gluster.mount_ops import create_mount_objs
 from glustolibs.gluster.nfs_libs import export_volume_through_nfs
 from glustolibs.gluster.peer_ops import (
     is_peer_connected,
-    peer_status,
+    peer_probe_servers, peer_status
 )
+from glustolibs.gluster.gluster_init import (
+    restart_glusterd, stop_glusterd, wait_for_glusterd_to_start)
 from glustolibs.gluster.samba_libs import share_volume_over_smb
 from glustolibs.gluster.volume_libs import (
     cleanup_volume,
@@ -99,6 +102,7 @@ class GlusterBaseClass(TestCase):
     # defaults in setUpClass()
     volume_type = None
     mount_type = None
+    error_or_failure_exists = False
 
     @staticmethod
     def get_super_method(obj, method_name):
@@ -209,6 +213,94 @@ class GlusterBaseClass(TestCase):
         peer_status(cls.mnode)
 
         return True
+
+    def _is_error_or_failure_exists(self):
+        """Function to get execution error in case of
+        failures in testcases
+        """
+        if hasattr(self, '_outcome'):
+            # Python 3.4+
+            result = self.defaultTestResult()
+            self._feedErrorsToResult(result, self._outcome.errors)
+        else:
+            # Python 2.7-3.3
+            result = getattr(
+                self, '_outcomeForDoCleanups', self._resultForDoCleanups)
+        ok_result = True
+        for attr in ('errors', 'failures'):
+            if not hasattr(result, attr):
+                continue
+            exc_list = getattr(result, attr)
+            if exc_list and exc_list[-1][0] is self:
+                ok_result = ok_result and not exc_list[-1][1]
+        if hasattr(result, '_excinfo'):
+            ok_result = ok_result and not result._excinfo
+        if ok_result:
+            return False
+        self.error_or_failure_exists = True
+        GlusterBaseClass.error_or_failure_exists = True
+        return True
+
+    @classmethod
+    def scratch_cleanup(cls, error_or_failure_exists):
+        """
+        This scratch_cleanup script will run only when the code
+        currently running goes into execution or assertion error.
+
+        Args:
+            error_or_failure_exists (bool): If set True will cleanup setup
+                atlast of testcase only if exectution or assertion error in
+                teststeps. False will skip this scratch cleanup step.
+
+        Returns (bool): True if setup cleanup is successful.
+            False otherwise.
+        """
+        if error_or_failure_exists:
+            ret = stop_glusterd(cls.servers)
+            if not ret:
+                g.log.error("Failed to stop glusterd")
+                cmd_list = ("pkill pidof glusterd",
+                            "rm /var/run/glusterd.socket")
+                for server in cls.servers:
+                    for cmd in cmd_list:
+                        ret, _, _ = g.run(server, cmd, "root")
+                        if ret:
+                            g.log.error("Failed to stop glusterd")
+                            return False
+            for server in cls.servers:
+                cmd_list = ("rm -rf /var/lib/glusterd/vols/*",
+                            "rm -rf /var/lib/glusterd/snaps/*",
+                            "rm -rf /var/lib/glusterd/peers/*",
+                            "rm -rf {}/*/*".format(
+                                cls.all_servers_info[server]['brick_root']))
+                for cmd in cmd_list:
+                    ret, _, _ = g.run(server, cmd, "root")
+                    if ret:
+                        g.log.error(
+                            "failed to cleanup server {}".format(server))
+                        return False
+            ret = restart_glusterd(cls.servers)
+            if not ret:
+                g.log.error("Failed to start glusterd")
+                return False
+            sleep(2)
+            ret = wait_for_glusterd_to_start(cls.servers)
+            if not ret:
+                g.log.error("Failed to bring glusterd up")
+                return False
+            ret = peer_probe_servers(cls.mnode, cls.servers)
+            if not ret:
+                g.log.error("Failed to peer probe servers")
+                return False
+            for client in cls.clients:
+                cmd_list = ("umount /mnt/*", "rm -rf /mnt/*")
+                for cmd in cmd_list:
+                    ret = g.run(client, cmd, "root")
+                    if ret:
+                        g.log.error(
+                            "failed to unmount/already unmounted {}"
+                            .format(client))
+            return True
 
     @classmethod
     def setup_volume(cls, volume_create_force=False):
@@ -923,3 +1015,19 @@ class GlusterBaseClass(TestCase):
         msg = "Teardownclass: %s : %s" % (cls.__name__, cls.glustotest_run_id)
         g.log.info(msg)
         cls.inject_msg_in_gluster_logs(msg)
+
+    def doCleanups(self):
+        if (self.error_or_failure_exists or
+                self._is_error_or_failure_exists()):
+            ret = self.scratch_cleanup(self.error_or_failure_exists)
+            g.log.warn(ret)
+        return self.get_super_method(self, 'doCleanups')()
+
+    @classmethod
+    def doClassCleanups(cls):
+        if (GlusterBaseClass.error_or_failure_exists or
+                cls._is_error_or_failure_exists()):
+            ret = cls.scratch_cleanup(
+                GlusterBaseClass.error_or_failure_exists)
+            g.log.warn(ret)
+        return cls.get_super_method(cls, 'doClassCleanups')()
