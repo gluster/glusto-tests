@@ -23,10 +23,10 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.peer_ops import peer_detach
 from glustolibs.gluster.peer_ops import peer_probe_servers
 from glustolibs.gluster.lib_utils import is_core_file_created
+from glustolibs.gluster.volume_ops import volume_stop, volume_start
 
 
-@runs_on([['distributed', 'replicated', 'distributed-replicated',
-           'dispersed', 'distributed-dispersed'], ['glusterfs']])
+@runs_on([['replicated', 'distributed-dispersed'], ['glusterfs']])
 class PeerDetachVerification(GlusterBaseClass):
     """
     Test that peer detach works as expected
@@ -58,14 +58,37 @@ class PeerDetachVerification(GlusterBaseClass):
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
 
+    # A local function to detach peer when volume exists
+    def check_detach_error_message(self, use_force=True):
+        ret, _, err = peer_detach(self.mnode, self.servers[1],
+                                  force=use_force)
+        self.assertNotEqual(ret, 0, "detach server should fail: %s"
+                            % self.servers[1])
+        msg = ('peer detach: failed: Brick(s) with the peer ' +
+               self.servers[1] + ' ' + 'exist in cluster')
+        if msg not in err:
+            msg = ('peer detach: failed: Peer ' + self.servers[1] +
+                   ' hosts one or more bricks. ' +
+                   'If the peer is in not recoverable ' +
+                   'state then use either ' +
+                   'replace-brick or remove-brick command ' +
+                   'with force to remove ' +
+                   'all bricks from the peer and ' +
+                   'attempt the peer detach again.')
+            self.assertIn(msg, err, "Peer detach not failed with "
+                          "proper error message")
+
     def test_peer_detach_host(self):
+        # pylint: disable = too-many-statements
         # peer Detaching specified server from cluster
-        # peer Detaching detached server again
+        # peer Detaching detached server again and checking the error msg
         # peer Detaching invalid host
         # peer Detaching Non exist host
         # peer Checking Core file created or not
         # Peer detach one node which contains the bricks of volume created
         # Peer detach force a node which is hosting bricks of a volume
+        # Peer detach one node which hosts bricks of offline volume
+        # Peer detach force a node which hosts bricks of offline volume
 
         # Timestamp of current test case of start time
         ret, test_timestamp, _ = g.run_local('date +%s')
@@ -86,9 +109,12 @@ class PeerDetachVerification(GlusterBaseClass):
         # Detached server detaching again, Expected to fail detach
         g.log.info("Start detached server detaching "
                    "again : %s", self.servers[1])
-        ret, _, _ = peer_detach(self.mnode, self.servers[1])
+        ret, _, err = peer_detach(self.mnode, self.servers[1])
         self.assertNotEqual(ret, 0, "Detach server should "
                                     "fail :%s" % self.servers[1])
+        self.assertEqual(err, "peer detach: failed: %s is not part of "
+                              "cluster\n" % self.servers[1], "Peer "
+                         "Detach didn't fail as expected")
 
         # Probing detached server
         g.log.info("Start probing detached server : %s", self.servers[1])
@@ -108,13 +134,6 @@ class PeerDetachVerification(GlusterBaseClass):
         self.assertNotEqual(ret, 0, "Detach non existing host "
                                     "should fail :%s" % self.non_exist_host)
 
-        # Chekcing core. file created or not in "/", "/tmp", "/log/var/core
-        # directory
-        ret = is_core_file_created(self.servers, test_timestamp)
-        self.assertTrue(ret, "glusterd service should not crash")
-        g.log.info("No core file found, glusterd service running "
-                   "successfully")
-
         # Creating Volume
         g.log.info("Started creating volume: %s", self.volname)
         ret = self.setup_volume()
@@ -123,39 +142,37 @@ class PeerDetachVerification(GlusterBaseClass):
         # Peer detach one node which contains the bricks of the volume created
         g.log.info("Start detaching server %s which is hosting "
                    "bricks of a volume", self.servers[1])
-        ret, _, err = peer_detach(self.mnode, self.servers[1])
-        self.assertNotEqual(ret, 0, "detach server should fail: %s"
-                            % self.servers[1])
-        msg = ('peer detach: failed: Brick(s) with the peer ' +
-               self.servers[1] + ' ' + 'exist in cluster')
-        if msg not in err:
-            msg = ('peer detach: failed: Peer ' + self.servers[1] +
-                   ' hosts one or more bricks. ' +
-                   'If the peer is in not recoverable ' +
-                   'state then use either ' +
-                   'replace-brick or remove-brick command ' +
-                   'with force to remove ' +
-                   'all bricks from the peer and ' +
-                   'attempt the peer detach again.')
-        self.assertIn(msg, err, "Peer detach not failed with "
-                                "proper error message")
+        self.check_detach_error_message(use_force=False)
 
         #  Peer detach force a node which is hosting bricks of a volume
+        g.log.info("Start detaching server using force %s which is hosting "
+                   "bricks of a volume", self.servers[1])
+        self.check_detach_error_message()
+
+        # Peer detach one node which contains bricks of an offline volume
+        g.log.info("stopping the volume")
+        ret, _, err = volume_stop(self.mnode, self.volname)
+        msg = ('volume stop: ' + 'self.volname' + ': failed: Volume ' +
+               'self.volname' + ' is not in the started state\n')
+        if msg not in err:
+            self.assertEqual(ret, 0, "stopping volume %s failed"
+                             % self.volname)
+        g.log.info("Start to detach server %s which is hosting "
+                   "bricks of an offline volume", self.servers[1])
+        self.check_detach_error_message(use_force=False)
+
+        # Forceful Peer detach node which hosts bricks of offline volume
         g.log.info("start detaching server %s with force option "
                    "which is hosting bricks of a volume", self.servers[1])
-        ret, _, err = peer_detach(self.mnode, self.servers[1], force=True)
-        self.assertNotEqual(ret, 0, "detach server should fail with force "
-                                    "option : %s" % self.servers[1])
-        msg = ('peer detach: failed: Brick(s) with the peer ' +
-               self.servers[1] + ' ' + 'exist in cluster')
-        if msg not in err:
-            msg = ('peer detach: failed: Peer ' + self.servers[1] +
-                   ' hosts one or more bricks. ' +
-                   'If the peer is in not recoverable ' +
-                   'state then use either ' +
-                   'replace-brick or remove-brick command ' +
-                   'with force to remove ' +
-                   'all bricks from the peer and ' +
-                   'attempt the peer detach again.')
-        self.assertIn(msg, err, "Peer detach not failed with "
-                                "proper error message")
+        self.check_detach_error_message()
+
+        # starting volume for proper cleanup
+        ret, _, _ = volume_start(self.mnode, self.volname)
+        self.assertEqual(ret, 0, "volume start failed")
+
+        # Checking core. file created or not in "/", "/tmp", "/log/var/core
+        # directory
+        ret = is_core_file_created(self.servers, test_timestamp)
+        self.assertTrue(ret, "glusterd service should not crash")
+        g.log.info("No core file found, glusterd service running "
+                   "successfully")
