@@ -297,10 +297,21 @@ def find_new_hashed(subvols, parent_path, oldname):
         g.log.error("could not form brickobject list")
         return None
 
+    for bro in brickobject:
+        bro._get_hashrange()
+        low = bro._hashrange_low
+        high = bro._hashrange_high
+        g.log.debug("low hashrange %s high hashrange %s", str(low), str(high))
+        g.log.debug("absoulte path %s", bro._fqpath)
+
+    hash_num = calculate_hash(brickobject[0]._host, oldname)
     oldhashed, _ = find_hashed_subvol(subvols, parent_path, oldname)
     if oldhashed is None:
         g.log.error("could not find old hashed subvol")
         return None
+
+    g.log.debug("oldhashed: %s oldname: %s oldhash %s", oldhashed._host,
+                oldname, hash_num)
 
     count = -1
     for item in range(1, 5000, 1):
@@ -309,9 +320,10 @@ def find_new_hashed(subvols, parent_path, oldname):
             count += 1
             ret = brickdir.hashrange_contains_hash(newhash)
             if ret == 1:
-                g.log.debug("oldhashed %s new %s count %s",
-                            oldhashed, brickdir._host, str(count))
-                return NewHashed(item, brickdir, count)
+                if oldhashed._fqpath != brickdir._fqpath:
+                    g.log.debug("oldhashed %s new %s count %s",
+                                oldhashed, brickdir._host, str(count))
+                    return NewHashed(item, brickdir, count)
 
         count = -1
     return None
