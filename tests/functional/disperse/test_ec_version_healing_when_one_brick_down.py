@@ -230,7 +230,7 @@ class TestEcVersionBrickdown(GlusterBaseClass):
         ret = bring_bricks_offline(self.volname,
                                    brick_b2_down)
         self.assertTrue(ret, 'Brick %s is not offline' % brick_b2_down)
-        g.log.info('Brick % is  offline successfully', brick_b2_down)
+        g.log.info('Brick %s is offline successfully', brick_b2_down)
 
         # Bring brick b1 online
         ret = bring_bricks_online(self.mnode, self.volname,
