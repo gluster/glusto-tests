@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -75,6 +75,9 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
 
+        # After running restart in g.async adding 10 sec sleep
+        sleep(10)
+
         # Creating volumes using 3 servers
         ret, _, _ = volume_create(self.mnode, self.volname,
                                   bricks_list)
@@ -100,6 +103,9 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
                        "service glusterd restart; sleep 3; "
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
+
+        # After running restart in g.async adding 10 sec sleep
+        sleep(10)
 
         # Start the volume created.
         ret, _, _ = volume_start(self.mnode, self.volname)
