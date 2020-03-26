@@ -18,7 +18,8 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            get_volume_list, get_volume_status)
-from glustolibs.gluster.brick_libs import get_all_bricks
+from glustolibs.gluster.brick_libs import (
+    get_all_bricks, wait_for_bricks_to_be_online)
 from glustolibs.gluster.volume_libs import (cleanup_volume)
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
                                          peer_probe_servers,
@@ -61,6 +62,11 @@ class TestRebalanceHang(GlusterBaseClass):
         vol_list = get_volume_list(self.mnode)
         if vol_list is not None:
             for volume in vol_list:
+                # check all bricks are online
+                ret = wait_for_bricks_to_be_online(self.mnode, volume)
+                if not ret:
+                    raise ExecutionError("Failed to bring bricks online"
+                                         "for volume %s" % volume)
                 ret = cleanup_volume(self.mnode, volume)
                 if not ret:
                     raise ExecutionError("Failed to cleanup volume")
