@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2016-2019 Red Hat, Inc.
+# Copyright (c) 2016-2020 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,6 +49,8 @@ setup(
 )
 
 try:
-    dir_util.copy_tree('./gdeploy_configs', '/usr/share/glustolibs/gdeploy_configs')
+    for srcdir, destdir in (('./gdeploy_configs', '/usr/share/glustolibs/gdeploy_configs'),
+                            ('./scripts', '/usr/share/glustolibs/scripts/')):
+        dir_util.copy_tree(srcdir, destdir)
 except:
     pass

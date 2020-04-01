@@ -26,8 +26,6 @@ import re
 import time
 from collections import OrderedDict
 import tempfile
-import subprocess
-import random
 
 ONE_GB_BYTES = 1073741824.0
 
@@ -53,23 +51,16 @@ def append_string_to_file(mnode, filename, str_to_add_in_file,
     Returns:
         True, on success, False otherwise
     """
-    try:
-        conn = g.rpyc_get_connection(mnode, user=user)
-        if conn is None:
-            g.log.error("Unable to get connection to 'root' of node %s"
-                        " in append_string_to_file()" % mnode)
-            return False
-
-        with conn.builtin.open(filename, 'a') as _filehandle:
-            _filehandle.write(str_to_add_in_file)
-
-        return True
-    except IOError:
-        g.log.error("Exception occurred while adding string to "
-                    "file %s in append_string_to_file()", filename)
+    cmd = "echo '{0}' >> {1}".format(str_to_add_in_file,
+                                     filename)
+    ret, out, err = g.run(mnode, cmd, user)
+    if ret or out or err:
+        g.log.error("Unable to append string '{0}' to file "
+                    "'{1}' on node {2} using user {3}"
+                    .format(str_to_add_in_file, filename,
+                            mnode, user))
         return False
-    finally:
-        g.rpyc_close_connection(host=mnode, user=user)
+    return True
 
 
 def search_pattern_in_file(mnode, search_pattern, filename, start_str_to_parse,
@@ -268,31 +259,19 @@ def list_files(mnode, dir_path, parse_str="", user="root"):
         NoneType: None if command execution fails, parse errors.
         list: files with absolute name
     """
-
-    try:
-        conn = g.rpyc_get_connection(mnode, user=user)
-        if conn is None:
-            g.log.error("Unable to get connection to 'root' of node %s"
-                        % mnode)
-            return None
-
-        filepaths = []
-        for root, directories, files in conn.modules.os.walk(dir_path):
-            for filename in files:
-                if parse_str != "":
-                    if parse_str in filename:
-                        filepath = conn.modules.os.path.join(root, filename)
-                        filepaths.append(filepath)
-                else:
-                    filepath = conn.modules.os.path.join(root, filename)
-                    filepaths.append(filepath)
-        return filepaths
-    except StopIteration:
-        g.log.error("Exception occurred in list_files()")
+    if parse_str == "":
+        cmd = "find {0} -type f".format(dir_path)
+    else:
+        cmd = "find {0} -type f | grep {1}".format(dir_path,
+                                                   parse_str)
+    ret, out, err = g.run(mnode, cmd, user)
+    if ret or err:
+        g.log.error("Unable to get the list of files on path "
+                    "{0} on node {1} using user {2} due to error {3}"
+                    .format(dir_path, mnode, user, err))
         return None
-
-    finally:
-        g.rpyc_close_connection(host=mnode, user=user)
+    file_list = out.split('\n')
+    return file_list[0:len(file_list)-1]
 
 
 def get_servers_bricks_dict(servers, servers_info):
@@ -544,22 +523,13 @@ def get_disk_usage(mnode, path, user="root"):
     Example:
         get_disk_usage("abc.com", "/mnt/glusterfs")
     """
-
-    inst = random.randint(10, 100)
-    conn = g.rpyc_get_connection(mnode, user=user, instance=inst)
-    if conn is None:
-        g.log.error("Failed to get rpyc connection")
+    cmd = 'stat -f {0}'.format(path)
+    ret, out, err = g.run(mnode, cmd, user)
+    if ret:
+        g.log.error("Unable to get stat of path {0} on node {1} "
+                    "using user {2} due to error {3}".format(path, mnode,
+                                                             user, err))
         return None
-    cmd = 'stat -f ' + path
-    p = conn.modules.subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    ret = p.returncode
-    if ret != 0:
-        g.log.error("Failed to execute stat command")
-        return None
-
-    g.rpyc_close_connection(host=mnode, user=user, instance=inst)
     res = ''.join(out)
     match = re.match(r'.*Block size:\s(\d+).*Blocks:\sTotal:\s(\d+)\s+?'
                      r'Free:\s(\d+)\s+?Available:\s(\d+).*Inodes:\s'

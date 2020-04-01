@@ -22,7 +22,7 @@ import os
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.glusterfile import (GlusterFile, calculate_hash,
-                                            get_pathinfo)
+                                            get_pathinfo, file_exists)
 from glustolibs.gluster.glusterdir import GlusterDir
 from glustolibs.gluster.layout import Layout
 import glustolibs.gluster.constants as k
@@ -30,6 +30,7 @@ import glustolibs.gluster.exceptions as gex
 from glustolibs.gluster.brickdir import BrickDir
 from glustolibs.gluster.volume_libs import get_subvols, get_volume_type
 from glustolibs.gluster.gluster_init import get_gluster_version
+from glustolibs.misc.misc_libs import upload_scripts
 
 
 def run_layout_tests(mnode, fqpath, layout, test_type):
@@ -120,11 +121,25 @@ def validate_files_in_dir(mnode, rootdir,
     """
     layout_cache = {}
 
-    conn = g.rpyc_get_connection(mnode)
-    if conn is None:
-        g.log.info("Not able to establish connection to node %s" % mnode)
+    script_path = ("/usr/share/glustolibs/scripts/walk_dir.py")
+    if not file_exists(mnode, script_path):
+        if upload_scripts(mnode, script_path,
+                          "/usr/share/glustolibs/scripts/"):
+            g.log.info("Successfully uploaded script "
+                       "walk_dir.py!")
+        else:
+            g.log.error("Faild to upload walk_dir.py!")
+            return False
+    else:
+        g.log.info("compute_hash.py already present!")
+
+    cmd = ("/usr/bin/env python {0} {1}".format(script_path, rootdir))
+    ret, out, _ = g.run(mnode, cmd)
+    if ret:
+        g.log.error('Unable to run the script on node {0}'
+                    .format(mnode))
         return False
-    for walkies in conn.modules.os.walk(rootdir):
+    for walkies in eval(out):
         g.log.info("TESTING DIRECTORY %s..." % walkies[0])
 
         # check directories
@@ -161,8 +176,6 @@ def validate_files_in_dir(mnode, rootdir,
 
                 if test_type & k.TEST_FILE_EXISTS_ON_HASHED_BRICKS:
                     run_hashed_bricks_test(gfile)
-
-    g.rpyc_close_connection(mnode)
     return True
 
 

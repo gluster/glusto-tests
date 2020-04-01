@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ import os
 import re
 
 from glusto.core import Glusto as g
-
 from glustolibs.gluster.layout import Layout
+from glustolibs.misc.misc_libs import upload_scripts
 
 
 def calculate_hash(host, filename):
@@ -39,26 +39,43 @@ def calculate_hash(host, filename):
 
     Returns:
         An integer representation of the hash
+
+    TODO: For testcases specifically testing hashing routine
+          consider using a baseline external Davies-Meyer hash_value.c
+          Creating comparison hash from same library we are testing
+          may not be best practice here. (Holloway)
     """
-    # TODO: For testcases specifically testing hashing routine
-    #        consider using a baseline external Davies-Meyer hash_value.c
-    #        Creating comparison hash from same library we are testing
-    #        may not be best practice here. (Holloway)
     try:
         # Check if libglusterfs.so.0 is available locally
         glusterfs = ctypes.cdll.LoadLibrary("libglusterfs.so.0")
         g.log.debug("Library libglusterfs.so.0 loaded locally")
+        computed_hash = (
+            ctypes.c_uint32(glusterfs.gf_dm_hashfn(filename,
+                                                   len(filename))))
+        hash_value = int(computed_hash.value)
     except OSError:
-        conn = g.rpyc_get_connection(host)
-        glusterfs = \
-            conn.modules.ctypes.cdll.LoadLibrary("libglusterfs.so.0")
-        g.log.debug("Library libglusterfs.so.0 loaded via rpyc")
-
-    computed_hash = \
-        ctypes.c_uint32(glusterfs.gf_dm_hashfn(filename, len(filename)))
-    # conn.close()
-
-    return int(computed_hash.value)
+        script_path = ("/usr/share/glustolibs/scripts/"
+                       "compute_hash.py")
+        if not file_exists(host, script_path):
+            if upload_scripts(host, script_path,
+                              '/usr/share/glustolibs/scripts/'):
+                g.log.info("Successfully uploaded script "
+                           "compute_hash.py!")
+            else:
+                g.log.error('Unable to upload the script to node {0}'
+                            .format(host))
+                return 0
+        else:
+            g.log.info("compute_hash.py already present!")
+        cmd = ("/usr/bin/env python {0} {1}".format(script_path,
+                                                    filename))
+        ret, out, _ = g.run(host, cmd)
+        if ret:
+            g.log.error('Unable to run the script on node {0}'
+                        .format(host))
+            return 0
+        hash_value = int(out.split('\n')[0])
+    return hash_value
 
 
 def get_mountpoint(host, fqpath):

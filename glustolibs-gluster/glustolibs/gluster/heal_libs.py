@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2016 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -395,30 +395,26 @@ def do_bricks_exist_in_shd_volfile(mnode, volname, brick_list):
     host = brick = None
     parse = False
 
-    # Establish connection to mnode
-    conn = g.rpyc_get_connection(mnode)
-    if conn is None:
-        g.log.info("Not able to establish connection to node %s" % mnode)
+    cmd = "cat {0}".format(GLUSTERSHD)
+    ret, out, _ = g.run(mnode, cmd)
+    if ret:
+        g.log.error("Unable to cat the GLUSTERSHD file.")
         return False
-    try:
-        fd = conn.builtins.open(GLUSTERSHD)
-        for each_line in fd:
-            each_line = each_line.strip()
-            if volume_clients in each_line:
-                parse = True
-            elif "end-volume" in each_line:
-                if parse:
-                    brick_list_server_vol.append("%s:%s" % (host, brick))
-                parse = False
-            elif parse:
-                if "option remote-subvolume" in each_line:
-                    brick = each_line.split(" ")[2]
-                if "option remote-host" in each_line:
-                    host = each_line.split(" ")[2]
+    fd = out.split('\n')
 
-    except IOError as e:
-        g.log.info("I/O error ({0}): {1}".format(e.errno, e.strerror))
-        return False
+    for each_line in fd:
+        each_line = each_line.strip()
+        if volume_clients in each_line:
+            parse = True
+        elif "end-volume" in each_line:
+            if parse:
+                brick_list_server_vol.append("%s:%s" % (host, brick))
+            parse = False
+        elif parse:
+            if "option remote-subvolume" in each_line:
+                brick = each_line.split(" ")[2]
+            if "option remote-host" in each_line:
+                host = each_line.split(" ")[2]
 
     g.log.info("Brick List from volume info : %s" % brick_list)
     g.log.info("Brick List from glustershd server volume "
