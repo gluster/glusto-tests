@@ -21,7 +21,7 @@ import sys
 import time
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.lib_utils import is_rhel7
+from glustolibs.gluster.lib_utils import is_rhel6
 
 
 def create_dirs(list_of_nodes, list_of_dir_paths):
@@ -572,14 +572,14 @@ def daemon_reload(node):
         bool: True, On successful daemon reload
                False, Otherwise
     """
-    if is_rhel7([node]):
-        cmd = "systemctl daemon-reload"
+    if is_rhel6([node]):
+        cmd = 'service glusterd reload'
         ret, _, _ = g.run(node, cmd)
         if ret != 0:
             g.log.error("Failed to reload the daemon")
             return False
     else:
-        cmd = 'service glusterd reload'
+        cmd = "systemctl daemon-reload"
         ret, _, _ = g.run(node, cmd)
         if ret != 0:
             g.log.error("Failed to reload the daemon")
