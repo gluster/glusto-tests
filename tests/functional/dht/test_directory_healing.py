@@ -1,4 +1,4 @@
-#  Copyright (C) 2018-2019 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,17 +19,16 @@ Description:
 """
 
 from glusto.core import Glusto as g
-
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.brick_libs import bring_bricks_offline
-from glustolibs.gluster.brick_libs import bring_bricks_online
-from glustolibs.gluster.brickdir import BrickDir
-from glustolibs.gluster.volume_libs import get_subvols
-from glustolibs.gluster.dht_test_utils import find_nonhashed_subvol
+from glustolibs.gluster.brick_libs import (bring_bricks_offline,
+                                           bring_bricks_online, get_all_bricks)
+from glustolibs.gluster.brickdir import check_hashrange
+from glustolibs.gluster.glusterfile import get_file_stat, calculate_hash
 
 
-@runs_on([['distributed-replicated', 'distributed', 'distributed-dispersed'],
+@runs_on([['distributed', 'distributed-replicated',
+           'distributed-dispersed', 'distributed-arbiter'],
           ['glusterfs', 'nfs']])
 class TestDirHeal(GlusterBaseClass):
     '''
@@ -75,18 +74,25 @@ class TestDirHeal(GlusterBaseClass):
         g.log.info("mkdir of parent successful")
 
         # find non-hashed subvol for child
-        subvols = (get_subvols(self.mnode, self.volname))['volume_subvols']
+        hashed, non_hashed = [], []
+        hash_num = calculate_hash(self.mnode, "child")
+        bricklist = get_all_bricks(self.mnode, self.volname)
+        for brick in bricklist:
+            ret = check_hashrange(brick + "/parent")
+            hash_range_low = ret[0]
+            hash_range_high = ret[1]
+            if hash_range_low <= hash_num <= hash_range_high:
+                hashed.append(brick)
 
-        non_hashed, count = find_nonhashed_subvol(subvols, "parent", "child")
-        self.assertIsNotNone(non_hashed, "could not find non_hashed subvol")
-
-        g.log.info("non_hashed subvol %s", non_hashed._host)
+        non_hashed = [brick for brick in bricklist if brick not in hashed]
+        g.log.info("Non-hashed bricks are: %s", non_hashed)
 
         # bring non_hashed offline
-        ret = bring_bricks_offline(self.volname, subvols[count])
-        self.assertTrue(ret, ('Error in bringing down subvolume %s',
-                              subvols[count]))
-        g.log.info('target subvol %s is offline', subvols[count])
+        for brick in non_hashed:
+            ret = bring_bricks_offline(self.volname, brick)
+            self.assertTrue(ret, ('Error in bringing down brick %s',
+                                  brick))
+            g.log.info('Non-hashed brick %s is offline', brick)
 
         # create child directory
         runc = ("mkdir %s" % target_dir)
@@ -95,36 +101,44 @@ class TestDirHeal(GlusterBaseClass):
         g.log.info('mkdir successful %s', target_dir)
 
         # Check that the dir is not created on the down brick
-        brickpath = ("%s/child" % non_hashed._path)
-
-        ret, _, _ = g.run(non_hashed._host, ("stat %s" % brickpath))
-        self.assertEqual(ret, 1, ("Expected %s to be not present on %s" %
-                                  (brickpath, non_hashed._host)))
-        g.log.info("stat of %s failed as expected", brickpath)
+        for brick in non_hashed:
+            non_hashed_host, dir_path = brick.split(":")
+            brickpath = ("%s/parent/child" % dir_path)
+            ret, _, _ = g.run(non_hashed_host, ("stat %s" % brickpath))
+            self.assertEqual(ret, 1, ("Expected %s to be not present on %s" %
+                                      (brickpath, non_hashed_host)))
+            g.log.info("Stat of %s failed as expected", brickpath)
 
         # bring up the subvol
-        ret = bring_bricks_online(self.mnode, self.volname, subvols[count],
-                                  bring_bricks_online_methods=None)
+        ret = bring_bricks_online(
+            self.mnode, self.volname, non_hashed,
+            bring_bricks_online_methods='volume_start_force')
         self.assertTrue(ret, "Error in bringing back subvol online")
-        g.log.info('Subvol is back online')
+        g.log.info("Subvol is back online")
 
         runc = ("ls %s" % target_dir)
         ret, _, _ = g.run(self.clients[0], runc)
-        self.assertEqual(ret, 0, ("lookup on %s failed", target_dir))
-        g.log.info("lookup is successful on %s", target_dir)
+        self.assertEqual(ret, 0, ("Lookup on %s failed", target_dir))
+        g.log.info("Lookup is successful on %s", target_dir)
 
         # check if the directory is created on non_hashed
-        absolutedirpath = ("%s/child" % non_hashed._path)
+        for brick in non_hashed:
+            non_hashed_host, dir_path = brick.split(":")
+            absolutedirpath = ("%s/parent/child" % dir_path)
+            ret = get_file_stat(non_hashed_host, absolutedirpath)
+            self.assertIsNotNone(ret, "Directory is not present on non_hashed")
+            g.log.info("Directory is created on non_hashed subvol")
 
         # check if directory is healed => i.e. layout is zeroed out
-        temp = BrickDir(absolutedirpath)
-
-        if temp is None:
-            self.assertIsNot(temp, None, 'temp is None')
-
-        ret = temp.has_zero_hashrange()
-        self.assertTrue(ret, ("hash range is not there %s", ret))
-        g.log.info("directory healing successful")
+        for brick in non_hashed:
+            brick_path = ("%s/parent/child" % brick)
+            ret = check_hashrange(brick_path)
+            hash_range_low = ret[0]
+            hash_range_high = ret[1]
+            if not hash_range_low and not hash_range_high:
+                g.log.info("Directory healing successful")
+            else:
+                g.log.error("Directory is not healed")
 
     @classmethod
     def tearDownClass(cls):
