@@ -341,8 +341,8 @@ def install_arequal(list_of_nodes):
         list_of_nodes = [list_of_nodes]
 
     try:
-        arequal_repo = (g.config['dependencies']['testing_tools']['arequal']
-                        ['repo'])
+        arequal_repo = (g.config['dependencies']['testing_tools']
+                        ['arequal']['repo'])
     except KeyError:
         arequal_repo = ("https://copr.fedorainfracloud.org/coprs/nigelbabu/"
                         "arequal/repo/epel-7/nigelbabu-arequal-epel-7.repo")
@@ -618,4 +618,51 @@ def git_clone_and_compile(hosts, link, dir_name, compile_option='False'):
             return False
         else:
             g.log.info("Successfully cloned/compiled repo on %s" % host)
+    return True
+
+
+def kill_process(mnode, process_ids='', process_names=''):
+    """Kills the given set of process running in the specified node
+
+    Args:
+        mnode (str): Node at which the command has to be executed
+        process_ids (list|str): List of pid's to be terminated
+        process_names(list|str): List of Process names to be terminated
+
+    Returns:
+        bool : True on successful termination of all the processes
+               False, otherwise
+    Example:
+        >>> kill_process("10.70.43.68", process_ids=27664)
+        True/False
+        >>> kill_process("10.70.43.68", process_names=["glustershd",
+        "glusterd"])
+        True/False
+    """
+    if process_names:
+        process_ids = []
+        if not isinstance(process_names, list):
+            process_names = [process_names]
+
+        for process in process_names:
+            ret, pids, _ = g.run(mnode,
+                                 "ps -aef | grep -i '%s' | grep -v 'grep' | "
+                                 "awk '{ print $2 }'" % process)
+            pids = pids.split("\n")[:-1]
+            if not pids:
+                g.log.error("Getting pid for process %s failed" % process)
+                return False
+            for pid in pids:
+                if pid:
+                    process_ids.append(pid)
+
+    if process_ids and not isinstance(process_ids, list):
+        process_ids = [process_ids]
+
+    # Kill process
+    for pid in process_ids:
+        ret, _, _ = g.run(mnode, "kill -9 %s" % str(pid))
+        if ret:
+            g.log.error("Failed to kill process with pid %s" % str(pid))
+            return False
     return True
