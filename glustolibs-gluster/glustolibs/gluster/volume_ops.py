@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,11 @@ import re
 import copy
 from glusto.core import Glusto as g
 from pprint import pformat
+import io
+try:
+    import ConfigParser as configparser  # Python 2
+except ImportError:
+    import configparser as configparser  # Python 3
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
@@ -840,3 +845,76 @@ def get_volume_list(mnode):
                 vol_list.append(elem.text)
 
     return vol_list
+
+
+def get_gluster_state(mnode):
+    """Executes the 'gluster get-state' command on the specified node, checks
+    for the data dump, reads the glusterd state dump and returns it.
+
+    Args:
+        mnode (str): Node on which command has to be executed
+
+    Returns:
+        dict: The output of gluster get-state command in dict format
+
+    Example:
+         >>>get_gluster_state(self.mnode)
+         {'Global': {'myuuid': 'e92964c8-a7d2-4e59-81ac-feb0687df55e',
+         'op-version': '70000'}, 'Global options': {}, 'Peers':
+         {'peer1.primary_hostname': 'dhcp43-167.lab.eng.blr.redhat.com',
+         'peer1.uuid': 'd3a85b6a-134f-4df2-ba93-4bd0321b6d6a', 'peer1.state':
+         'Peer in Cluster', 'peer1.connected': 'Connected',
+         'peer1.othernames': '', 'peer2.primary_hostname':
+         'dhcp43-68.lab.eng.blr.redhat.com', 'peer2.uuid':
+         'f488aa35-bc56-4aea-9581-8db54e137937', 'peer2.state':
+         'Peer in Cluster', 'peer2.connected': 'Connected',
+         'peer2.othernames': '', 'peer3.primary_hostname':
+         'dhcp43-64.lab.eng.blr.redhat.com', 'peer3.uuid':
+         'dfe75b01-2988-4eac-879a-cf3d701e1382', 'peer3.state':
+         'Peer in Cluster', 'peer3.connected': 'Connected',
+         'peer3.othernames': '', 'peer4.primary_hostname':
+         'dhcp42-147.lab.eng.blr.redhat.com', 'peer4.uuid':
+         '05e3858b-33bf-449a-b170-2d3dac9adc45', 'peer4.state':
+         'Peer in Cluster', 'peer4.connected': 'Connected',
+         'peer4.othernames': '', 'peer5.primary_hostname':
+         'dhcp41-246.lab.eng.blr.redhat.com', 'peer5.uuid':
+         'c2e3f833-98fa-42d9-ae63-2bc471515810', 'peer5.state':
+         'Peer in Cluster', 'peer5.connected': 'Connected',
+         'peer5.othernames': ''}, 'Volumes': {}, 'Services': {'svc1.name':
+         'glustershd', 'svc1.online_status': 'Offline', 'svc2.name': 'nfs',
+         'svc2.online_status': 'Offline', 'svc3.name': 'bitd',
+         'svc3.online_status': 'Offline', 'svc4.name': 'scrub',
+         'svc4.online_status': 'Offline', 'svc5.name': 'quotad',
+         'svc5.online_status': 'Offline'}, 'Misc': {'base port': '49152',
+         'last allocated port': '49154'}}
+    """
+
+    ret, out, _ = g.run(mnode, "gluster get-state")
+    if ret:
+        g.log.error("Failed to execute gluster get-state command!")
+        return None
+    # get-state should dump properly.
+    # Checking whether a path is returned or not and then
+    # extracting path from the out data
+
+    path = re.search(r"/.*?/.\S*", out).group()
+    if not path:
+        g.log.error("Failed to get the gluster state dump file path.")
+        return None
+    ret, out, _ = g.run(mnode, "cat {}".format(path))
+    if ret:
+        g.log.error("Failed to read the gluster state dump.")
+        return None
+    g.log.info("Command Executed successfully and the data dump verified")
+
+    # Converting the string to unicode for py2/3 compatibility
+    out = u"".join(out)
+    data_buf = io.StringIO(out)
+    config = configparser.ConfigParser()
+    try:
+        config.read_file(data_buf)   # Python3
+    except AttributeError:
+        config.readfp(data_buf)      # Python2
+    # Converts the config parser object to a dictionary and returns it
+    return {section: dict(config.items(section)) for section in
+            config.sections()}
