@@ -100,7 +100,7 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
 
         # bring down glusterd of half nodes
         num_of_servers = len(self.servers)
-        num_of_nodes_to_bring_down = num_of_servers/2
+        num_of_nodes_to_bring_down = num_of_servers//2
 
         for node in range(num_of_nodes_to_bring_down, num_of_servers):
             ret = stop_glusterd(self.servers[node])
