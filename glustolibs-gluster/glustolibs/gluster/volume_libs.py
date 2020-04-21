@@ -1897,7 +1897,8 @@ def form_bricks_to_replace_brick(mnode, volname, servers, all_servers_info,
 def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
                               src_brick=None, dst_brick=None,
                               delete_brick=True,
-                              replace_brick_from_hot_tier=False):
+                              replace_brick_from_hot_tier=False,
+                              multi_vol=False):
     """Replace faulty brick from the volume.
 
     Args:
@@ -1929,6 +1930,10 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
         replace_brick_from_hot_tier (bool): True If brick are to be
             replaced from hot_tier. False otherwise. Defaults to False.
 
+        multi_vol (bool): True, If bricks need to created for multiple
+                          volumes(more than 5)
+                          False, Otherwise. By default, value is set to False.
+
     Returns:
         bool: True if replacing brick from the volume is successful.
             False otherwise.
@@ -1945,10 +1950,17 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
     subvols_info = get_subvols(mnode, volname)
 
     if not dst_brick:
-        dst_brick = form_bricks_list(mnode=mnode, volname=volname,
-                                     number_of_bricks=1,
-                                     servers=servers,
-                                     servers_info=all_servers_info)
+        if multi_vol:
+            dst_brick = form_bricks_for_multivol(mnode=mnode,
+                                                 volname=volname,
+                                                 number_of_bricks=1,
+                                                 servers=servers,
+                                                 servers_info=all_servers_info)
+        else:
+            dst_brick = form_bricks_list(mnode=mnode, volname=volname,
+                                         number_of_bricks=1,
+                                         servers=servers,
+                                         servers_info=all_servers_info)
         if not dst_brick:
             g.log.error("Failed to get a new brick to replace the faulty "
                         "brick")
