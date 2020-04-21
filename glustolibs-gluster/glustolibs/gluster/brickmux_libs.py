@@ -66,7 +66,10 @@ def get_all_bricks_from_servers_multivol(servers, servers_info):
 
     for item in list(zip_longest(*list(servers_bricks.values()))):
         for brick in item:
-            server = server_ip.next()
+            try:
+                server = server_ip.next()  # Python 2
+            except AttributeError:
+                server = next(server_ip)  # Python 3
             if brick:
                 bricks_list.append(server + ":" + brick)
                 brickCount += 1
