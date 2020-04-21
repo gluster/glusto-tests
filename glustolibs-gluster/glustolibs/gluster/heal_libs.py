@@ -509,3 +509,33 @@ def bring_self_heal_daemon_process_offline(nodes):
         _rc = False
 
     return _rc
+
+
+def is_shd_daemon_running(mnode, node, volname):
+    """
+    Verifies whether the shd daemon is up and running on a particular node by
+    checking the existence of shd pid and parsing the get volume status output.
+
+    Args:
+        mnode (str): The first node in servers list
+        node (str): The node to be checked for whether the glustershd
+                    process is up or not
+        volname (str): Name of the volume created
+
+    Returns:
+        boolean: True if shd is running on the node, False, otherwise
+    """
+
+    # Get glustershd pid from node.
+    ret, glustershd_pids = get_self_heal_daemon_pid(node)
+    if not ret and glustershd_pids[node] != -1:
+        return False
+    # Verifying glustershd process is no longer running from get status.
+    vol_status = get_volume_status(mnode, volname)
+    if vol_status is None:
+        return False
+    try:
+        _ = vol_status[volname][node]['Self-heal Daemon']
+        return True
+    except KeyError:
+        return False
