@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
 from glustolibs.gluster.volume_libs import (get_subvols, is_tiered_volume,
                                             get_client_quorum_info,
                                             get_volume_type_info)
+from glustolibs.gluster.lib_utils import (get_extended_attributes_info)
 
 
 def get_all_bricks(mnode, volname):
@@ -926,4 +927,43 @@ def is_broken_symlinks_present_on_bricks(mnode, volname):
             g.log.error("Error: Broken symlink found on brick path: "
                         "%s on node %s.", (brick_path, brick_node))
             return True
+    return False
+
+
+def validate_xattr_on_all_bricks(bricks_list, file_path, xattr):
+    """Checks if the xattr of the file/dir is same on all bricks.
+
+    Args:
+        bricks_list (list): List of bricks.
+        file_path (str): The path to the file/dir.
+        xattr (str): The file attribute to get from file.
+
+    Returns:
+        True if the xattr is same on all the fqpath. False otherwise
+
+    Example:
+        validate_xattr_on_all_bricks("bricks_list",
+                                     "dir1/file1",
+                                     "xattr")
+    """
+
+    time_counter = 250
+    g.log.info("The heal monitoring timeout is : %d minutes",
+               (time_counter // 60))
+    while time_counter > 0:
+        attr_vals = {}
+        for brick in bricks_list:
+            brick_node, brick_path = brick.split(":")
+            attr_vals[brick] = (
+                get_extended_attributes_info(brick_node,
+                                             ["{0}/{1}".format(brick_path,
+                                                               file_path)],
+                                             attr_name=xattr))
+        ec_version_vals = [list(val.values())[0][xattr] for val in
+                           list(attr_vals.values())]
+        if len(set(ec_version_vals)) == 1:
+            return True
+        else:
+            time.sleep(120)
+            time_counter -= 120
     return False
