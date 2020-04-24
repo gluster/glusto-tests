@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2017-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -149,8 +149,10 @@ def get_brick_processes_count(mnode):
         int: Number of brick processes running on the node.
         None: If the command fails to execute.
     """
-    ret, out, _ = g.run(mnode, "pidof glusterfsd")
+    ret, out, _ = g.run(mnode, "pgrep -x glusterfsd")
     if not ret:
-        return len(out.split(" "))
+        list_of_pids = out.split("\n")
+        list_of_pids.pop()
+        return len(list_of_pids)
     else:
         return None
