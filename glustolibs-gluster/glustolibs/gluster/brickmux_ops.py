@@ -119,7 +119,7 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
                         "of brick path %s", brick_node, brick_path)
             _rc = False
 
-        cmd = "pidof glusterfsd"
+        cmd = "pgrep -x glusterfsd"
         ret, pid, _ = g.run(brick_node, cmd)
         if ret != 0:
             g.log.error("Failed to run the command %s on "
@@ -127,7 +127,7 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
             _rc = False
 
         else:
-            glusterfsd_pid = pid.split()
+            glusterfsd_pid = pid.split('\n')[:-1]
 
         if brick_pid not in glusterfsd_pid:
             g.log.error("Brick pid %s doesn't match glusterfsd "
