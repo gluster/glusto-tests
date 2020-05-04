@@ -513,6 +513,45 @@ def occurences_of_pattern_in_file(node, search_pattern, filename):
     return int(out.strip('\n'))
 
 
+def create_link_file(node, file, link, soft=False):
+    """
+    Create hard or soft link for an exisiting file
+
+    Args:
+        node(str): Host on which the command is executed.
+        file(str): Path to the source file.
+        link(str): Path to the link file.
+
+    Kawrgs:
+        soft(bool): Create soft link if True else create
+        hard link.
+
+    Returns:
+        (bool): True if command successful else False.
+
+    Example:
+        >>> create_link_file('10.20.30.40', '/mnt/mp/file.txt',
+                             '/mnt/mp/link')
+        True
+    """
+    cmd = "ln {} {}".format(file, link)
+    if soft:
+        cmd = "ln -s {} {}".format(file, link)
+
+    ret, _, err = g.run(node, cmd)
+    if ret:
+        if soft:
+            g.log.error('Failed to create soft link on {} '
+                        'for file {} with error {}'
+                        .format(node, file, err))
+        else:
+            g.log.error('Failed to create hard link on {} '
+                        'for file {} with error {}'
+                        .format(node, file, err))
+        return False
+    return True
+
+
 class GlusterFile(object):
     """Class to handle files specific to Gluster (client and backend)"""
     def __init__(self, host, fqpath):
