@@ -32,8 +32,7 @@ from glustolibs.gluster.glusterdir import (mkdir,
                                            rmdir)
 
 
-@runs_on([['distributed-replicated', 'replicated', 'distributed',
-           'dispersed', 'distributed-dispersed'],
+@runs_on([['distributed-replicated', 'replicated', 'distributed'],
           ['glusterfs', 'nfs']])
 class LimitUsageDeepDir(GlusterBaseClass):
 
