@@ -75,11 +75,11 @@ class EcRemoveBrickOperations(GlusterBaseClass):
             cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
-                   "--dir-length 20 "
-                   "--max-num-of-dirs 10 "
-                   "--num-of-files 10 %s" % (self.script_upload_path,
-                                             self.counter,
-                                             mount_obj.mountpoint))
+                   "--dir-length 5 "
+                   "--max-num-of-dirs 3 "
+                   "--num-of-files 3 %s" % (self.script_upload_path,
+                                            self.counter,
+                                            mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
