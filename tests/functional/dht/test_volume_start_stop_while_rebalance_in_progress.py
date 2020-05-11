@@ -208,14 +208,14 @@ class RebalanceValidation(GlusterBaseClass):
                                           self.volname))
         g.log.info("Volume %s state is \"Started\"", self.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        # Unmount Volume and Cleanup Volume
-        g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
-        if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Volume %s unmount and cleanup: Success", cls.volname)
+    def tearDown(self):
 
-        # Calling GlusterBaseClass tearDownClass
-        cls.get_super_method(cls, 'tearDownClass')()
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()

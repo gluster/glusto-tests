@@ -50,17 +50,17 @@ class TestCustomxattrsOnNewBricks(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
-        # Unmount Volume and Cleanup Volume
+    def tearDown(self):
+
+        # Unmount and cleanup original volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass tearDown
-        cls.get_super_method(cls, 'tearDownClass')()
+        self.get_super_method(self, 'tearDown')()
 
     def check_xattr(self, list_of_all_dirs):
         """

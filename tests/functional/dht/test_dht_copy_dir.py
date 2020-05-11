@@ -202,17 +202,17 @@ class DhtCopyTest(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
 
-        # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
-        cls.get_super_method(cls, 'tearDownClass')()
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_copy_directory(self):
 

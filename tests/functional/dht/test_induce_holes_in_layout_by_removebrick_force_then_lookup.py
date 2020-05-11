@@ -163,9 +163,13 @@ class RebalanceValidation(GlusterBaseClass):
             if ret:
                 raise ExecutionError("Failed to delete removed brick dir "
                                      "%s:%s" % (brick_node, brick_path))
+
         # Unmount Volume and Cleanup Volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()

@@ -52,6 +52,18 @@ class TestFileAccessSubvolDown(GlusterBaseClass):
             g.log.error("Failed to Setup and Mount Volume")
             raise ExecutionError("Failed to Setup and Mount Volume")
 
+    def tearDown(self):
+
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
+
     def test_file_access(self):
         """
         Test file access.
@@ -158,15 +170,3 @@ class TestFileAccessSubvolDown(GlusterBaseClass):
         ret, _, _ = g.run(self.clients[0], ("stat %s" % dstfile))
         self.assertEqual(ret, 1, ('stat error on for file %s', dstfile))
         g.log.info("dstfile access failed as expected")
-
-    @classmethod
-    def tearDownClass(cls):
-        # Unmount Volume and Cleanup Volume
-        g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
-        if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
-
-        # Calling GlusterBaseClass tearDown
-        cls.get_super_method(cls, 'tearDownClass')()
