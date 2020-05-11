@@ -66,21 +66,17 @@ class QuotaListPathValues(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup and Mount Volume %s", cls.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume and umount volume from client
-        """
+    def tearDown(self):
 
-        # stopping the volume
+        # Unmount and cleanup original volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
-        # calling GlusterBaseClass tearDownClass
-        cls.get_super_method(cls, 'tearDownClass')()
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_quota_single_brick_volume(self):
         """
