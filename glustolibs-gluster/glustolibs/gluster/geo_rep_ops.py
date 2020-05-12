@@ -292,7 +292,7 @@ def georep_config_set(mnode, mastervol, slaveip, slavevol, config, value,
 
     """
     if user:
-        cmd = ("gluster volume geo-replication %s %s::%s config %s %s" %
+        cmd = ("gluster volume geo-replication %s %s@%s::%s config %s %s" %
                (mastervol, user, slaveip, slavevol, config, value))
     else:
         cmd = ("gluster volume geo-replication %s %s::%s config %s %s" %
