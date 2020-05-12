@@ -85,13 +85,8 @@ class TestSnapAutoDelete(GlusterBaseClass):
                                  "auto-delete")
         g.log.info("Successfully set the snapshot config options to default")
 
-    @classmethod
-    def tearDownClass(cls):
-        # calling GlusterBaseClass tearDownClass
-        cls.get_super_method(cls, 'tearDownClass')()
-
-        # Clean up the volume
-        ret = cls.cleanup_volume()
+        # Cleanup-volume
+        ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Cleanup Volume")
         g.log.info("Successful in Cleanup Volume")

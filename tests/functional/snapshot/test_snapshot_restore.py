@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -95,20 +95,14 @@ class SnapRestore(GlusterBaseClass):
         ret, _, _ = snap_delete_all(self.mnode)
         if not ret:
             raise ExecutionError("Snapshot delete failed.")
-        self.get_super_method(self, 'tearDown')()
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume & mount
-        """
-        g.log.info("Starting volume and  mount cleanup")
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        # Unmount and cleanup-volume
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successful for the volume and mount")
+            raise ExecutionError("Failed to Unmount and Cleanup Volume")
+        g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
-        cls.get_super_method(cls, 'tearDownClass')()
+        self.get_super_method(self, 'tearDown')()
 
     def test_validate_snaps_restore(self):
         # pylint: disable=too-many-statements

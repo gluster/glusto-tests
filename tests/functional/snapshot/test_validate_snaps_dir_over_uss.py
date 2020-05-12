@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -89,23 +89,14 @@ class TestValidateUss(GlusterBaseClass):
         g.log.info("Successfully disabled uss for volume"
                    "%s", self.volname)
 
+        # Unmount and cleanup-volume
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to Unmount and Cleanup Volume")
+        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
-
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume & mount
-        """
-        # stopping the volume and clean up the volume
-        g.log.info("Starting to Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
-        if not ret:
-            raise ExecutionError("Failed to Cleanup Volume and mount")
-        g.log.info("Successful in Cleanup Volume and mount")
-
-        # calling GlusterBaseClass tearDownClass
-        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_validate_snaps_dir_over_uss(self):
 
