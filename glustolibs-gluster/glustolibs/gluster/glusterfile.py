@@ -237,7 +237,7 @@ def get_file_stat(host, fqpath):
     Returns:
         A dictionary of file stat data. None on fail.
     """
-    statformat = '%F:%n:%i:%a:%s:%h:%u:%g:%U:%G'
+    statformat = '%F$%n$%i$%a$%s$%h$%u$%g$%U$%G$%x$%y$%z$%X$%Y$%Z'
     command = "stat -c '%s' %s" % (statformat, fqpath)
     rcode, rout, rerr = g.run(host, command)
     if rcode == 0:
@@ -245,7 +245,9 @@ def get_file_stat(host, fqpath):
         stat_string = rout.strip()
         (filetype, filename, inode,
          access, size, links,
-         uid, gid, username, groupname) = stat_string.split(":")
+         uid, gid, username, groupname,
+         atime, mtime, ctime, epoch_atime,
+         epoch_mtime, epoch_ctime) = stat_string.split("$")
 
         stat_data['filetype'] = filetype
         stat_data['filename'] = filename
@@ -257,6 +259,12 @@ def get_file_stat(host, fqpath):
         stat_data["groupname"] = groupname
         stat_data["uid"] = uid
         stat_data["gid"] = gid
+        stat_data["atime"] = atime
+        stat_data["mtime"] = atime
+        stat_data["ctime"] = atime
+        stat_data["epoch_atime"] = epoch_atime
+        stat_data["epoch_mtime"] = epoch_mtime
+        stat_data["epoch_ctime"] = epoch_ctime
 
         return stat_data
 
