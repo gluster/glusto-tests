@@ -59,6 +59,7 @@ from glustolibs.gluster.volume_ops import (
     set_volume_options, volume_reset, volume_start)
 from glustolibs.io.utils import log_mounts_info
 from glustolibs.gluster.geo_rep_libs import setup_master_and_slave_volumes
+from glustolibs.misc.misc_libs import kill_process
 
 
 class runs_on(g.CarteTestClass):
@@ -268,6 +269,14 @@ class GlusterBaseClass(TestCase):
                             g.log.error("Failed to stop glusterd")
                             return False
             for server in cls.servers:
+                ret, out, _ = g.run(server, "pgrep glusterfsd", "root")
+                if not ret:
+                    ret = kill_process(server,
+                                       process_ids=out.strip().split('\n'))
+                    if not ret:
+                        g.log.error("Unable to kill process {}".format(
+                                    out.strip().split('\n')))
+                        return False
                 cmd_list = ("rm -rf /var/lib/glusterd/vols/*",
                             "rm -rf /var/lib/glusterd/snaps/*",
                             "rm -rf /var/lib/glusterd/peers/*",
