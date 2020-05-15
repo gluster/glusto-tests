@@ -260,8 +260,8 @@ def get_file_stat(host, fqpath):
         stat_data["uid"] = uid
         stat_data["gid"] = gid
         stat_data["atime"] = atime
-        stat_data["mtime"] = atime
-        stat_data["ctime"] = atime
+        stat_data["mtime"] = mtime
+        stat_data["ctime"] = ctime
         stat_data["epoch_atime"] = epoch_atime
         stat_data["epoch_mtime"] = epoch_mtime
         stat_data["epoch_ctime"] = epoch_ctime
