@@ -260,7 +260,7 @@ class GlusterBaseClass(TestCase):
             ret = stop_glusterd(cls.servers)
             if not ret:
                 g.log.error("Failed to stop glusterd")
-                cmd_list = ("pkill pidof glusterd",
+                cmd_list = ("pkill `pidof glusterd`",
                             "rm /var/run/glusterd.socket")
                 for server in cls.servers:
                     for cmd in cmd_list:
