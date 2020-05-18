@@ -67,7 +67,7 @@ def volume_exists(mnode, volname):
 
 
 def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
-                 force=False):
+                 force=False, create_only=False):
     """Setup Volume with the configuration defined in volume_config
 
     Args:
@@ -115,7 +115,11 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
         force (bool): If this option is set to True, then volume creation
                       command is executed with force option.
                       False, without force option.
-                      By default, value is set to False
+                      By default, value is set to False.
+        create_only(bool): True, if only volume creation is needed.
+                           False, will do volume create, start, set operation
+                           if any provided in the volume_config.
+                           By default, value is set to False.
     Returns:
         bool : True on successful setup. False Otherwise
 
@@ -293,6 +297,11 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
         g.log.error("Unable to create volume %s", volname)
         return False
 
+    if create_only and (ret == 0):
+        g.log.info("Volume creation of {} is done successfully".format(
+                   volname))
+        return True
+
     # Start Volume
     time.sleep(2)
     ret = volume_start(mnode, volname)
@@ -424,7 +433,7 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
 
 def bulk_volume_creation(mnode, number_of_volumes, servers_info,
                          volume_config, vol_prefix="mult_vol_",
-                         is_force=False):
+                         is_force=False, is_create_only=False):
     """
     Creates the number of volumes user has specified
 
@@ -438,7 +447,11 @@ def bulk_volume_creation(mnode, number_of_volumes, servers_info,
     Kwargs:
         vol_prefix (str): Prefix to be added to the volume name.
         is_force (bool): True, If volume create command need to be executed
-                         with force, False Otherwise. Defaults to False
+                         with force, False Otherwise. Defaults to False.
+        create_only(bool): True, if only volume creation is needed.
+                           False, will do volume create, start, set operation
+                           if any provided in the volume_config.
+                           By default, value is set to False.
     Returns:
         bool: True on successful bulk volume creation, False Otherwise.
 
@@ -468,7 +481,7 @@ def bulk_volume_creation(mnode, number_of_volumes, servers_info,
     for volume in range(number_of_volumes):
         volume_config['name'] = vol_prefix + volume_name + str(volume)
         ret = setup_volume(mnode, servers_info, volume_config, multi_vol=True,
-                           force=is_force)
+                           force=is_force, create_only=is_create_only)
         if not ret:
             g.log.error("Volume creation failed for the volume %s"
                         % volume_config['name'])

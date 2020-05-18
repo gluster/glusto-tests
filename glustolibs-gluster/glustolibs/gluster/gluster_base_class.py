@@ -312,7 +312,7 @@ class GlusterBaseClass(TestCase):
             return True
 
     @classmethod
-    def setup_volume(cls, volume_create_force=False):
+    def setup_volume(cls, volume_create_force=False, only_volume_create=False):
         """Setup the volume:
             - Create the volume, Start volume, Set volume
             options, enable snapshot/quota/tier if specified in the config
@@ -324,6 +324,9 @@ class GlusterBaseClass(TestCase):
         Args:
             volume_create_force(bool): True if create_volume should be
                 executed with 'force' option.
+            only_volume_create(bool): True, only volume creation is needed
+                                      False, by default volume creation and
+                                      start.
 
         Returns (bool): True if all the steps mentioned in the descriptions
             passes. False otherwise.
@@ -346,11 +349,18 @@ class GlusterBaseClass(TestCase):
         g.log.info("Setting up volume %s", cls.volname)
         ret = setup_volume(mnode=cls.mnode,
                            all_servers_info=cls.all_servers_info,
-                           volume_config=cls.volume, force=force_volume_create)
+                           volume_config=cls.volume, force=force_volume_create,
+                           create_only=only_volume_create)
         if not ret:
             g.log.error("Failed to Setup volume %s", cls.volname)
             return False
         g.log.info("Successful in setting up volume %s", cls.volname)
+
+        # Returning the value without proceeding for next steps
+        if only_volume_create and ret:
+            g.log.info("Setup volume with volume creation {} "
+                       "successful".format(cls.volname))
+            return True
 
         # Wait for volume processes to be online
         g.log.info("Wait for volume %s processes to be online", cls.volname)
