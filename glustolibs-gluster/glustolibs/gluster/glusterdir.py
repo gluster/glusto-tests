@@ -82,22 +82,29 @@ def rmdir(host, fqpath, force=False):
     return False
 
 
-def get_dir_contents(host, path):
+def get_dir_contents(host, path, recursive=False):
     """Get the files and directories present in a given directory.
 
     Args:
         host (str): The hostname/ip of the remote system.
         path (str): The path to the directory.
 
+    Kwargs:
+        recursive (bool): lists all entries recursively
+
     Returns:
         file_dir_list (list): List of files and directories on path.
         None: In case of error or failure.
     """
-    ret, out, _ = g.run(host, ' ls '+path)
-    if ret != 0:
+    if recursive:
+        cmd = "find {}".format(path)
+    else:
+        cmd = "ls " + path
+    ret, out, _ = g.run(host, cmd)
+    if ret:
+        g.log.error("No such file or directory {}".format(path))
         return None
-    file_dir_list = list(filter(None, out.split("\n")))
-    return file_dir_list
+    return(list(filter(None, out.split("\n"))))
 
 
 class GlusterDir(GlusterFile):
