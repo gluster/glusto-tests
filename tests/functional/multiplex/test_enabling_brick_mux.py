@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ class TestBrickMultiplexing(GlusterBaseClass):
 
         g.log.info('Checking for warning message in output...')
         if "volume set: success" not in out:
-            self.assertIn(out, warning_message,
+            self.assertIn(warning_message, out,
                           'There is no warning message in '
                           'output or message is incorrect.')
             g.log.info('Warning message is correct.')
