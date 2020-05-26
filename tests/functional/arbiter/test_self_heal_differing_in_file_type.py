@@ -179,9 +179,10 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Checking arequals before bringing bricks offline
         # and after bringing bricks offline
-        self.assertItemsEqual(result_before_offline, result_after_offline,
-                              'Checksums before and after '
-                              'bringing bricks offline are not equal')
+        self.assertEqual(sorted(result_before_offline),
+                         sorted(result_after_offline),
+                         'Checksums before and after bringing bricks'
+                         ' offline are not equal')
         g.log.info('Checksums before and after '
                    'bringing bricks offline are equal')
 
@@ -271,8 +272,9 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Checking arequals before bringing bricks online
         # and after bringing bricks online
-        self.assertItemsEqual(result_before_online, result_after_online,
-                              'Checksums before and '
-                              'after bringing bricks online are not equal')
+        self.assertEqual(sorted(result_before_online),
+                         sorted(result_after_online),
+                         'Checksums before and after bringing bricks'
+                         ' online are not equal')
         g.log.info('Checksums before and after bringing bricks online '
                    'are equal')

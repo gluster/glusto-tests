@@ -332,8 +332,9 @@ class TestMetadataSelfHeal(GlusterBaseClass):
 
         # Checking arequals before bringing bricks online
         # and after bringing bricks online
-        self.assertItemsEqual(result_before_online, result_after_online,
-                              'Checksums are not equal')
+        self.assertEqual(sorted(result_before_online),
+                         sorted(result_after_online),
+                         'Checksums are not equal')
         g.log.info('Checksums before bringing bricks online '
                    'and after bringing bricks online are equal')
 
