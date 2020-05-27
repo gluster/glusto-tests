@@ -302,6 +302,20 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
                    volname))
         return True
 
+    is_ganesha = False
+    if 'nfs_ganesha' in volume_config:
+        is_ganesha = bool(volume_config['nfs_ganesha']['enable'])
+
+    if not is_ganesha:
+        # Set all the volume options:
+        if 'options' in volume_config:
+            volume_options = volume_config['options']
+            ret = set_volume_options(mnode=mnode, volname=volname,
+                                     options=volume_options)
+            if not ret:
+                g.log.error("Unable to set few volume options")
+                return False
+
     # Start Volume
     time.sleep(2)
     ret = volume_start(mnode, volname)
@@ -420,14 +434,16 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
             g.log.error("USS is not enabled on the volume %s", volname)
             return False
 
-    # Set all the volume options:
-    if 'options' in volume_config:
-        volume_options = volume_config['options']
-        ret = set_volume_options(mnode=mnode, volname=volname,
-                                 options=volume_options)
-        if not ret:
-            g.log.error("Unable to set few volume options")
-            return False
+    if is_ganesha:
+        # Set all the volume options for NFS Ganesha
+        if 'options' in volume_config:
+            volume_options = volume_config['options']
+            ret = set_volume_options(mnode=mnode, volname=volname,
+                                     options=volume_options)
+            if not ret:
+                g.log.error("Unable to set few volume options")
+                return False
+
     return True
 
 
