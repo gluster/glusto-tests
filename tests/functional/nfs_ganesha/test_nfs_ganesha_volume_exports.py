@@ -172,6 +172,59 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaClusterSetupClass):
                                  "ganesha.enable 'on'" % self.volname)
             g.log.info("Exported volume after enabling nfs-ganesha cluster")
 
+    def test_nfs_ganesha_exportID_after_vol_restart(self):
+        """
+        Tests script to check nfs-ganesha volume gets exported with same
+        Export ID after multiple volume restarts.
+        Steps:
+        1. Create and Export the Volume
+        2. Stop and Start the volume multiple times
+        3. Check for export ID
+           Export ID should not change
+        """
+        for i in range(1, 4):
+            g.log.info("Testing nfs ganesha exportID after volume stop and "
+                       "start.\n Count : %s", str(i))
+
+            # Stopping volume
+            ret = volume_stop(self.mnode, self.volname)
+            self.assertTrue(ret, ("Failed to stop volume %s" % self.volname))
+            g.log.info("Volume is stopped")
+
+            # Waiting for few seconds for volume unexport. Max wait time is
+            # 120 seconds.
+            ret = wait_for_nfs_ganesha_volume_to_get_unexported(self.mnode,
+                                                                self.volname)
+            self.assertTrue(ret, ("Failed to unexport volume %s after "
+                                  "stopping volume" % self.volname))
+            g.log.info("Volume is unexported via ganesha")
+
+            # Starting volume
+            ret = volume_start(self.mnode, self.volname)
+            self.assertTrue(ret, ("Failed to start volume %s" % self.volname))
+            g.log.info("Volume is started")
+
+            # Waiting for few seconds for volume export. Max wait time is
+            # 120 seconds.
+            ret = wait_for_nfs_ganesha_volume_to_get_exported(self.mnode,
+                                                              self.volname)
+            self.assertTrue(ret, ("Failed to export volume %s after "
+                                  "starting volume" % self.volname))
+            g.log.info("Volume is exported via ganesha")
+
+            # Check for Export ID
+            cmd = ("cat /run/gluster/shared_storage/nfs-ganesha/exports/"
+                   "export.*.conf | grep Export_Id | grep -Eo '[0-9]'")
+            ret, out, _ = g.run(self.mnode, cmd)
+            self.assertEqual(ret, 0, "Unable to get export ID of the volume %s"
+                             % self.volname)
+            g.log.info("Successful in getting volume export ID: %s " % out)
+            self.assertEqual(out.strip("\n"), "2",
+                             "Export ID changed after export and unexport "
+                             "of volume: %s" % out)
+            g.log.info("Export ID of volume is same after export "
+                       "and export: %s" % out)
+
     def tearDown(self):
         """
         Unexport volume
