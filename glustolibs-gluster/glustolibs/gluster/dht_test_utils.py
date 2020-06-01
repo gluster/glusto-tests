@@ -342,6 +342,40 @@ def find_new_hashed(subvols, parent_path, oldname):
     return None
 
 
+def find_specific_hashed(subvols, parent_path, subvol):
+    """ Finds filename that hashes to a specific subvol.
+
+    Args:
+           subvols(list): list of subvols
+           parent_path(str): parent path (relative to mount) of "oldname"
+           subvol(str): The subvol to which the new name has to be hashed
+
+    Returns:
+             (Class Object): For success returns an object of type NewHashed
+                            holding information pertaining to new name.
+                            None, otherwise
+     Note: The new hash will be searched under the same parent
+    """
+    # pylint: disable=protected-access
+    brickobject = create_brickobjectlist(subvols, parent_path)
+    if brickobject is None:
+        g.log.error("could not form brickobject list")
+        return None
+    count = -1
+    for item in range(1, 5000, 1):
+        newhash = calculate_hash(brickobject[0]._host, str(item))
+        for brickdir in brickobject:
+            count += 1
+            if subvol._fqpath == brickdir._fqpath:
+                ret = brickdir.hashrange_contains_hash(newhash)
+                if ret:
+                    g.log.debug("oldhashed %s new %s count %s",
+                                subvol, brickdir._host, str(count))
+                    return NewHashed(item, brickdir, count)
+        count = -1
+    return None
+
+
 class NewHashed(object):
     '''
         Helper Class to hold new hashed info
