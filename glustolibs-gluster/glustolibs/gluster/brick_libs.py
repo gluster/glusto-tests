@@ -17,7 +17,7 @@
 """ Description: Module for gluster brick related helper functions. """
 
 import random
-from math import ceil
+from math import floor
 import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.brickmux_ops import is_brick_mux_enabled
@@ -806,7 +806,7 @@ def get_bricks_to_bring_offline_from_replicated_volume(subvols_list,
                 offline_bricks_limit = int(replica_count) - int(quorum_count)
 
         elif 'auto' in quorum_type:
-            offline_bricks_limit = ceil(int(replica_count) / 2)
+            offline_bricks_limit = floor(int(replica_count) // 2)
 
         elif quorum_type is None:
             offline_bricks_limit = int(replica_count) - 1
