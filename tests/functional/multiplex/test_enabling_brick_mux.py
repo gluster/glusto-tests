@@ -14,6 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from random import choice
+import string
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
@@ -21,6 +23,7 @@ from glustolibs.gluster.brickmux_ops import (disable_brick_mux,
                                              is_brick_mux_enabled,
                                              get_brick_mux_status)
 from glustolibs.gluster.lib_utils import search_pattern_in_file
+from glustolibs.gluster.volume_ops import set_volume_options
 
 
 @runs_on([['replicated'],
@@ -40,6 +43,10 @@ class TestBrickMultiplexing(GlusterBaseClass):
 
         # Calling GlusterBaseClass teardown
         self.get_super_method(self, 'tearDown')()
+
+    @staticmethod
+    def get_random_string(chars, str_len=4):
+        return ''.join((choice(chars) for _ in range(str_len)))
 
     def test_enabling_brick_mux(self):
         """
@@ -125,3 +132,26 @@ class TestBrickMultiplexing(GlusterBaseClass):
         cmd = "yes | gluster v set all cluster.brick-multiplex incorrect"
         ret, _, _ = g.run(self.mnode, cmd)
         self.assertEqual(ret, 1, 'Incorrect status has passed')
+
+    def test_enabling_brick_mux_with_wrong_values(self):
+        """
+        Test Case:
+        - Create a gluster cluster
+        - Set cluster.brick-multiplex value to random string(Must fail)
+        - Set cluster.brick-multiplex value to random int(Must fail)
+        - Set cluster.brick-multiplex value to random
+          special characters(Must fail)
+        """
+        # Creation of random data for cluster.brick-multiplex option
+        # Data has: alphabets, numbers, punctuations and their combinations
+        key = 'cluster.brick-multiplex'
+        for char_type in (string.ascii_letters, string.punctuation,
+                          string.printable, string.digits):
+
+            temp_val = self.get_random_string(char_type)
+            value = "{}".format(temp_val)
+            ret = set_volume_options(self.mnode, self.volname, {key: value})
+            self.assertFalse(ret, "Unexpected: Erroneous value {}, to option "
+                             "{} should result in failure".format(value, key))
+            g.log.info("Expected: Erroneous value %s, to option "
+                       "%s resulted in failure", value, key)
