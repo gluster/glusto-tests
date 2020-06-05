@@ -63,24 +63,24 @@ class AssignGfidOnLookup(GlusterBaseClass):
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
 
+    def setUp(self):
+
+        self.get_super_method(self, 'setUp')()
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup Volume and Mount Volume")
-        ret = cls.setup_volume_and_mount_volume(cls.mounts)
+        ret = self.setup_volume_and_mount_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
 
         # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+        g.log.info("Successful in cleaning up Volume %s", self.volname)
 
-        cls.get_super_method(cls, 'tearDownClass')()
+        self.get_super_method(self, 'tearDown')()
 
     def verify_gfid(self, dirname):
         dir_gfids = dict()

@@ -42,49 +42,43 @@ class SelfHealDaemonProcessTestsWithSingleVolume(GlusterBaseClass):
     verifies the self-heal daemon process on a single volume
     """
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        setup volume, mount volume and initialize necessary variables
-        which is used in tests
-        """
+    def setUp(self):
 
         # Calling GlusterBaseClass setUpClass
-        cls.get_super_method(cls, 'setUpClass')()
+        self.get_super_method(self, 'setUp')()
+
+        # Upload script
+        self.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
+                                   "file_dir_ops.py")
+        ret = upload_scripts(self.clients, [self.script_upload_path])
+        if not ret:
+            raise ExecutionError("Failed to upload IO scripts to clients")
 
         # Setup Volume and Mount Volume
-        ret = cls.setup_volume_and_mount_volume(mounts=cls.mounts)
+        ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
         # Verify glustershd process releases its parent process
-        ret = is_shd_daemonized(cls.servers)
+        ret = is_shd_daemonized(self.servers)
         if not ret:
             raise ExecutionError("Self Heal Daemon process was still"
                                  " holding parent process.")
         g.log.info("Self Heal Daemon processes are online")
 
-        # Upload script
-        cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
-                                  "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [cls.script_upload_path])
-        if not ret:
-            raise ExecutionError("Failed to upload IO scripts to clients")
-
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         """
         Clean up the volume and umount volume from client
         """
         # Stopping the volume
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
-        # Calling GlusterBaseClass tearDownClass
-        cls.get_super_method(cls, 'tearDownClass')()
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_server_side_healing_happens_only_when_glustershd_running(self):
         """
