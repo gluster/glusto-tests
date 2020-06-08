@@ -23,10 +23,10 @@ from glusto.core import Glusto as g
 
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.volume_libs import (
-    set_volume_options, get_subvols)
+from glustolibs.gluster.volume_libs import get_subvols
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.gluster.volume_ops import reset_volume_option
+from glustolibs.gluster.volume_ops import (set_volume_options,
+                                           reset_volume_option)
 from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            bring_bricks_online)
 from glustolibs.io.utils import (validate_io_procs,
