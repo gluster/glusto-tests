@@ -203,8 +203,8 @@ gluster:
             replica_count: 3
             arbiter_count: 1
             transport: tcp
-        distributed-arbiter: &distrbuted_arbiter
-            type: distributed_arbiter
+        distributed-arbiter: &distrbuted-arbiter
+            type: distributed-arbiter
             dist_count: 2
             replica_count: 3
             arbiter_count: 1
