@@ -444,3 +444,33 @@ def wait_for_remove_brick_to_complete(mnode, volname, bricks_list,
             g.log.error("Remove brick operation has not completed. "
                         "Wait timeout is %s" % count)
     return False
+
+
+def set_rebalance_throttle(mnode, volname, throttle_type='normal'):
+    """Sets rebalance throttle
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+        volname (str): volume name
+
+    Kwargs:
+        throttle_type (str): throttling type (lazy|normal|aggressive)
+            Defaults to 'normal'
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    Example:
+        set_rebalance_throttle(mnode, testvol, throttle_type='aggressive')
+    """
+    cmd = ("gluster volume set {} rebal-throttle {}".format
+           (volname, throttle_type))
+    return g.run(mnode, cmd)
