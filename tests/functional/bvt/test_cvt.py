@@ -124,7 +124,7 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterBaseClass):
             cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
-                   "--dir-length 15 "
+                   "--dir-length 10 "
                    "--max-num-of-dirs 5 "
                    "--num-of-files 5 %s" % (
                        self.script_upload_path,
@@ -755,7 +755,8 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
 
         # Wait for volume processes to be online
         g.log.info("Wait for volume processes to be online")
-        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
+        ret = wait_for_volume_process_to_be_online(self.mnode, self.volname,
+                                                   timeout=400)
         self.assertTrue(ret, ("Failed to wait for volume %s processes to "
                               "be online", self.volname))
         g.log.info("Successful in waiting for volume %s processes to be "
@@ -779,9 +780,10 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
 
         # Wait for self-heal to complete
         g.log.info("Wait for self-heal to complete")
-        ret = monitor_heal_completion(self.mnode, self.volname)
+        ret = monitor_heal_completion(self.mnode, self.volname,
+                                      timeout_period=1500)
         self.assertTrue(ret, "Self heal didn't complete even after waiting "
-                        "for 20 minutes. 20 minutes is too much a time for "
+                        "for 25 minutes. 25 minutes is too much a time for "
                         "current test workload")
         g.log.info("self-heal is successful after replace-brick operation")
 
