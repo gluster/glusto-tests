@@ -43,8 +43,8 @@ class QuotaDeemStatfsAndQuotad(GlusterBaseClass):
     def tearDown(self):
 
         # Unmount and cleanup original volume
-        g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        g.log.info("Starting to Cleanup Volume")
+        ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to umount the vol & cleanup Volume")
         g.log.info("Successful in umounting the volume and Cleanup")
