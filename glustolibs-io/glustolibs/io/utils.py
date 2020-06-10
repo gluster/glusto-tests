@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -983,3 +983,21 @@ def upload_file_dir_ops(clients):
     g.log.info("Successfully uploaded IO scripts to clients %s",
                clients)
     return True
+
+
+def open_file_fd(mountpoint, time, client):
+    """Open FD for a file and write to file.
+
+    Args:
+      mountpoint(str): The mount point where the FD of file is to
+                       be opened.
+      time(int): The time to wait after opening an FD.
+      client(str): The client from which FD is to be opened.
+
+    Returns:
+      proc(object): Returns a process object
+    """
+    cmd = ("cd {}; exec 30<> file_openfd ; sleep {};"
+           "echo 'xyz' >&30".format(mountpoint, time))
+    proc = g.run_async(client, cmd)
+    return proc
