@@ -27,12 +27,15 @@ from glustolibs.gluster.volume_libs import get_subvols
 from glustolibs.misc.misc_libs import upload_scripts
 
 
-def collect_mounts_arequal(mounts):
+def collect_mounts_arequal(mounts, path=''):
     """Collects arequal from all the mounts
 
     Args:
         mounts (list): List of all GlusterMount objs.
 
+    Kwargs:
+        path (str): Path whose arequal is to be calculated.
+                    Defaults to root of mountpoint
     Returns:
         tuple(bool, list):
             On success returns (True, list of arequal-checksums of each mount)
@@ -47,9 +50,10 @@ def collect_mounts_arequal(mounts):
     g.log.info("Start collecting arequal-checksum from all mounts")
     all_mounts_procs = []
     for mount_obj in mounts:
+        total_path = os.path.join(mount_obj.mountpoint, path)
         g.log.info("arequal-checksum of mount %s:%s", mount_obj.client_system,
-                   mount_obj.mountpoint)
-        cmd = "arequal-checksum -p %s -i .trashcan" % mount_obj.mountpoint
+                   total_path)
+        cmd = "arequal-checksum -p %s -i .trashcan" % total_path
         proc = g.run_async(mount_obj.client_system, cmd, user=mount_obj.user)
         all_mounts_procs.append(proc)
     all_mounts_arequal_checksums = []
