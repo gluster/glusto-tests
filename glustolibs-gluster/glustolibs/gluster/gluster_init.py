@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -107,6 +107,30 @@ def restart_glusterd(servers):
     if not _rc:
         return False
 
+    return True
+
+
+def reset_failed_glusterd(servers):
+    """Reset-failed glusterd on specified servers.
+
+    Args:
+        servers (str|list): A server|List of server hosts on which glusterd
+            has to be reset-failed.
+
+    Returns:
+        bool : True if reset-failed glusterd is successful on all servers.
+            False otherwise.
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "systemctl reset-failed glusterd"
+    results = g.run_parallel(servers, cmd)
+
+    for server, (retcode, _, _) in results.items():
+        if retcode:
+            g.log.error("Unable to reset glusterd on server %s", server)
+            return False
     return True
 
 
