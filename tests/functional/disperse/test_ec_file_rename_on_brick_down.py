@@ -26,7 +26,7 @@ from glustolibs.gluster.volume_libs import volume_start
 from glustolibs.gluster.glusterfile import create_link_file
 
 
-@runs_on([['replicated', 'dispersed', 'distributed-dispersed'], ['glusterfs']])
+@runs_on([['dispersed', 'distributed-dispersed'], ['glusterfs']])
 class TestECRenameFilesOnBrickDown(GlusterBaseClass):
 
     # pylint: disable=too-many-statements,too-many-locals
