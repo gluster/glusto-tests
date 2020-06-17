@@ -81,12 +81,16 @@ def stop_glusterd(servers):
     return True
 
 
-def restart_glusterd(servers):
+def restart_glusterd(servers, enable_retry=True):
     """Restart the glusterd on specified servers.
 
     Args:
         servers (str|list): A server|List of server hosts on which glusterd
             has to be restarted.
+
+    Kwargs:
+        enable_retry(Bool): If set to True than runs reset-failed else
+                            do nothing.
 
     Returns:
         bool : True if restarting glusterd is successful on all servers.
@@ -104,10 +108,12 @@ def restart_glusterd(servers):
         if retcode != 0:
             g.log.error("Unable to restart glusterd on server %s", server)
             _rc = False
-    if not _rc:
-        return False
-
-    return True
+    if not _rc and enable_retry:
+        ret = reset_failed_glusterd(servers)
+        if ret:
+            ret = restart_glusterd(servers)
+        return ret
+    return _rc
 
 
 def reset_failed_glusterd(servers):

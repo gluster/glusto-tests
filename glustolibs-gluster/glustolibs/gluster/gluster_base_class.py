@@ -45,8 +45,7 @@ from glustolibs.gluster.peer_ops import (
     peer_probe_servers, peer_status
 )
 from glustolibs.gluster.gluster_init import (
-    restart_glusterd, stop_glusterd, wait_for_glusterd_to_start,
-    reset_failed_glusterd)
+    restart_glusterd, stop_glusterd, wait_for_glusterd_to_start)
 from glustolibs.gluster.samba_libs import share_volume_over_smb
 from glustolibs.gluster.volume_libs import (
     cleanup_volume,
@@ -291,18 +290,8 @@ class GlusterBaseClass(TestCase):
                         return False
             ret = restart_glusterd(cls.servers)
             if not ret:
-                # Due to recent changes in glusterd.service.in
-                # we can only restart glusterd 6 times in an hour
-                # if not then we would need reset-failed glusterd
-                # and restart glusterd
-                ret = reset_failed_glusterd(cls.servers)
-                if not ret:
-                    g.log.error("Failed to reset glusterd")
-                    return False
-                ret = restart_glusterd(cls.servers)
-                if not ret:
-                    g.log.error("Failed to start glusterd")
-                    return False
+                g.log.error("Failed to start glusterd")
+                return False
             sleep(2)
             ret = wait_for_glusterd_to_start(cls.servers)
             if not ret:
