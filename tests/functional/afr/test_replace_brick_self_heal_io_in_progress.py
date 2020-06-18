@@ -140,10 +140,7 @@ class TestAFRSelfHeal(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = list(filter(None, (
-            bricks_to_bring_offline_dict['hot_tier_bricks'] +
-            bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks'])))
+        bricks_to_bring_offline = bricks_to_bring_offline_dict['volume_bricks']
 
         # Bring brick offline
         ret = bring_bricks_offline(self.volname, bricks_to_bring_offline)

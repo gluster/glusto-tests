@@ -166,10 +166,8 @@ class SnapshotSelfheal(GlusterBaseClass):
         g.log.info("Starting to bring bricks to offline")
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = list(filter(None, (
-            bricks_to_bring_offline_dict['hot_tier_bricks'] +
-            bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks'])))
+        bricks_to_bring_offline = bricks_to_bring_offline_dict['volume_bricks']
+
         g.log.info("Brick to bring offline: %s ", bricks_to_bring_offline)
         ret = bring_bricks_offline(self.clone, bricks_to_bring_offline)
         self.assertTrue(ret, "Failed to bring the bricks offline")
