@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -71,7 +71,9 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
                                        server_info_for_three_nodes)
         # Restarting glusterd in a loop
         restart_cmd = ("for i in `seq 1 5`; do "
-                       "service glusterd restart; sleep 3; "
+                       "service glusterd restart; "
+                       "systemctl reset-failed glusted; "
+                       "sleep 3; "
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
 
@@ -100,7 +102,9 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
 
         # Restarting glusterd in a loop
         restart_cmd = ("for i in `seq 1 5`; do "
-                       "service glusterd restart; sleep 3; "
+                       "service glusterd restart; "
+                       "systemctl reset-failed glusted; "
+                       "sleep 3; "
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
 
