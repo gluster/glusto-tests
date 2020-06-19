@@ -135,7 +135,7 @@ def are_all_self_heal_daemons_are_online(mnode, volname):
         return False
 
 
-def monitor_heal_completion(mnode, volname, timeout_period=1200):
+def monitor_heal_completion(mnode, volname, timeout_period=1200, bricks=None):
     """Monitors heal completion by looking into .glusterfs/indices/xattrop
         directory of every brick for certain time. When there are no entries
         in all the brick directories then heal is successful. Otherwise heal is
@@ -146,6 +146,10 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200):
         volname : Name of the volume
         heal_monitor_timeout : time until which the heal monitoring to be done.
                                Default: 1200 i.e 20 minutes.
+
+    Kwargs:
+        bricks : list of bricks to monitor heal, if not provided
+                 heal will be monitored on all bricks of volume
 
     Return:
         bool: True if heal is complete within timeout_period. False otherwise
@@ -158,7 +162,7 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200):
 
     # Get all bricks
     from glustolibs.gluster.brick_libs import get_all_bricks
-    bricks_list = get_all_bricks(mnode, volname)
+    bricks_list = bricks or get_all_bricks(mnode, volname)
     if bricks_list is None:
         g.log.error("Unable to get the bricks list. Hence unable to verify "
                     "whether self-heal-daemon process is running or not "
@@ -180,7 +184,12 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200):
             time.sleep(120)
             time_counter = time_counter - 120
 
-    if heal_complete:
+    if heal_complete and bricks:
+        # In EC volumes, check heal completion only on online bricks
+        # and `gluster volume heal info` fails for an offline brick
+        return True
+
+    if heal_complete and not bricks:
         heal_completion_status = is_heal_complete(mnode, volname)
         if heal_completion_status is True:
             g.log.info("Heal has successfully completed on volume %s" %
