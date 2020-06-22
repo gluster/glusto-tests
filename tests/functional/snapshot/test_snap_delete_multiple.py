@@ -99,7 +99,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
         """
         # Perform I/O
-        def io_operation():
+        def io_operation(name):
             g.log.info("Starting to Perform I/O")
             all_mounts_procs = []
             for mount_obj in self.mounts:
@@ -107,10 +107,11 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
                            mount_obj.client_system, mount_obj.mountpoint)
                 # Create files
                 g.log.info('Creating files...')
-                command = ("/usr/bin/env python %s create_files -f 100 "
-                           "--fixed-file-size 1k %s" % (
-                               self.script_upload_path,
-                               mount_obj.mountpoint))
+                fname = "{}-{}".format(mount_obj.client_system, name)
+                command = ("/usr/bin/env python {} create_files -f 100 "
+                           "--fixed-file-size 1k --base-file-name {}"
+                           " {}".format(self.script_upload_path,
+                                        fname, mount_obj.mountpoint))
                 proc = g.run_async(mount_obj.client_system, command,
                                    user=mount_obj.user)
                 all_mounts_procs.append(proc)
@@ -217,14 +218,14 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
         self.assertEqual(ret1, 30, "Failed")
         ret2 = mount_clone_and_io(self.clone1, self.mpoint1)
         self.assertEqual(ret2, 0, "Failed to mount volume")
-        ret = io_operation()
+        ret = io_operation("first")
         self.assertEqual(ret, 0, "Failed to perform io")
         ret3 = create_snap(value2, self.clone1, self.snap2,
                            self.clone2, ret1)
         self.assertEqual(ret3, 40, "Failed")
         ret4 = mount_clone_and_io(self.clone2, self.mpoint2)
         self.assertEqual(ret4, 0, "Failed to mount volume")
-        ret = io_operation()
+        ret = io_operation("second")
         self.assertEqual(ret, 0, "Failed to perform io")
         ret1 = create_snap(value3, self.clone2, self.snap2,
                            self.clone2, ret3)
