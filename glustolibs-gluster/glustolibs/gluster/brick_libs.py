@@ -22,7 +22,7 @@ import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.brickmux_ops import is_brick_mux_enabled
 from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
-from glustolibs.gluster.volume_libs import (get_subvols, is_tiered_volume,
+from glustolibs.gluster.volume_libs import (get_subvols,
                                             get_client_quorum_info,
                                             get_volume_type_info)
 from glustolibs.gluster.lib_utils import (get_extended_attributes_info)
@@ -30,8 +30,6 @@ from glustolibs.gluster.lib_utils import (get_extended_attributes_info)
 
 def get_all_bricks(mnode, volname):
     """Get list of all the bricks of the specified volume.
-        If the volume is 'Tier' volume, the list will contain both
-        'hot tier' and 'cold tier' bricks.
 
     Args:
         mnode (str): Node on which command has to be executed
@@ -46,19 +44,7 @@ def get_all_bricks(mnode, volname):
         g.log.error("Unable to get the volinfo of %s.", volname)
         return None
 
-    if 'Tier' in volinfo[volname]['typeStr']:
-        # Get bricks from hot-tier in case of Tier volume
-        hot_tier_bricks = get_hot_tier_bricks(mnode, volname)
-        if hot_tier_bricks is None:
-            return None
-        # Get cold-tier bricks in case of Tier volume
-        cold_tier_bricks = get_cold_tier_bricks(mnode, volname)
-        if cold_tier_bricks is None:
-            return None
-
-        return hot_tier_bricks + cold_tier_bricks
-
-    # Get bricks from a non Tier volume
+    # Get bricks from a volume
     all_bricks = []
     if 'bricks' in volinfo[volname]:
         if 'brick' in volinfo[volname]['bricks']:
@@ -75,88 +61,6 @@ def get_all_bricks(mnode, volname):
         return None
     g.log.error("Bricks not found for the volume %s", volname)
     return None
-
-
-def get_hot_tier_bricks(mnode, volname):
-    """Get list of hot-tier bricks of the specified volume
-
-    Args:
-        mnode (str): Node on which command has to be executed
-        volname (str): Name of the volume
-
-    Returns:
-        list : List of hot-tier bricks of the volume on Success.
-        NoneType: None on failure.
-    """
-    volinfo = get_volume_info(mnode, volname)
-    if volinfo is None:
-        g.log.error("Unable to get the volinfo of %s.", volname)
-        return None
-
-    if 'Tier' not in volinfo[volname]['typeStr']:
-        g.log.error("Volume %s is not a tiered volume", volname)
-        return None
-
-    hot_tier_bricks = []
-    if 'bricks' in volinfo[volname]:
-        if 'hotBricks' in volinfo[volname]['bricks']:
-            if 'brick' in volinfo[volname]['bricks']['hotBricks']:
-                for brick in volinfo[volname]['bricks']['hotBricks']['brick']:
-                    if 'name' in brick:
-                        hot_tier_bricks.append(brick['name'])
-                    else:
-                        g.log.error("brick %s doesn't have the key 'name' "
-                                    "for the volume: %s", brick, volname)
-                        return None
-            else:
-                g.log.error("Bricks not found in hotBricks section of volume "
-                            "info for the volume %s", volname)
-                return None
-        return hot_tier_bricks
-    else:
-        g.log.error("Bricks not found for the volume %s", volname)
-        return None
-
-
-def get_cold_tier_bricks(mnode, volname):
-    """Get list of cold-tier bricks of the specified volume
-
-    Args:
-        mnode (str): Node on which command has to be executed
-        volname (str): Name of the volume
-
-    Returns:
-        list : List of cold-tier bricks of the volume on Success.
-        NoneType: None on failure.
-    """
-    volinfo = get_volume_info(mnode, volname)
-    if volinfo is None:
-        g.log.error("Unable to get the volinfo of %s.", volname)
-        return None
-
-    if 'Tier' not in volinfo[volname]['typeStr']:
-        g.log.error("Volume %s is not a tiered volume", volname)
-        return None
-
-    cold_tier_bricks = []
-    if 'bricks' in volinfo[volname]:
-        if 'coldBricks' in volinfo[volname]['bricks']:
-            if 'brick' in volinfo[volname]['bricks']['coldBricks']:
-                for brick in volinfo[volname]['bricks']['coldBricks']['brick']:
-                    if 'name' in brick:
-                        cold_tier_bricks.append(brick['name'])
-                    else:
-                        g.log.error("brick %s doesn't have the key 'name' "
-                                    "for the volume: %s", brick, volname)
-                        return None
-            else:
-                g.log.error("Bricks not found in coldBricks section of volume "
-                            "info for the volume %s", volname)
-                return None
-        return cold_tier_bricks
-    else:
-        g.log.error("Bricks not found for the volume %s", volname)
-        return None
 
 
 def bring_bricks_offline(volname, bricks_list,
@@ -505,41 +409,29 @@ def select_bricks_to_bring_offline(mnode, volname):
             being empty list.
             Example:
                 brick_to_bring_offline = {
-                    'is_tier': False,
-                    'hot_tier_bricks': [],
-                    'cold_tier_bricks': [],
                     'volume_bricks': []
                     }
     """
     # Defaulting the values to empty list
     bricks_to_bring_offline = {
-        'is_tier': False,
-        'hot_tier_bricks': [],
-        'cold_tier_bricks': [],
         'volume_bricks': []
-        }
+    }
 
     volinfo = get_volume_info(mnode, volname)
     if volinfo is None:
         g.log.error("Unable to get the volume info for volume %s", volname)
         return bricks_to_bring_offline
 
-    if is_tiered_volume(mnode, volname):
-        bricks_to_bring_offline['is_tier'] = True
-        # Select bricks from tiered volume.
-        bricks_to_bring_offline = (
-            select_tier_volume_bricks_to_bring_offline(mnode, volname))
-    else:
-        # Select bricks from non-tiered volume.
-        volume_bricks = select_volume_bricks_to_bring_offline(mnode, volname)
-        bricks_to_bring_offline['volume_bricks'] = volume_bricks
+    # Select bricks from the volume.
+    volume_bricks = select_volume_bricks_to_bring_offline(mnode, volname)
+    bricks_to_bring_offline['volume_bricks'] = volume_bricks
 
     return bricks_to_bring_offline
 
 
 def select_volume_bricks_to_bring_offline(mnode, volname):
     """Randomly selects bricks to bring offline without affecting the cluster
-    from a non-tiered volume.
+    from a volume.
 
     Args:
         mnode (str): Node on which commands will be executed.
@@ -547,13 +439,9 @@ def select_volume_bricks_to_bring_offline(mnode, volname):
 
     Returns:
         list: On success returns list of bricks that can be brough offline.
-            If volume doesn't exist or is a tiered volume returns empty list
+            If volume doesn't exist returns empty list
     """
     volume_bricks_to_bring_offline = []
-
-    # Check if volume is tiered
-    if is_tiered_volume(mnode, volname):
-        return volume_bricks_to_bring_offline
 
     # get volume type
     volume_type_info = get_volume_type_info(mnode, volname)
@@ -599,162 +487,6 @@ def select_volume_bricks_to_bring_offline(mnode, volname):
     return volume_bricks_to_bring_offline
 
 
-def select_tier_volume_bricks_to_bring_offline(mnode, volname):
-    """Randomly selects bricks to bring offline without affecting the cluster
-    from a tiered volume.
-
-    Args:
-        mnode (str): Node on which commands will be executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        dict: On success returns dict. Value of each key is list of bricks to
-            bring offline.
-            If volume doesn't exist or is not a tiered volume returns dict
-            with value of each item being empty list.
-            Example:
-                brick_to_bring_offline = {
-                    'hot_tier_bricks': [],
-                    'cold_tier_bricks': [],
-                    }
-    """
-    # Defaulting the values to empty list
-    bricks_to_bring_offline = {
-        'hot_tier_bricks': [],
-        'cold_tier_bricks': [],
-        }
-
-    volinfo = get_volume_info(mnode, volname)
-    if volinfo is None:
-        g.log.error("Unable to get the volume info for volume %s", volname)
-        return bricks_to_bring_offline
-
-    if is_tiered_volume(mnode, volname):
-        # Select bricks from both hot tier and cold tier.
-        hot_tier_bricks = (select_hot_tier_bricks_to_bring_offline
-                           (mnode, volname))
-        cold_tier_bricks = (select_cold_tier_bricks_to_bring_offline
-                            (mnode, volname))
-        bricks_to_bring_offline['hot_tier_bricks'] = hot_tier_bricks
-        bricks_to_bring_offline['cold_tier_bricks'] = cold_tier_bricks
-    return bricks_to_bring_offline
-
-
-def select_hot_tier_bricks_to_bring_offline(mnode, volname):
-    """Randomly selects bricks to bring offline without affecting the cluster
-    from a hot tier.
-
-    Args:
-        mnode (str): Node on which commands will be executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        list: On success returns list of bricks that can be brough offline
-            from hot tier. If volume doesn't exist or is a non tiered volume
-            returns empty list.
-    """
-    hot_tier_bricks_to_bring_offline = []
-
-    # Check if volume is tiered
-    if not is_tiered_volume(mnode, volname):
-        return hot_tier_bricks_to_bring_offline
-
-    # get volume type
-    volume_type_info = get_volume_type_info(mnode, volname)
-    hot_tier_type = volume_type_info['hot_tier_type_info']['hotBrickType']
-
-    # get subvols
-    subvols_dict = get_subvols(mnode, volname)
-    hot_tier_subvols = subvols_dict['hot_tier_subvols']
-
-    # select bricks from distribute volume
-    if hot_tier_type == 'Distribute':
-        hot_tier_bricks_to_bring_offline = []
-
-    # select bricks from replicated, distributed-replicated volume
-    if (hot_tier_type == 'Replicate' or
-            hot_tier_type == 'Distributed-Replicate'):
-        # Get replica count
-        hot_tier_replica_count = (volume_type_info
-                                  ['hot_tier_type_info']['hotreplicaCount'])
-
-        # Get quorum info
-        quorum_info = get_client_quorum_info(mnode, volname)
-        hot_tier_quorum_info = quorum_info['hot_tier_quorum_info']
-
-        # Get list of bricks to bring offline
-        hot_tier_bricks_to_bring_offline = (
-            get_bricks_to_bring_offline_from_replicated_volume(
-                hot_tier_subvols, hot_tier_replica_count,
-                hot_tier_quorum_info))
-
-    return hot_tier_bricks_to_bring_offline
-
-
-def select_cold_tier_bricks_to_bring_offline(mnode, volname):
-    """Randomly selects bricks to bring offline without affecting the cluster
-    from a cold tier.
-
-    Args:
-        mnode (str): Node on which commands will be executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        list: On success returns list of bricks that can be brough offline
-            from cold tier. If volume doesn't exist or is a non tiered volume
-            returns empty list.
-    """
-    cold_tier_bricks_to_bring_offline = []
-
-    # Check if volume is tiered
-    if not is_tiered_volume(mnode, volname):
-        return cold_tier_bricks_to_bring_offline
-
-    # get volume type
-    volume_type_info = get_volume_type_info(mnode, volname)
-    cold_tier_type = volume_type_info['cold_tier_type_info']['coldBrickType']
-
-    # get subvols
-    subvols_dict = get_subvols(mnode, volname)
-    cold_tier_subvols = subvols_dict['cold_tier_subvols']
-
-    # select bricks from distribute volume
-    if cold_tier_type == 'Distribute':
-        cold_tier_bricks_to_bring_offline = []
-
-    # select bricks from replicated, distributed-replicated volume
-    elif (cold_tier_type == 'Replicate' or
-          cold_tier_type == 'Distributed-Replicate'):
-        # Get replica count
-        cold_tier_replica_count = (volume_type_info['cold_tier_type_info']
-                                   ['coldreplicaCount'])
-
-        # Get quorum info
-        quorum_info = get_client_quorum_info(mnode, volname)
-        cold_tier_quorum_info = quorum_info['cold_tier_quorum_info']
-
-        # Get list of bricks to bring offline
-        cold_tier_bricks_to_bring_offline = (
-            get_bricks_to_bring_offline_from_replicated_volume(
-                cold_tier_subvols, cold_tier_replica_count,
-                cold_tier_quorum_info))
-
-    # select bricks from Disperse, Distribured-Disperse volume
-    elif (cold_tier_type == 'Disperse' or
-          cold_tier_type == 'Distributed-Disperse'):
-
-        # Get redundancy count
-        cold_tier_redundancy_count = (volume_type_info['cold_tier_type_info']
-                                      ['coldredundancyCount'])
-
-        # Get list of bricks to bring offline
-        cold_tier_bricks_to_bring_offline = (
-            get_bricks_to_bring_offline_from_disperse_volume(
-                cold_tier_subvols, cold_tier_redundancy_count))
-
-    return cold_tier_bricks_to_bring_offline
-
-
 def get_bricks_to_bring_offline_from_replicated_volume(subvols_list,
                                                        replica_count,
                                                        quorum_info):
@@ -762,13 +494,10 @@ def get_bricks_to_bring_offline_from_replicated_volume(subvols_list,
         for a replicated volume.
 
     Args:
-        subvols_list: list of subvols. It can be volume_subvols,
-            hot_tier_subvols or cold_tier_subvols.
+        subvols_list: list of subvols.
             For example:
                 subvols = volume_libs.get_subvols(mnode, volname)
                 volume_subvols = subvols_dict['volume_subvols']
-                hot_tier_subvols = subvols_dict['hot_tier_subvols']
-                cold_tier_subvols = subvols_dict['cold_tier_subvols']
         replica_count: Replica count of a Replicate or Distributed-Replicate
             volume.
         quorum_info: dict containing quorum info of the volume. The dict should
@@ -777,8 +506,6 @@ def get_bricks_to_bring_offline_from_replicated_volume(subvols_list,
             For example:
                 quorum_dict = get_client_quorum_info(mnode, volname)
                 volume_quorum_info = quorum_info['volume_quorum_info']
-                hot_tier_quorum_info = quorum_info['hot_tier_quorum_info']
-                cold_tier_quorum_info = quorum_info['cold_tier_quorum_info']
 
     Returns:
         list: List of bricks that can be brought offline without affecting the
@@ -836,18 +563,15 @@ def get_bricks_to_bring_offline_from_disperse_volume(subvols_list,
         for a disperse volume.
 
     Args:
-        subvols_list: list of subvols. It can be volume_subvols,
-            hot_tier_subvols or cold_tier_subvols.
+        subvols_list: list of subvols.
             For example:
                 subvols = volume_libs.get_subvols(mnode, volname)
                 volume_subvols = subvols_dict['volume_subvols']
-                hot_tier_subvols = subvols_dict['hot_tier_subvols']
-                cold_tier_subvols = subvols_dict['cold_tier_subvols']
         redundancy_count: Redundancy count of a Disperse or
             Distributed-Disperse volume.
 
     Returns:
-        list: List of bricks that can be brought offline without affecting  the
+        list: List of bricks that can be brought offline without affecting the
             cluster.On any failure return empty list.
     """
     list_of_bricks_to_bring_offline = []

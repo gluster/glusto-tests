@@ -238,15 +238,8 @@ def volume_delete(mnode, volname, xfail=False):
             )
             return False
 
-    if volinfo[volname]['typeStr'] == 'Tier':
-        tmp_hot_brick = volinfo[volname]["bricks"]["hotBricks"]["brick"]
-        hot_bricks = [x["name"] for x in tmp_hot_brick if "name" in x]
-        tmp_cold_brick = volinfo[volname]["bricks"]["coldBricks"]["brick"]
-        cold_bricks = [x["name"] for x in tmp_cold_brick if "name" in x]
-        bricks = hot_bricks + cold_bricks
-    else:
-        bricks = [x["name"] for x in volinfo[volname]["bricks"]["brick"]
-                  if "name" in x]
+    bricks = [x["name"] for x in volinfo[volname]["bricks"]["brick"] if
+              "name" in x]
     ret, out, err = g.run(mnode, "gluster volume delete {} --mode=script"
                           .format(volname))
     if ret != 0:
@@ -392,27 +385,34 @@ def get_volume_status(mnode, volname='all', service='', options=''):
         NoneType: on failure
 
     Example:
-        get_volume_status("10.70.47.89", volname="testvol")
-        >>>{'testvol': {'10.70.47.89': {'/bricks/brick1/a11': {'status': '1',
-        'pid': '28963', 'bricktype': 'cold', 'port': '49163', 'peerid':
-        '7fc9015e-8134-4753-b837-54cbc6030c98', 'ports': {'rdma': 'N/A',
-        'tcp': '49163'}}, '/bricks/brick2/a31': {'status': '1', 'pid':
-        '28982', 'bricktype': 'cold', 'port': '49164', 'peerid':
-        '7fc9015e-8134-4753-b837-54cbc6030c98', 'ports': {'rdma': 'N/A',
-        'tcp': '49164'}}, 'NFS Server': {'status': '1', 'pid': '30525',
-        'port': '2049', 'peerid': '7fc9015e-8134-4753-b837-54cbc6030c98',
-        'ports': {'rdma': 'N/A', 'tcp': '2049'}}, '/bricks/brick1/a12':
-        {'status': '1', 'pid': '30505', 'bricktype': 'hot', 'port': '49165',
-        'peerid': '7fc9015e-8134-4753-b837-54cbc6030c98', 'ports': {'rdma':
-        'N/A', 'tcp': '49165'}}}, '10.70.47.118': {'/bricks/brick1/a21':
-        {'status': '1', 'pid': '5427', 'bricktype': 'cold', 'port': '49162',
-        'peerid': '5397d8f5-2986-453a-b0b5-5c40a9bb87ff', 'ports': {'rdma':
-        'N/A', 'tcp': '49162'}}, '/bricks/brick2/a41': {'status': '1', 'pid':
-        '5446', 'bricktype': 'cold', 'port': '49163', 'peerid':
-        '5397d8f5-2986-453a-b0b5-5c40a9bb87ff', 'ports': {'rdma': 'N/A',
-        'tcp': '49163'}}, 'NFS Server': {'status': '1', 'pid': '6397', 'port':
-        '2049', 'peerid': '5397d8f5-2986-453a-b0b5-5c40a9bb87ff', 'ports':
-        {'rdma': 'N/A', 'tcp': '2049'}}}}}
+        get_volume_status(host1, volname="testvol_replicated")
+        >>>{'testvol_replicated': {'host1': {'Self-heal Daemon': {'status':
+        '1', 'pid': '2479', 'port': 'N/A', 'peerid':
+        'b7a02af9-eea4-4657-8b86-3b21ec302f48', 'ports': {'rdma': 'N/A',
+        'tcp': 'N/A'}}, '/bricks/brick4/testvol_replicated_brick2': {'status':
+        '1', 'pid': '2468', 'bricktype': 'None', 'port': '49160', 'peerid':
+        'b7a02af9-eea4-4657-8b86-3b21ec302f48', 'ports': {'rdma': 'N/A',
+        'tcp': '49160'}}}, 'host2': {'Self-heal Daemon': {'status': '1',
+        'pid': '2513', 'port': 'N/A', 'peerid':
+        '7f6fb9ed-3e0b-4f27-89b3-9e4f836c2332', 'ports': {'rdma': 'N/A',
+        'tcp': 'N/A'}}, '/bricks/brick4/testvol_replicated_brick1': {'status':
+        '1', 'pid': '2456', 'bricktype': 'None', 'port': '49160', 'peerid':
+        '7f6fb9ed-3e0b-4f27-89b3-9e4f836c2332', 'ports': {'rdma': 'N/A',
+        'tcp': '49160'}}}, 'host3': {'Self-heal Daemon': {'status': '1', 'pid'
+        : '2515', 'port': 'N/A', 'peerid':
+        '6172cfab-9d72-43b5-ba6f-612e5cfc020c', 'ports': {'rdma': 'N/A',
+        'tcp': 'N/A'}}}, 'host4': {'Self-heal Daemon': {'status': '1', 'pid':
+        '2445', 'port': 'N/A', 'peerid': 'c16a1660-ee73-4e0f-b9c7-d2e830e39539
+        ', 'ports': {'rdma': 'N/A', 'tcp': 'N/A'}}}, 'host5':
+        {'Self-heal Daemon': {'status': '1', 'pid': '2536', 'port': 'N/A',
+        'peerid': '79ea9f52-88f0-4293-ae21-8ea13f44b58d', 'ports':
+        {'rdma': 'N/A', 'tcp': 'N/A'}}}, 'host6': {'Self-heal Daemon':
+        {'status': '1', 'pid': '2526', 'port': 'N/A', 'peerid':
+        'c00a3c5e-668f-440b-860c-da43e999737b', 'ports': {'rdma': 'N/A',
+        'tcp': 'N/A'}}, '/bricks/brick4/testvol_replicated_brick0': {'status':
+        '1', 'pid': '2503', 'bricktype': 'None', 'port': '49160', 'peerid':
+        'c00a3c5e-668f-440b-860c-da43e999737b', 'ports': {'rdma': 'N/A',
+        'tcp': '49160'}}}}}
     """
 
     cmd = "gluster vol status %s %s %s --xml" % (volname, service, options)
@@ -433,8 +433,6 @@ def get_volume_status(mnode, volname='all', service='', options=''):
     for volume in volume_list:
         tmp_dict1 = {}
         tmp_dict2 = {}
-        hot_bricks = []
-        cold_bricks = []
         vol_name = [vol.text for vol in volume if vol.tag == "volName"]
 
         # parsing volume status xml output
@@ -454,24 +452,7 @@ def get_volume_status(mnode, volname='all', service='', options=''):
             elem_tag = []
             for elem in volume.getchildren():
                 elem_tag.append(elem.tag)
-            if ('hotBricks' in elem_tag) or ('coldBricks' in elem_tag):
-                for elem in volume.getchildren():
-                    if (elem.tag == 'hotBricks'):
-                        nodes = elem.findall("node")
-                        hot_bricks = [node.find('path').text
-                                      for node in nodes
-                                      if (
-                                       node.find('path').text.startswith('/'))]
-                    if (elem.tag == 'coldBricks'):
-                        for n in elem.findall("node"):
-                            nodes.append(n)
-                        cold_bricks = [node.find('path').text
-                                       for node in nodes
-                                       if (
-                                        (node.find('path').
-                                         text.startswith('/')))]
-            else:
-                nodes = volume.findall("node")
+            nodes = volume.findall("node")
 
             for each_node in nodes:
                 if each_node.find('path').text.startswith('/'):
@@ -484,12 +465,7 @@ def get_volume_status(mnode, volname='all', service='', options=''):
                 tmp_dict3 = {}
                 if "hostname" in node_dict.keys():
                     if node_dict['path'].startswith('/'):
-                        if node_dict['path'] in hot_bricks:
-                            node_dict["bricktype"] = 'hot'
-                        elif node_dict['path'] in cold_bricks:
-                            node_dict["bricktype"] = 'cold'
-                        else:
-                            node_dict["bricktype"] = 'None'
+                        node_dict["bricktype"] = 'None'
                         tmp = node_dict["path"]
                         tmp_dict3[node_dict["path"]] = node_dict
                     else:
@@ -678,29 +654,42 @@ def get_volume_info(mnode, volname='all', xfail=False):
         dict: volume info in dict of dicts
 
     Example:
-        get_volume_info("abc.com", volname="testvol")
-        >>>{'testvol': {'status': '1', 'xlators': None, 'disperseCount': '0',
-        'bricks': {'coldBricks': {'colddisperseCount': '0',
-        'coldarbiterCount': '0', 'coldBrickType': 'Distribute',
-        'coldbrickCount': '4', 'numberOfBricks': '4', 'brick':
-        [{'isArbiter': '0', 'name': '10.70.47.89:/bricks/brick1/a11',
-        'hostUuid': '7fc9015e-8134-4753-b837-54cbc6030c98'}, {'isArbiter':
-        '0', 'name': '10.70.47.118:/bricks/brick1/a21', 'hostUuid':
-        '7fc9015e-8134-4753-b837-54cbc6030c98'}, {'isArbiter': '0', 'name':
-        '10.70.47.89:/bricks/brick2/a31', 'hostUuid':
-        '7fc9015e-8134-4753-b837-54cbc6030c98'}, {'isArbiter': '0',
-        'name': '10.70.47.118:/bricks/brick2/a41', 'hostUuid':
-        '7fc9015e-8134-4753-b837-54cbc6030c98'}], 'coldreplicaCount': '1'},
-        'hotBricks': {'hotBrickType': 'Distribute', 'numberOfBricks': '1',
-        'brick': [{'name': '10.70.47.89:/bricks/brick1/a12', 'hostUuid':
-        '7fc9015e-8134-4753-b837-54cbc6030c98'}], 'hotbrickCount': '1',
-        'hotreplicaCount': '1'}}, 'type': '5', 'distCount': '1',
-        'replicaCount': '1', 'brickCount': '5', 'options':
-        {'cluster.tier-mode': 'cache', 'performance.readdir-ahead': 'on',
-        'features.ctr-enabled': 'on'}, 'redundancyCount': '0', 'transport':
-        '0', 'typeStr': 'Tier', 'stripeCount': '1', 'arbiterCount': '0',
-        'id': 'ffa8a8d1-546f-4ebf-8e82-fcc96c7e4e05', 'statusStr': 'Started',
-        'optCount': '3'}}
+        get_volume_info("host1", volname="testvol")
+        >>>{'testvol': {'status': '1', 'disperseCount': '6',
+        'bricks': {'brick': [{'isArbiter': '0', 'name':
+        'host1:/bricks/brick6/testvol_brick0', 'hostUuid':
+        'c00a3c5e-668f-440b-860c-da43e999737b'}, {'isArbiter': '0', 'name':
+        'host2:/bricks/brick6/testvol_brick1', 'hostUuid':
+        '7f6fb9ed-3e0b-4f27-89b3-9e4f836c2332'}, {'isArbiter': '0', 'name':
+        'host3:/bricks/brick6/testvol_brick2', 'hostUuid':
+        'b7a02af9-eea4-4657-8b86-3b21ec302f48'}, {'isArbiter': '0', 'name':
+        'host4:/bricks/brick4/testvol_brick3', 'hostUuid':
+        '79ea9f52-88f0-4293-ae21-8ea13f44b58d'}, {'isArbiter': '0', 'name':
+        'host5:/bricks/brick2/testvol_brick4', 'hostUuid':
+        'c16a1660-ee73-4e0f-b9c7-d2e830e39539'}, {'isArbiter': '0', 'name':
+        'host6:/bricks/brick2/testvol_brick5', 'hostUuid':
+        '6172cfab-9d72-43b5-ba6f-612e5cfc020c'}, {'isArbiter': '0', 'name':
+        'host1:/bricks/brick7/testvol_brick6', 'hostUuid':
+        'c00a3c5e-668f-440b-860c-da43e999737b'}, {'isArbiter': '0', 'name':
+        'host2:/bricks/brick7/testvol_brick7', 'hostUuid':
+        '7f6fb9ed-3e0b-4f27-89b3-9e4f836c2332'}, {'isArbiter': '0', 'name':
+        'host3:/bricks/brick7/testvol_brick8', 'hostUuid':
+        'b7a02af9-eea4-4657-8b86-3b21ec302f48'}, {'isArbiter': '0', 'name':
+        'host4:/bricks/brick5/testvol_brick9', 'hostUuid':
+        '79ea9f52-88f0-4293-ae21-8ea13f44b58d'}, {'isArbiter': '0', 'name':
+        'host5:/bricks/brick4/testvol_brick10', 'hostUuid':
+        'c16a1660-ee73-4e0f-b9c7-d2e830e39539'}, {'isArbiter': '0', 'name':
+        'host6:/bricks/brick4/testvol_brick11', 'hostUuid':
+        '6172cfab-9d72-43b5-ba6f-612e5cfc020c'}]},
+        'type': '9', 'distCount': '2', 'replicaCount': '1', 'brickCount':
+        '12', 'options': {'nfs.disable': 'on', 'cluster.server-quorum-ratio':
+        '90%', 'storage.fips-mode-rchecksum': 'on',
+        'transport.address-family': 'inet', 'cluster.brick-multiplex':
+        'disable'}, 'redundancyCount': '2', 'snapshotCount': '0',
+        'transport': '0', 'typeStr': 'Distributed-Disperse', 'stripeCount':
+        '1', 'arbiterCount': '0',
+        'id': '8d217fa3-094b-4293-89b5-41d447c06d22', 'statusStr': 'Started',
+        'optCount': '5'}}
     """
 
     cmd = "gluster volume info %s --xml" % volname
@@ -732,18 +721,6 @@ def get_volume_info(mnode, volname='all', xfail=False):
                         (volinfo[volname]["bricks"]["brick"].
                          append(brick_info_dict))
 
-                    if el.tag == "hotBricks" or el.tag == "coldBricks":
-                        volinfo[volname]["bricks"][el.tag] = {}
-                        volinfo[volname]["bricks"][el.tag]["brick"] = []
-                        for elmt in el.getchildren():
-                            if elmt.tag == 'brick':
-                                brick_info_dict = {}
-                                for el_brk in elmt.getchildren():
-                                    brick_info_dict[el_brk.tag] = el_brk.text
-                                (volinfo[volname]["bricks"][el.tag]["brick"].
-                                 append(brick_info_dict))
-                            else:
-                                volinfo[volname]["bricks"][el.tag][elmt.tag] = elmt.text  # noqa: E501
             elif elem.tag == "options":
                 volinfo[volname]["options"] = {}
                 for option in elem.findall("option"):

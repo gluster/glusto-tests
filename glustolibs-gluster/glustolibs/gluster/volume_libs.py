@@ -31,9 +31,6 @@ from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            volume_info, volume_status,
                                            get_volume_options,
                                            get_volume_list)
-from glustolibs.gluster.tiering_ops import (add_extra_servers_to_cluster,
-                                            tier_attach,
-                                            is_tier_process_running)
 from glustolibs.gluster.quota_ops import (quota_enable, quota_limit_usage,
                                           is_quota_enabled)
 from glustolibs.gluster.uss_ops import enable_uss, is_uss_enabled
@@ -101,11 +98,6 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
                                           'size': '100GB'},
                           'enable': False},
                 'uss': {'enable': False},
-                'tier': {'create_tier': True,
-                         'tier_type': {'type': 'distributed-replicated',
-                                  'replica_count': 2,
-                                  'dist_count': 2,
-                                  'transport': 'tcp'}},
                 'options': {'performance.readdir-ahead': True}
                 }
     Kwargs:
@@ -322,68 +314,6 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
     if not ret:
         g.log.error("volume start %s failed", volname)
         return False
-
-    # Create Tier volume
-    if ('tier' in volume_config and 'create_tier' in volume_config['tier'] and
-            volume_config['tier']['create_tier']):
-        # get servers info for tier attach
-        if ('extra_servers' in volume_config and
-                volume_config['extra_servers']):
-            extra_servers = volume_config['extra_servers']
-            ret = add_extra_servers_to_cluster(mnode, extra_servers)
-            if not ret:
-                return False
-        else:
-            extra_servers = volume_config['servers']
-
-        # get the tier volume type
-        if 'tier_type' in volume_config['tier']:
-            if 'type' in volume_config['tier']['tier_type']:
-                tier_volume_type = volume_config['tier']['tier_type']['type']
-                dist = rep = 1
-                if tier_volume_type == 'distributed':
-                    if 'dist_count' in volume_config['tier']['tier_type']:
-                        dist = (volume_config['tier']['tier_type']
-                                ['dist_count'])
-
-                elif tier_volume_type == 'replicated':
-                    if 'replica_count' in volume_config['tier']['tier_type']:
-                        rep = (volume_config['tier']['tier_type']
-                               ['replica_count'])
-
-                elif tier_volume_type == 'distributed-replicated':
-                    if 'dist_count' in volume_config['tier']['tier_type']:
-                        dist = (volume_config['tier']['tier_type']
-                                ['dist_count'])
-                    if 'replica_count' in volume_config['tier']['tier_type']:
-                        rep = (volume_config['tier']['tier_type']
-                               ['replica_count'])
-        else:
-            tier_volume_type = 'distributed'
-            dist = 1
-            rep = 1
-        number_of_bricks = dist * rep
-
-        # Attach Tier
-        ret, _, _ = tier_attach(mnode=mnode, volname=volname,
-                                extra_servers=extra_servers,
-                                extra_servers_info=all_servers_info,
-                                num_bricks_to_add=number_of_bricks,
-                                replica=rep)
-        if ret != 0:
-            g.log.error("Unable to attach tier")
-            return False
-
-        time.sleep(30)
-        # Check if tier is running
-        _rc = True
-        for server in extra_servers:
-            ret = is_tier_process_running(server, volname)
-            if not ret:
-                g.log.error("Tier process not running on %s", server)
-                _rc = False
-        if not _rc:
-            return False
 
     # Enable Quota
     if ('quota' in volume_config and 'enable' in volume_config['quota'] and
@@ -646,77 +576,11 @@ def get_subvols(mnode, volname):
         get_subvols("abc.xyz.com", "testvol")
     """
 
-    subvols = {
-        'is_tier': False,
-        'hot_tier_subvols': [],
-        'cold_tier_subvols': [],
-        'volume_subvols': []
-        }
+    subvols = {'volume_subvols': []}
+
     volinfo = get_volume_info(mnode, volname)
     if volinfo is not None:
         voltype = volinfo[volname]['typeStr']
-        if voltype == 'Tier':
-            # Set is_tier to True
-            subvols['is_tier'] = True
-
-            # Get hot tier subvols
-            hot_tier_type = (volinfo[volname]["bricks"]
-                             ['hotBricks']['hotBrickType'])
-            tmp = volinfo[volname]["bricks"]['hotBricks']["brick"]
-            hot_tier_bricks = [x["name"] for x in tmp if "name" in x]
-            if hot_tier_type == 'Distribute':
-                for brick in hot_tier_bricks:
-                    subvols['hot_tier_subvols'].append([brick])
-
-            elif (hot_tier_type == 'Replicate' or
-                  hot_tier_type == 'Distributed-Replicate'):
-                rep_count = int(
-                    (volinfo[volname]["bricks"]['hotBricks']
-                     ['numberOfBricks']).split("=", 1)[0].split("x")[1].strip()
-                    )
-                subvol_list = (
-                    [hot_tier_bricks[i:i + rep_count]
-                     for i in range(0, len(hot_tier_bricks), rep_count)])
-                subvols['hot_tier_subvols'] = subvol_list
-
-            # Get cold tier subvols
-            cold_tier_type = (volinfo[volname]["bricks"]['coldBricks']
-                              ['coldBrickType'])
-            tmp = volinfo[volname]["bricks"]['coldBricks']["brick"]
-            cold_tier_bricks = [x["name"] for x in tmp if "name" in x]
-
-            # Distribute volume
-            if cold_tier_type == 'Distribute':
-                for brick in cold_tier_bricks:
-                    subvols['cold_tier_subvols'].append([brick])
-
-            # Replicate or Distribute-Replicate volume
-            elif (cold_tier_type == 'Replicate' or
-                  cold_tier_type == 'Distributed-Replicate'):
-                rep_count = int(
-                    (volinfo[volname]["bricks"]['coldBricks']
-                     ['numberOfBricks']).split("=", 1)[0].split("x")[1].strip()
-                    )
-                subvol_list = (
-                    [cold_tier_bricks[i:i + rep_count]
-                     for i in range(0, len(cold_tier_bricks), rep_count)])
-                subvols['cold_tier_subvols'] = subvol_list
-
-            # Disperse or Distribute-Disperse volume
-            elif (cold_tier_type == 'Disperse' or
-                  cold_tier_type == 'Distributed-Disperse'):
-                disp_count = sum(
-                    [int(nums) for nums in (
-                        (volinfo[volname]["bricks"]['coldBricks']
-                         ['numberOfBricks']).split("x", 1)[1].
-                        strip().split("=")[0].strip().strip("()").
-                        split()) if nums.isdigit()])
-                subvol_list = [cold_tier_bricks[i:i + disp_count]
-                               for i in range(0, len(cold_tier_bricks),
-                                              disp_count)]
-                subvols['cold_tier_subvols'] = subvol_list
-            return subvols
-
         tmp = volinfo[volname]["bricks"]["brick"]
         bricks = [x["name"] for x in tmp if "name" in x]
         if voltype == 'Replicate' or voltype == 'Distributed-Replicate':
@@ -737,29 +601,6 @@ def get_subvols(mnode, volname):
     return subvols
 
 
-def is_tiered_volume(mnode, volname):
-    """Check if volume is tiered volume.
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        bool : True if the volume is tiered volume. False otherwise
-        NoneType: None if volume does not exist.
-    """
-    volinfo = get_volume_info(mnode, volname)
-    if volinfo is None:
-        g.log.error("Unable to get the volume info for volume %s", volname)
-        return None
-
-    voltype = volinfo[volname]['typeStr']
-    if voltype == 'Tier':
-        return True
-    else:
-        return False
-
-
 def is_distribute_volume(mnode, volname):
     """Check if volume is a plain distributed volume
 
@@ -776,20 +617,10 @@ def is_distribute_volume(mnode, volname):
         g.log.error("Unable to check if the volume %s is distribute", volname)
         return False
 
-    if volume_type_info['is_tier']:
-        hot_tier_type = (volume_type_info['hot_tier_type_info']
-                         ['hotBrickType'])
-        cold_tier_type = (volume_type_info['cold_tier_type_info']
-                          ['coldBrickType'])
-        if hot_tier_type == 'Distribute' and cold_tier_type == 'Distribute':
-            return True
-        else:
-            return False
+    if volume_type_info['volume_type_info']['typeStr'] == 'Distribute':
+        return True
     else:
-        if volume_type_info['volume_type_info']['typeStr'] == 'Distribute':
-            return True
-        else:
-            return False
+        return False
 
 
 def get_volume_type_info(mnode, volname):
@@ -803,9 +634,6 @@ def get_volume_type_info(mnode, volname):
         dict : Dict containing the keys, values defining the volume type:
             Example:
                 volume_type_info = {
-                    'is_tier': False,
-                    'hot_tier_type_info': {},
-                    'cold_tier_type_info': {},
                     'volume_type_info': {
                         'typeStr': 'Disperse',
                         'replicaCount': '1',
@@ -817,18 +645,6 @@ def get_volume_type_info(mnode, volname):
                     }
 
                 volume_type_info = {
-                    'is_tier': True,
-                    'hot_tier_type_info': {
-                        'hotBrickType': 'Distribute',
-                        'hotreplicaCount': '1'
-                        },
-                    'cold_tier_type_info': {
-                        'coldBrickType': 'Disperse',
-                        'coldreplicaCount': '1',
-                        'coldarbiterCount': '0',
-                        'colddisperseCount': '3',
-                        'numberOfBricks':1
-                        },
                     'volume_type_info': {}
 
 
@@ -839,138 +655,26 @@ def get_volume_type_info(mnode, volname):
         g.log.error("Unable to get the volume info for volume %s", volname)
         return None
 
-    volume_type_info = {
-        'is_tier': False,
-        'hot_tier_type_info': {},
-        'cold_tier_type_info': {},
-        'volume_type_info': {}
-        }
+    volume_type_info = {'volume_type_info': {}}
 
-    voltype = volinfo[volname]['typeStr']
-    if voltype == 'Tier':
-        volume_type_info['is_tier'] = True
-
-        hot_tier_type_info = get_hot_tier_type_info(mnode, volname)
-        volume_type_info['hot_tier_type_info'] = hot_tier_type_info
-
-        cold_tier_type_info = get_cold_tier_type_info(mnode, volname)
-        volume_type_info['cold_tier_type_info'] = cold_tier_type_info
-
-    else:
-        non_tiered_volume_type_info = {
-            'typeStr': '',
-            'replicaCount': '',
-            'arbiterCount': '',
-            'stripeCount': '',
-            'disperseCount': '',
-            'redundancyCount': ''
-            }
-        for key in non_tiered_volume_type_info.keys():
-            if key in volinfo[volname]:
-                non_tiered_volume_type_info[key] = volinfo[volname][key]
-            else:
-                g.log.error("Unable to find key '%s' in the volume info for "
-                            "the volume %s", key, volname)
-                non_tiered_volume_type_info[key] = None
-        volume_type_info['volume_type_info'] = non_tiered_volume_type_info
+    all_volume_type_info = {
+        'typeStr': '',
+        'replicaCount': '',
+        'arbiterCount': '',
+        'stripeCount': '',
+        'disperseCount': '',
+        'redundancyCount': ''
+    }
+    for key in all_volume_type_info.keys():
+        if key in volinfo[volname]:
+            all_volume_type_info[key] = volinfo[volname][key]
+        else:
+            g.log.error("Unable to find key '%s' in the volume info for "
+                        "the volume %s", key, volname)
+            all_volume_type_info[key] = None
+    volume_type_info['volume_type_info'] = all_volume_type_info
 
     return volume_type_info
-
-
-def get_cold_tier_type_info(mnode, volname):
-    """Returns cold tier type information for the specified volume.
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        dict : Dict containing the keys, values defining the cold tier type:
-            Example:
-                cold_tier_type_info = {
-                    'coldBrickType': 'Disperse',
-                    'coldreplicaCount': '1',
-                    'coldarbiterCount': '0',
-                    'colddisperseCount': '3',
-                    'numberOfBricks': '3'
-                    }
-        NoneType: None if volume does not exist or is not a tiered volume or
-            any other key errors.
-    """
-    volinfo = get_volume_info(mnode, volname)
-    if volinfo is None:
-        g.log.error("Unable to get the volume info for volume %s", volname)
-        return None
-
-    if not is_tiered_volume(mnode, volname):
-        g.log.error("Volume %s is not a tiered volume", volname)
-        return None
-
-    cold_tier_type_info = {
-        'coldBrickType': '',
-        'coldreplicaCount': '',
-        'coldarbiterCount': '',
-        'colddisperseCount': '',
-        'numberOfBricks': ''
-        }
-    for key in cold_tier_type_info.keys():
-        if key in volinfo[volname]['bricks']['coldBricks']:
-            cold_tier_type_info[key] = (volinfo[volname]['bricks']
-                                        ['coldBricks'][key])
-        else:
-            g.log.error("Unable to find key '%s' in the volume info for the "
-                        "volume %s", key, volname)
-            return None
-
-    if 'Disperse' in cold_tier_type_info['coldBrickType']:
-        redundancy_count = (cold_tier_type_info['numberOfBricks'].
-                            split("x", 1)[1].strip().
-                            split("=")[0].strip().strip("()").split()[2])
-        cold_tier_type_info['coldredundancyCount'] = redundancy_count
-
-    return cold_tier_type_info
-
-
-def get_hot_tier_type_info(mnode, volname):
-    """Returns hot tier type information for the specified volume.
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        dict : Dict containing the keys, values defining the hot tier type:
-            Example:
-                hot_tier_type_info = {
-                    'hotBrickType': 'Distribute',
-                    'hotreplicaCount': '1'
-                    }
-        NoneType: None if volume does not exist or is not a tiered volume or
-            any other key errors.
-    """
-    volinfo = get_volume_info(mnode, volname)
-    if volinfo is None:
-        g.log.error("Unable to get the volume info for volume %s", volname)
-        return None
-
-    if not is_tiered_volume(mnode, volname):
-        g.log.error("Volume %s is not a tiered volume", volname)
-        return None
-
-    hot_tier_type_info = {
-        'hotBrickType': '',
-        'hotreplicaCount': ''
-        }
-    for key in hot_tier_type_info.keys():
-        if key in volinfo[volname]['bricks']['hotBricks']:
-            hot_tier_type_info[key] = (volinfo[volname]['bricks']['hotBricks']
-                                       [key])
-        else:
-            g.log.error("Unable to find key '%s' in the volume info for the "
-                        "volume %s", key, volname)
-            return None
-
-    return hot_tier_type_info
 
 
 def get_num_of_bricks_per_subvol(mnode, volname):
@@ -985,84 +689,19 @@ def get_num_of_bricks_per_subvol(mnode, volname):
                 number of bricks per subvol
                 Example:
                     num_of_bricks_per_subvol = {
-                        'is_tier': False,
-                        'hot_tier_num_of_bricks_per_subvol': None,
-                        'cold_tier_num_of_bricks_per_subvol': None,
                         'volume_num_of_bricks_per_subvol': 2
                         }
 
-                    num_of_bricks_per_subvol = {
-                        'is_tier': True,
-                        'hot_tier_num_of_bricks_per_subvol': 3,
-                        'cold_tier_num_of_bricks_per_subvol': 2,
-                        'volume_num_of_bricks_per_subvol': None
-                        }
-
-        NoneType: None if volume does not exist or is a tiered volume.
+        NoneType: None if volume does not exist.
     """
-    bricks_per_subvol_dict = {
-        'is_tier': False,
-        'hot_tier_num_of_bricks_per_subvol': None,
-        'cold_tier_num_of_bricks_per_subvol': None,
-        'volume_num_of_bricks_per_subvol': None
-        }
+    bricks_per_subvol_dict = {'volume_num_of_bricks_per_subvol': None}
 
     subvols_dict = get_subvols(mnode, volname)
     if subvols_dict['volume_subvols']:
         bricks_per_subvol_dict['volume_num_of_bricks_per_subvol'] = (
             len(subvols_dict['volume_subvols'][0]))
-    else:
-        if (subvols_dict['hot_tier_subvols'] and
-                subvols_dict['cold_tier_subvols']):
-            bricks_per_subvol_dict['is_tier'] = True
-            bricks_per_subvol_dict['hot_tier_num_of_bricks_per_subvol'] = (
-                len(subvols_dict['hot_tier_subvols'][0]))
-            bricks_per_subvol_dict['cold_tier_num_of_bricks_per_subvol'] = (
-                len(subvols_dict['cold_tier_subvols'][0]))
 
     return bricks_per_subvol_dict
-
-
-def get_cold_tier_num_of_bricks_per_subvol(mnode, volname):
-    """Returns number of bricks per subvol in cold tier
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        int : Number of bricks per subvol on cold tier.
-        NoneType: None if volume does not exist or not a tiered volume.
-    """
-    if not is_tiered_volume(mnode, volname):
-        g.log.error("Volume %s is not a tiered volume", volname)
-        return None
-    subvols_dict = get_subvols(mnode, volname)
-    if subvols_dict['cold_tier_subvols']:
-        return len(subvols_dict['cold_tier_subvols'][0])
-    else:
-        return None
-
-
-def get_hot_tier_num_of_bricks_per_subvol(mnode, volname):
-    """Returns number of bricks per subvol in hot tier
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        int : Number of bricks per subvol on hot tier.
-        NoneType: None if volume does not exist or not a tiered volume.
-    """
-    if not is_tiered_volume(mnode, volname):
-        g.log.error("Volume %s is not a tiered volume", volname)
-        return None
-    subvols_dict = get_subvols(mnode, volname)
-    if subvols_dict['hot_tier_subvols']:
-        return len(subvols_dict['hot_tier_subvols'][0])
-    else:
-        return None
 
 
 def get_replica_count(mnode, volname):
@@ -1076,16 +715,7 @@ def get_replica_count(mnode, volname):
         dict : Dict contain keys, values defining Replica count of the volume.
             Example:
                 replica_count_info = {
-                    'is_tier': False,
-                    'hot_tier_replica_count': None,
-                    'cold_tier_replica_count': None,
                     'volume_replica_count': 3
-                    }
-                replica_count_info = {
-                    'is_tier': True,
-                    'hot_tier_replica_count': 2,
-                    'cold_tier_replica_count': 3,
-                    'volume_replica_count': None
                     }
         NoneType: None if it is parse failure.
     """
@@ -1095,67 +725,12 @@ def get_replica_count(mnode, volname):
                     volname)
         return None
 
-    replica_count_info = {
-        'is_tier': False,
-        'hot_tier_replica_count': None,
-        'cold_tier_replica_count': None,
-        'volume_replica_count': None
-        }
+    replica_count_info = {'volume_replica_count': None}
 
-    replica_count_info['is_tier'] = vol_type_info['is_tier']
-    if replica_count_info['is_tier']:
-        replica_count_info['hot_tier_replica_count'] = (
-            vol_type_info['hot_tier_type_info']['hotreplicaCount'])
-        replica_count_info['cold_tier_replica_count'] = (
-            vol_type_info['cold_tier_type_info']['coldreplicaCount'])
-
-    else:
-        replica_count_info['volume_replica_count'] = (
-            vol_type_info['volume_type_info']['replicaCount'])
+    replica_count_info['volume_replica_count'] = (
+        vol_type_info['volume_type_info']['replicaCount'])
 
     return replica_count_info
-
-
-def get_cold_tier_replica_count(mnode, volname):
-    """Get the replica count of cold tier.
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        int : Replica count of the cold tier.
-        NoneType: None if volume does not exist or not a tiered volume.
-    """
-    is_tier = is_tiered_volume(mnode, volname)
-    if not is_tier:
-        return None
-    else:
-        volinfo = get_volume_info(mnode, volname)
-        cold_tier_replica_count = (volinfo[volname]["bricks"]['coldBricks']
-                                   ['coldreplicaCount'])
-        return cold_tier_replica_count
-
-
-def get_hot_tier_replica_count(mnode, volname):
-    """Get the replica count of hot tier.
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        int : Replica count of the hot tier.
-        NoneType: None if volume does not exist or not a tiered volume.
-    """
-    is_tier = is_tiered_volume(mnode, volname)
-    if not is_tier:
-        return None
-    else:
-        volinfo = get_volume_info(mnode, volname)
-        hot_tier_replica_count = (volinfo[volname]["bricks"]['hotBricks']
-                                  ['hotreplicaCount'])
-        return hot_tier_replica_count
 
 
 def get_disperse_count(mnode, volname):
@@ -1169,14 +744,7 @@ def get_disperse_count(mnode, volname):
         dict : Dict contain keys, values defining Disperse count of the volume.
             Example:
                 disperse_count_info = {
-                    'is_tier': False,
-                    'cold_tier_disperse_count': None,
                     'volume_disperse_count': 3
-                    }
-                disperse_count_info = {
-                    'is_tier': True,
-                    'cold_tier_disperse_count': 3,
-                    'volume_disperse_count': None
                     }
         None: If it is non dispersed volume.
     """
@@ -1186,43 +754,12 @@ def get_disperse_count(mnode, volname):
                     volname)
         return None
 
-    disperse_count_info = {
-        'is_tier': False,
-        'cold_tier_disperse_count': None,
-        'volume_disperse_count': None
-        }
+    disperse_count_info = {'volume_disperse_count': None}
 
-    disperse_count_info['is_tier'] = vol_type_info['is_tier']
-    if disperse_count_info['is_tier']:
-        disperse_count_info['cold_tier_disperse_count'] = (
-            vol_type_info['cold_tier_type_info']['colddisperseCount'])
-
-    else:
-        disperse_count_info['volume_disperse_count'] = (
+    disperse_count_info['volume_disperse_count'] = (
             vol_type_info['volume_type_info']['disperseCount'])
 
     return disperse_count_info
-
-
-def get_cold_tier_disperse_count(mnode, volname):
-    """Get the disperse count of cold tier.
-
-    Args:
-        mnode (str): Node on which commands are executed.
-        volname (str): Name of the volume.
-
-    Returns:
-        int : disperse count of the cold tier.
-        NoneType: None if volume does not exist or not a tiered volume.
-    """
-    is_tier = is_tiered_volume(mnode, volname)
-    if not is_tier:
-        return None
-    else:
-        volinfo = get_volume_info(mnode, volname)
-        cold_tier_disperse_count = (volinfo[volname]["bricks"]['coldBricks']
-                                    ['colddisperseCount'])
-        return cold_tier_disperse_count
 
 
 def enable_and_validate_volume_options(mnode, volname, volume_options_list,
@@ -1271,7 +808,6 @@ def enable_and_validate_volume_options(mnode, volname, volume_options_list,
 
 
 def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
-                                  add_to_hot_tier=False,
                                   **kwargs):
     """Forms list of bricks to add-bricks to the volume.
 
@@ -1294,9 +830,6 @@ def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
                     }
                 }
     Kwargs:
-        add_to_hot_tier (bool): True If bricks are to be added to hot_tier.
-            False otherwise. Defaults to False.
-
         The keys, values in kwargs are:
             - replica_count : (int)|None.
               Increase the current_replica_count by replica_count
@@ -1335,19 +868,8 @@ def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
         bricks_per_subvol_dict = get_num_of_bricks_per_subvol(mnode, volname)
 
         # Get number of bricks to add.
-        if bricks_per_subvol_dict['is_tier']:
-            if add_to_hot_tier:
-                num_of_bricks_per_subvol = (
-                    bricks_per_subvol_dict['hot_tier_num_of_bricks_per_subvol']
-                    )
-            else:
-                num_of_bricks_per_subvol = (
-                    bricks_per_subvol_dict
-                    ['cold_tier_num_of_bricks_per_subvol']
-                    )
-        else:
-            num_of_bricks_per_subvol = (
-                bricks_per_subvol_dict['volume_num_of_bricks_per_subvol'])
+        num_of_bricks_per_subvol = (
+            bricks_per_subvol_dict['volume_num_of_bricks_per_subvol'])
 
         if num_of_bricks_per_subvol is None:
             g.log.error("Number of bricks per subvol is None. "
@@ -1363,15 +885,7 @@ def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
     if replica_count:
         # Get Subvols
         subvols_info = get_subvols(mnode, volname)
-
-        # Calculate number of bricks to add
-        if subvols_info['is_tier']:
-            if add_to_hot_tier:
-                num_of_subvols = len(subvols_info['hot_tier_subvols'])
-            else:
-                num_of_subvols = len(subvols_info['cold_tier_subvols'])
-        else:
-            num_of_subvols = len(subvols_info['volume_subvols'])
+        num_of_subvols = len(subvols_info['volume_subvols'])
 
         if num_of_subvols == 0:
             g.log.error("No Sub-Volumes available for the volume %s."
@@ -1409,7 +923,7 @@ def form_bricks_list_to_add_brick(mnode, volname, servers, all_servers_info,
 
 
 def expand_volume(mnode, volname, servers, all_servers_info, force=False,
-                  add_to_hot_tier=False, **kwargs):
+                  **kwargs):
     """Forms list of bricks to add and adds those bricks to the volume.
 
     Args:
@@ -1435,9 +949,6 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
             will get executed with force option. If it is set to False,
             then add-brick command will get executed without force option
 
-        add_to_hot_tier (bool): True If bricks are to be added to hot_tier.
-            False otherwise. Defaults to False.
-
         **kwargs
             The keys, values in kwargs are:
                 - replica_count : (int)|None.
@@ -1449,11 +960,9 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
         bool: True of expanding volumes is successful.
             False otherwise.
 
-    NOTE: adding bricks to hot tier is yet to be added in this function.
     """
     bricks_list = form_bricks_list_to_add_brick(mnode, volname, servers,
-                                                all_servers_info,
-                                                add_to_hot_tier, **kwargs)
+                                                all_servers_info, **kwargs)
 
     if not bricks_list:
         g.log.info("Unable to get bricks list to add-bricks. "
@@ -1465,17 +974,8 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
 
         # Get replica count info.
         replica_count_info = get_replica_count(mnode, volname)
-
-        if is_tiered_volume(mnode, volname):
-            if add_to_hot_tier:
-                current_replica_count = (
-                    int(replica_count_info['hot_tier_replica_count']))
-            else:
-                current_replica_count = (
-                    int(replica_count_info['cold_tier_replica_count']))
-        else:
-            current_replica_count = (
-                int(replica_count_info['volume_replica_count']))
+        current_replica_count = (
+            int(replica_count_info['volume_replica_count']))
 
         kwargs['replica_count'] = current_replica_count + replica_count
 
@@ -1491,8 +991,7 @@ def expand_volume(mnode, volname, servers, all_servers_info, force=False,
 
 
 def form_bricks_list_to_remove_brick(mnode, volname, subvol_num=None,
-                                     replica_num=None,
-                                     remove_from_hot_tier=False, **kwargs):
+                                     replica_num=None, **kwargs):
     """Form bricks list for removing the bricks.
 
     Args:
@@ -1508,9 +1007,6 @@ def form_bricks_list_to_remove_brick(mnode, volname, subvol_num=None,
         replica_num (int): Specify which replica brick to remove.
             If replica_num = 0, then 1st brick from each subvolume is removed.
             the replica_num starts from 0.
-
-        remove_from_hot_tier (bool): True If bricks are to be removed from
-            hot_tier. False otherwise. Defaults to False.
 
         **kwargs
             The keys, values in kwargs are:
@@ -1554,27 +1050,13 @@ def form_bricks_list_to_remove_brick(mnode, volname, subvol_num=None,
         is_arbiter = False
 
         # Calculate bricks to remove
-        if subvols_info['is_tier']:
-            if remove_from_hot_tier:
-                current_replica_count = (
-                    int(replica_count_info['hot_tier_replica_count']))
-                subvols_list = subvols_info['hot_tier_subvols']
-            else:
-                current_replica_count = (
-                    int(replica_count_info['cold_tier_replica_count']))
-                subvols_list = subvols_info['cold_tier_subvols']
-                arbiter_count = int(volume_type_info['cold_tier_type_info']
-                                    ['coldarbiterCount'])
-                if arbiter_count == 1:
-                    is_arbiter = True
-        else:
-            current_replica_count = (
-                int(replica_count_info['volume_replica_count']))
-            subvols_list = subvols_info['volume_subvols']
-            arbiter_count = int(volume_type_info['volume_type_info']
-                                ['arbiterCount'])
-            if arbiter_count == 1:
-                is_arbiter = True
+        current_replica_count = (
+            int(replica_count_info['volume_replica_count']))
+        subvols_list = subvols_info['volume_subvols']
+        arbiter_count = int(volume_type_info['volume_type_info']
+                            ['arbiterCount'])
+        if arbiter_count == 1:
+            is_arbiter = True
 
         # If replica_num is specified select the bricks of that replica number
         # from all the subvolumes.
@@ -1620,14 +1102,7 @@ def form_bricks_list_to_remove_brick(mnode, volname, subvol_num=None,
 
     # remove bricks from sub-volumes
     if subvol_num is not None or 'distribute_count' in kwargs:
-        if subvols_info['is_tier']:
-            if remove_from_hot_tier:
-                subvols_list = subvols_info['hot_tier_subvols']
-            else:
-                subvols_list = subvols_info['cold_tier_subvols']
-        else:
-            subvols_list = subvols_info['volume_subvols']
-
+        subvols_list = subvols_info['volume_subvols']
         if not subvols_list:
             g.log.error("No Sub-Volumes available for the volume %s", volname)
             return None
@@ -1663,7 +1138,7 @@ def form_bricks_list_to_remove_brick(mnode, volname, subvol_num=None,
 
 def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
                   force=False, rebalance_timeout=300, delete_bricks=True,
-                  remove_from_hot_tier=False, **kwargs):
+                  **kwargs):
     """Remove bricks from the volume.
 
     Args:
@@ -1690,9 +1165,6 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
 
         delete_bricks (bool): After remove-brick delete the removed bricks.
 
-        remove_from_hot_tier (bool): True If bricks are to be removed from
-            hot_tier. False otherwise. Defaults to False.
-
         **kwargs
             The keys, values in kwargs are:
                 - replica_count : (int)|None. Specify the replica count to
@@ -1703,12 +1175,10 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
         bool: True if removing bricks from the volume is successful.
             False otherwise.
 
-    NOTE: remove-bricks from hot-tier is yet to be added in this function.
     """
     # Form bricks list to remove-bricks
     bricks_list_to_remove = form_bricks_list_to_remove_brick(
-        mnode, volname, subvol_num, replica_num, remove_from_hot_tier,
-        **kwargs)
+        mnode, volname, subvol_num, replica_num, **kwargs)
 
     if not bricks_list_to_remove:
         g.log.error("Failed to form bricks list to remove-brick. "
@@ -1727,16 +1197,8 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
         # Get replica count info.
         replica_count_info = get_replica_count(mnode, volname)
 
-        if is_tiered_volume(mnode, volname):
-            if remove_from_hot_tier:
-                current_replica_count = (
-                    int(replica_count_info['hot_tier_replica_count']))
-            else:
-                current_replica_count = (
-                    int(replica_count_info['cold_tier_replica_count']))
-        else:
-            current_replica_count = (
-                int(replica_count_info['volume_replica_count']))
+        current_replica_count = (
+            int(replica_count_info['volume_replica_count']))
 
         kwargs['replica_count'] = current_replica_count - replica_count
 
@@ -1854,8 +1316,7 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
 
 
 def form_bricks_to_replace_brick(mnode, volname, servers, all_servers_info,
-                                 src_brick=None, dst_brick=None,
-                                 replace_brick_from_hot_tier=False):
+                                 src_brick=None, dst_brick=None):
     """Get src_brick, dst_brick to replace brick
 
     Args:
@@ -1882,9 +1343,6 @@ def form_bricks_to_replace_brick(mnode, volname, servers, all_servers_info,
 
         dst_brick (str): New brick to replace the faulty brick
 
-        replace_brick_from_hot_tier (bool): True If brick are to be
-            replaced from hot_tier. False otherwise. Defaults to False.
-
     Returns:
         Tuple: (src_brick, dst_brick)
         Nonetype: if volume doesn't exists or any other failure.
@@ -1910,13 +1368,7 @@ def form_bricks_to_replace_brick(mnode, volname, servers, all_servers_info,
 
     if not src_brick:
         # Randomly pick up a brick to bring the brick down and replace.
-        if subvols_info['is_tier']:
-            if replace_brick_from_hot_tier:
-                subvols_list = subvols_info['hot_tier_subvols']
-            else:
-                subvols_list = subvols_info['cold_tier_subvols']
-        else:
-            subvols_list = subvols_info['volume_subvols']
+        subvols_list = subvols_info['volume_subvols']
 
         src_brick = (random.choice(random.choice(subvols_list)))
 
@@ -1925,9 +1377,7 @@ def form_bricks_to_replace_brick(mnode, volname, servers, all_servers_info,
 
 def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
                               src_brick=None, dst_brick=None,
-                              delete_brick=True,
-                              replace_brick_from_hot_tier=False,
-                              multi_vol=False):
+                              delete_brick=True, multi_vol=False):
     """Replace faulty brick from the volume.
 
     Args:
@@ -1955,9 +1405,6 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
         dst_brick (str): New brick to replace the faulty brick
 
         delete_bricks (bool): After remove-brick delete the removed bricks.
-
-        replace_brick_from_hot_tier (bool): True If brick are to be
-            replaced from hot_tier. False otherwise. Defaults to False.
 
         multi_vol (bool): True, If bricks need to created for multiple
                           volumes(more than 5)
@@ -1998,13 +1445,7 @@ def replace_brick_from_volume(mnode, volname, servers, all_servers_info,
 
     if not src_brick:
         # Randomly pick up a brick to bring the brick down and replace.
-        if subvols_info['is_tier']:
-            if replace_brick_from_hot_tier:
-                subvols_list = subvols_info['hot_tier_subvols']
-            else:
-                subvols_list = subvols_info['cold_tier_subvols']
-        else:
-            subvols_list = subvols_info['volume_subvols']
+        subvols_list = subvols_info['volume_subvols']
 
         src_brick = (random.choice(random.choice(subvols_list)))
 
@@ -2069,17 +1510,6 @@ def get_client_quorum_info(mnode, volname):
     Returns:
         dict: client quorum information for the volume.
             client_quorum_dict = {
-                'is_tier': False,
-                'hot_tier_quorum_info':{
-                    'is_quorum_applicable': False,
-                    'quorum_type': None,
-                    'quorum_count': None
-                    },
-                'cold_tier_quorum_info':{
-                    'is_quorum_applicable': False,
-                    'quorum_type': None,
-                    'quorum_count': None
-                    },
                 'volume_quorum_info':{
                     'is_quorum_applicable': False,
                     'quorum_type': None,
@@ -2089,17 +1519,6 @@ def get_client_quorum_info(mnode, volname):
         NoneType: None if volume does not exist.
     """
     client_quorum_dict = {
-        'is_tier': False,
-        'hot_tier_quorum_info': {
-            'is_quorum_applicable': False,
-            'quorum_type': None,
-            'quorum_count': None
-            },
-        'cold_tier_quorum_info': {
-            'is_quorum_applicable': False,
-            'quorum_type': None,
-            'quorum_count': None
-            },
         'volume_quorum_info': {
             'is_quorum_applicable': False,
             'quorum_type': None,
@@ -2125,111 +1544,37 @@ def get_client_quorum_info(mnode, volname):
 
     # Set the quorum info
     volume_type_info = get_volume_type_info(mnode, volname)
-    if volume_type_info['is_tier'] is True:
-        client_quorum_dict['is_tier'] = True
+    volume_type = (volume_type_info['volume_type_info']['typeStr'])
+    if (volume_type == 'Replicate' or
+            volume_type == 'Distributed-Replicate'):
+        (client_quorum_dict['volume_quorum_info']
+            ['is_quorum_applicable']) = True
+        replica_count = (volume_type_info['volume_type_info']['replicaCount'])
 
-        # Hot Tier quorum info
-        hot_tier_type = volume_type_info['hot_tier_type_info']['hotBrickType']
-        if (hot_tier_type == 'Replicate' or
-                hot_tier_type == 'Distributed-Replicate'):
+        # Case1: Replica 2
+        if int(replica_count) == 2:
+            if 'none' not in quorum_type:
+                (client_quorum_dict['volume_quorum_info']
+                    ['quorum_type']) = quorum_type
 
-            (client_quorum_dict['hot_tier_quorum_info']
-             ['is_quorum_applicable']) = True
-            replica_count = (volume_type_info['hot_tier_type_info']
-                             ['hotreplicaCount'])
-
-            # Case1: Replica 2
-            if int(replica_count) == 2:
-                if 'none' not in quorum_type:
-                    (client_quorum_dict['hot_tier_quorum_info']
-                     ['quorum_type']) = quorum_type
-
-                    if quorum_type == 'fixed':
-                        if not quorum_count == '(null)':
-                            (client_quorum_dict['hot_tier_quorum_info']
-                             ['quorum_count']) = quorum_count
-
-            # Case2: Replica > 2
-            if int(replica_count) > 2:
-                if quorum_type == 'none':
-                    (client_quorum_dict['hot_tier_quorum_info']
-                     ['quorum_type']) = 'auto'
-                    quorum_type == 'auto'
-                else:
-                    (client_quorum_dict['hot_tier_quorum_info']
-                     ['quorum_type']) = quorum_type
-                if quorum_type == 'fixed':
-                    if not quorum_count == '(null)':
-                        (client_quorum_dict['hot_tier_quorum_info']
-                         ['quorum_count']) = quorum_count
-
-        # Cold Tier quorum info
-        cold_tier_type = (volume_type_info['cold_tier_type_info']
-                          ['coldBrickType'])
-        if (cold_tier_type == 'Replicate' or
-                cold_tier_type == 'Distributed-Replicate'):
-            (client_quorum_dict['cold_tier_quorum_info']
-             ['is_quorum_applicable']) = True
-            replica_count = (volume_type_info['cold_tier_type_info']
-                             ['coldreplicaCount'])
-
-            # Case1: Replica 2
-            if int(replica_count) == 2:
-                if 'none' not in quorum_type:
-                    (client_quorum_dict['cold_tier_quorum_info']
-                     ['quorum_type']) = quorum_type
-
-                    if quorum_type == 'fixed':
-                        if not quorum_count == '(null)':
-                            (client_quorum_dict['cold_tier_quorum_info']
-                             ['quorum_count']) = quorum_count
-
-            # Case2: Replica > 2
-            if int(replica_count) > 2:
-                if quorum_type == 'none':
-                    (client_quorum_dict['cold_tier_quorum_info']
-                     ['quorum_type']) = 'auto'
-                    quorum_type == 'auto'
-                else:
-                    (client_quorum_dict['cold_tier_quorum_info']
-                     ['quorum_type']) = quorum_type
-                if quorum_type == 'fixed':
-                    if not quorum_count == '(null)':
-                        (client_quorum_dict['cold_tier_quorum_info']
-                         ['quorum_count']) = quorum_count
-    else:
-        volume_type = (volume_type_info['volume_type_info']['typeStr'])
-        if (volume_type == 'Replicate' or
-                volume_type == 'Distributed-Replicate'):
-            (client_quorum_dict['volume_quorum_info']
-             ['is_quorum_applicable']) = True
-            replica_count = (volume_type_info['volume_type_info']
-                             ['replicaCount'])
-
-            # Case1: Replica 2
-            if int(replica_count) == 2:
-                if 'none' not in quorum_type:
-                    (client_quorum_dict['volume_quorum_info']
-                     ['quorum_type']) = quorum_type
-
-                    if quorum_type == 'fixed':
-                        if not quorum_count == '(null)':
-                            (client_quorum_dict['volume_quorum_info']
-                             ['quorum_count']) = quorum_count
-
-            # Case2: Replica > 2
-            if int(replica_count) > 2:
-                if quorum_type == 'none':
-                    (client_quorum_dict['volume_quorum_info']
-                     ['quorum_type']) = 'auto'
-                    quorum_type == 'auto'
-                else:
-                    (client_quorum_dict['volume_quorum_info']
-                     ['quorum_type']) = quorum_type
                 if quorum_type == 'fixed':
                     if not quorum_count == '(null)':
                         (client_quorum_dict['volume_quorum_info']
-                         ['quorum_count']) = quorum_count
+                            ['quorum_count']) = quorum_count
+
+        # Case2: Replica > 2
+        if int(replica_count) > 2:
+            if quorum_type == 'none':
+                (client_quorum_dict['volume_quorum_info']
+                    ['quorum_type']) = 'auto'
+                quorum_type == 'auto'
+            else:
+                (client_quorum_dict['volume_quorum_info']
+                    ['quorum_type']) = quorum_type
+            if quorum_type == 'fixed':
+                if not quorum_count == '(null)':
+                    (client_quorum_dict['volume_quorum_info']
+                        ['quorum_count']) = quorum_count
 
     return client_quorum_dict
 

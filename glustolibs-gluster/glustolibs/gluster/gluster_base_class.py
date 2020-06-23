@@ -330,7 +330,7 @@ class GlusterBaseClass(TestCase):
     def setup_volume(cls, volume_create_force=False, only_volume_create=False):
         """Setup the volume:
             - Create the volume, Start volume, Set volume
-            options, enable snapshot/quota/tier if specified in the config
+            options, enable snapshot/quota if specified in the config
             file.
             - Wait for volume processes to be online
             - Export volume as NFS/SMB share if mount_type is NFS or SMB
