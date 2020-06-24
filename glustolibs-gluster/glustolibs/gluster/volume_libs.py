@@ -2362,3 +2362,62 @@ def get_volume_type(brickdir_path):
         else:
             g.log.info("Failed to find brick-path %s for volume %s",
                        brickdir_path, volume)
+
+
+def parse_vol_file(mnode, vol_file):
+    """ Parses the .vol file and returns the content as a dict
+    Args:
+          mnode (str): Node on which commands will be executed.
+          vol_file(str) : Path to the .vol file
+    Returns:
+           (dict): Content of the .vol file
+           None : if failure happens
+    Example:
+        >>> ret =  parse_vol_file("abc@xyz.com",
+                                  "/var/lib/glusterd/vols/testvol_distributed/
+                                  trusted-testvol_distributed.tcp-fuse.vol")
+        {'testvol_distributed-client-0': {'type': 'protocol/client',
+        'option': {'send-gids': 'true','transport.socket.keepalive-count': '9',
+         'transport.socket.keepalive-interval': '2',
+         'transport.socket.keepalive-time': '20',
+          'transport.tcp-user-timeout': '0',
+          'transport.socket.ssl-enabled': 'off', 'password':
+          'bcc934b3-9e76-47fd-930c-c31ad9f6e2f0', 'username':
+          '23bb8f1c-b373-4f85-8bab-aaa77b4918ce', 'transport.address-family':
+          'inet', 'transport-type': 'tcp', 'remote-subvolume':
+          '/gluster/bricks/brick1/testvol_distributed_brick0',
+           'remote-host': 'xx.xx.xx.xx', 'ping-timeout': '42'}}}
+    """
+    vol_dict, data, key = {}, {}, None
+
+    def _create_dict_from_list(cur_dict, keys, value):
+        """Creates dynamic dictionary from a given list of keys and values"""
+        if len(keys) == 1:
+            cur_dict[keys[0]] = value
+            return
+        if keys[0] not in cur_dict:
+            cur_dict[keys[0]] = {}
+        _create_dict_from_list(cur_dict[keys[0]], keys[1:], value)
+
+    ret, file_contents, err = g.run(mnode, "cat {}".format(vol_file))
+    if ret:
+        g.log.error("Failed to read the .vol file : %s", err)
+        return None
+    if not file_contents:
+        g.log.error("The given .vol file is empty")
+        return None
+    for line in file_contents.split("\n"):
+        if line:
+            line = line.strip()
+            if line.startswith('end-volume'):
+                vol_dict[key] = data
+                data = {}
+            elif line.startswith("volume "):
+                key = line.split(" ")[-1]
+            elif line.startswith("subvolumes "):
+                key_list = line.split(" ")[0]
+                _create_dict_from_list(data, [key_list], line.split(" ")[1:])
+            else:
+                key_list = line.split(" ")[:-1]
+                _create_dict_from_list(data, key_list, line.split(" ")[-1])
+    return vol_dict
