@@ -138,15 +138,11 @@ For more info about running tests on PyUnit, Pytest and Nose Tests, refer the [d
 
 glusto-tests can also be executed using `tox`:
 
-```
        # tox -e functional -- glusto -c 'config.yml' --pytest='-v -s -k test_demo1'
-```
 
 glusto-tests can also be executed with python3 using `tox`:
 
-```
        # tox -e functional3 -- glusto -c 'config.yml' --pytest='-v -s -k test_demo1'
-```
 
 **NOTE:**
 - Please note that glusto-tests is not completely compatible with python3.
