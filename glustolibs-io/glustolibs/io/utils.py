@@ -989,7 +989,8 @@ def upload_file_dir_ops(clients):
     return True
 
 
-def open_file_fd(mountpoint, time, client):
+def open_file_fd(mountpoint, time, client, start_range=0,
+                 end_range=0):
     """Open FD for a file and write to file.
 
     Args:
@@ -998,10 +999,27 @@ def open_file_fd(mountpoint, time, client):
       time(int): The time to wait after opening an FD.
       client(str): The client from which FD is to be opened.
 
+    Kwargs:
+        start_range(int): The start range of the open FD.
+                          (Default: 0)
+        end_range(int): The end range of the open FD.
+                        (Default: 0)
+
     Returns:
       proc(object): Returns a process object
+
+    NOTE:
+    Before opening FD, check the currently used fds on the
+    system as only a limited number of fds can be opened on
+    a system at a given time for each process.
     """
-    cmd = ("cd {}; exec 30<> file_openfd ; sleep {};"
-           "echo 'xyz' >&30".format(mountpoint, time))
+    if not (start_range and end_range):
+        cmd = ("cd {}; exec 30<> file_openfd ; sleep {};"
+               "echo 'xyz' >&30".format(mountpoint, time))
+    else:
+        cmd = ('cd {}; for i in `seq {} {}`;'
+               ' do eval "exec $i<>file_openfd$i"; sleep {};'
+               ' echo "Write to open FD" >&$i; done'.format(
+                   mountpoint, start_range, end_range, time))
     proc = g.run_async(client, cmd)
     return proc
