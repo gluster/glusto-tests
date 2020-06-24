@@ -46,7 +46,7 @@ class DeleteFileInMigration(GlusterBaseClass):
         # Form brick list for add-brick operation
         self.add_brick_list = form_bricks_list_to_add_brick(
             self.mnode, self.volname, self.servers, self.all_servers_info,
-            distribute_count=1, add_to_hot_tier=False)
+            distribute_count=1)
         if not self.add_brick_list:
             raise ExecutionError("Volume %s: Failed to form bricks list for"
                                  " add-brick" % self.volname)
