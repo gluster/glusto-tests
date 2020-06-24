@@ -90,7 +90,7 @@ class TestAccessFileWithStaleLinktoXattr(GlusterBaseClass):
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
 
-    def test_readdirp_with_rebalance(self):
+    def test_access_file_with_stale_linkto_xattr(self):
         """
         Description: Checks if the files are accessible as non-root user if
                      the files have stale linkto xattr.
