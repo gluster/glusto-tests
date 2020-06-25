@@ -99,8 +99,7 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
         g.log.info("Adding bricks to convert to Arbiter Volume")
         replica_arbiter = {'replica_count': 1, 'arbiter_count': 1}
         ret = expand_volume(self.mnode, self.volname, self.servers,
-                            self.all_servers_info, add_to_hot_tier=False,
-                            **replica_arbiter)
+                            self.all_servers_info, **replica_arbiter)
         self.assertTrue(ret, "Failed to expand the volume  %s" % self.volname)
         g.log.info("Changing volume to arbiter volume is successful %s",
                    self.volname)

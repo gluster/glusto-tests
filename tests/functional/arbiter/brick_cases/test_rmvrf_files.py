@@ -145,10 +145,7 @@ class TestRmrfMount(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = list(filter(None, (
-            bricks_to_bring_offline_dict['hot_tier_bricks'] +
-            bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks'])))
+        bricks_to_bring_offline = bricks_to_bring_offline_dict['volume_bricks']
 
         # Killing one brick from the volume set
         g.log.info("Bringing bricks: %s offline", bricks_to_bring_offline)
