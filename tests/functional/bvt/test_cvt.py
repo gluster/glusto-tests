@@ -778,9 +778,9 @@ class TestGlusterHealSanity(GlusterBasicFeaturesSanityBaseClass):
         # Wait for self-heal to complete
         g.log.info("Wait for self-heal to complete")
         ret = monitor_heal_completion(self.mnode, self.volname,
-                                      timeout_period=1500)
+                                      timeout_period=1800)
         self.assertTrue(ret, "Self heal didn't complete even after waiting "
-                        "for 25 minutes. 25 minutes is too much a time for "
+                        "for 30 minutes. 30 minutes is too much a time for "
                         "current test workload")
         g.log.info("self-heal is successful after replace-brick operation")
 
