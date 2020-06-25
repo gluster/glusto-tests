@@ -44,9 +44,12 @@ class TestEcBrickReplace(GlusterBaseClass):
         cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
-        cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
-                                  "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [cls.script_upload_path])
+        cls.script_upload_path1 = ("/usr/share/glustolibs/io/scripts/"
+                                   "file_dir_ops.py")
+        cls.script_upload_path2 = ("/usr/share/glustolibs/io/scripts/"
+                                   "fd_writes.py")
+        ret = upload_scripts(cls.clients, [cls.script_upload_path1,
+                                           cls.script_upload_path2])
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -300,7 +303,7 @@ class TestEcBrickReplace(GlusterBaseClass):
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
                    "--num-of-files 5 %s/dir1" % (
-                       self.script_upload_path, count,
+                       self.script_upload_path1, count,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -321,6 +324,40 @@ class TestEcBrickReplace(GlusterBaseClass):
 
         # Validating IO's and waiting to complete
         ret = validate_io_procs(all_mounts_procs, self.mounts)
+        self.assertTrue(ret, "IO failed on some of the clients")
+        g.log.info("Successfully validated all io's")
+
+        # Create 2 directories and start IO's which opens FD
+        ret = mkdir(self.mounts[0].client_system, "%s/count{1..2}"
+                    % self.mounts[0].mountpoint)
+        self.assertTrue(ret, "Failed to create directories")
+        g.log.info("Directories created on %s successfully", self.mounts[0])
+
+        all_fd_procs, count = [], 1
+        for mount_obj in self.mounts:
+            cmd = ("cd %s ;/usr/bin/env python %s -n 10 -t 120 "
+                   "-d 5 -c 16 --dir count%s" % (
+                       mount_obj.mountpoint,
+                       self.script_upload_path2, count))
+            proc = g.run_async(mount_obj.client_system, cmd,
+                               user=mount_obj.user)
+            all_fd_procs.append(proc)
+            count += 1
+
+        # Replacing a brick while open FD IO's are going on
+        ret = replace_brick_from_volume(self.mnode, self.volname,
+                                        self.servers,
+                                        self.all_servers_info)
+        self.assertTrue(ret, "Unexpected:Replace brick is not successful")
+        g.log.info("Expected : Replace brick is successful")
+
+        # Wait for brick to come online
+        ret = wait_for_bricks_to_be_online(self.mnode, self.volname)
+        self.assertTrue(ret, "Unexpected:Bricks are not online")
+        g.log.info("Expected : Bricks are online")
+
+        # Validating IO's and waiting to complete
+        ret = validate_io_procs(all_fd_procs, self.mounts)
         self.assertTrue(ret, "IO failed on some of the clients")
         g.log.info("Successfully validated all io's")
 
