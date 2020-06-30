@@ -413,17 +413,14 @@ def is_linkto_file(host, fqpath):
     """
     command = 'file %s' % fqpath
     rcode, rout, _ = g.run(host, command)
-
     if rcode == 0:
-        if 'sticky empty' in rout.strip():
+        # An additional ',' is there for newer platforms
+        if 'sticky empty' or 'sticky, empty' in rout.strip():
             stat = get_file_stat(host, fqpath)
             if int(stat['size']) == 0:
-                # xattr = get_fattr(host, fqpath,
-                #                  'trusted.glusterfs.dht.linkto')
                 xattr = get_dht_linkto_xattr(host, fqpath)
                 if xattr is not None:
                     return True
-
     return False
 
 
