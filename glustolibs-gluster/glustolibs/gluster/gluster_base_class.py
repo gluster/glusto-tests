@@ -47,6 +47,7 @@ from glustolibs.gluster.peer_ops import (
 from glustolibs.gluster.gluster_init import (
     restart_glusterd, stop_glusterd, wait_for_glusterd_to_start)
 from glustolibs.gluster.samba_libs import share_volume_over_smb
+from glustolibs.gluster.shared_storage_ops import is_shared_volume_mounted
 from glustolibs.gluster.volume_libs import (
     cleanup_volume,
     log_volume_info_and_status,
@@ -257,6 +258,9 @@ class GlusterBaseClass(TestCase):
             False otherwise.
         """
         if error_or_failure_exists:
+            shared_storage_mounted = False
+            if is_shared_volume_mounted(cls.mnode):
+                shared_storage_mounted = True
             ret = stop_glusterd(cls.servers)
             if not ret:
                 g.log.error("Failed to stop glusterd")
@@ -277,11 +281,21 @@ class GlusterBaseClass(TestCase):
                         g.log.error("Unable to kill process {}".format(
                                     out.strip().split('\n')))
                         return False
-                cmd_list = ("rm -rf /var/lib/glusterd/vols/*",
-                            "rm -rf /var/lib/glusterd/snaps/*",
-                            "rm -rf /var/lib/glusterd/peers/*",
-                            "rm -rf {}/*/*".format(
-                                cls.all_servers_info[server]['brick_root']))
+                if not shared_storage_mounted:
+                    cmd_list = (
+                        "rm -rf /var/lib/glusterd/vols/*",
+                        "rm -rf /var/lib/glusterd/snaps/*",
+                        "rm -rf /var/lib/glusterd/peers/*",
+                        "rm -rf {}/*/*".format(
+                            cls.all_servers_info[server]['brick_root']))
+                else:
+                    cmd_list = (
+                        "for vol in `ls /var/lib/glusterd/vols/ | "
+                        "grep -v gluster_shared_storage`;do "
+                        "rm -rf /var/lib/glusterd/vols/$vol;done",
+                        "rm -rf /var/lib/glusterd/snaps/*"
+                        "rm -rf {}/*/*".format(
+                            cls.all_servers_info[server]['brick_root']))
                 for cmd in cmd_list:
                     ret, _, _ = g.run(server, cmd, "root")
                     if ret:
@@ -297,10 +311,11 @@ class GlusterBaseClass(TestCase):
             if not ret:
                 g.log.error("Failed to bring glusterd up")
                 return False
-            ret = peer_probe_servers(cls.mnode, cls.servers)
-            if not ret:
-                g.log.error("Failed to peer probe servers")
-                return False
+            if not shared_storage_mounted:
+                ret = peer_probe_servers(cls.mnode, cls.servers)
+                if not ret:
+                    g.log.error("Failed to peer probe servers")
+                    return False
             for client in cls.clients:
                 cmd_list = ("umount /mnt/*", "rm -rf /mnt/*")
                 for cmd in cmd_list:
