@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -34,8 +34,7 @@ from glustolibs.gluster.mount_ops import (mount_volume,
 from glustolibs.misc.misc_libs import upload_scripts
 
 
-@runs_on([['arbiter'],
-          ['glusterfs']])
+@runs_on([['arbiter'], ['glusterfs']])
 class VolumeSetDataSelfHealTests(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
@@ -57,6 +56,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         # Setup Volumes
         cls.volume_configs = []
         cls.mounts_dict_list = []
+        cls.client = cls.clients[0]
 
         # Define two replicated volumes
         for i in range(1, 3):
@@ -67,24 +67,22 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
             cls.volume_configs.append(volume_config)
 
             # Redefine mounts
-            for client in cls.all_clients_info.keys():
-                mount = {
-                    'protocol': cls.mount_type,
-                    'server': cls.mnode,
-                    'volname': volume_config['name'],
-                    'client': cls.all_clients_info[client],
-                    'mountpoint': (os.path.join(
-                        "/mnt", '_'.join([volume_config['name'],
-                                          cls.mount_type]))),
-                    'options': ''
-                    }
-                cls.mounts_dict_list.append(mount)
+            mount = {
+                'protocol': cls.mount_type,
+                'server': cls.mnode,
+                'volname': volume_config['name'],
+                'client': cls.all_clients_info[cls.client],
+                'mountpoint': (os.path.join(
+                    "/mnt", '_'.join([volume_config['name'],
+                                      cls.mount_type]))),
+                'options': ''
+                }
+            cls.mounts_dict_list.append(mount)
 
-            cls.mounts = create_mount_objs(cls.mounts_dict_list)
+        cls.mounts = create_mount_objs(cls.mounts_dict_list)
 
         # Create and mount volumes
         cls.mount_points = []
-        cls.client = cls.clients[0]
         for volume_config in cls.volume_configs:
 
             # Setup volume
@@ -146,39 +144,33 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
                 raise ExecutionError("Failed to list all files and dirs")
             g.log.info("Listing all files and directories is successful")
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume and umount volume from client
-        """
         # umount all volumes
-        for mount_obj in cls.mounts:
+        for mount_point in self.mount_points:
             ret, _, _ = umount_volume(
-                mount_obj.client_system, mount_obj.mountpoint)
+                self.client, mount_point)
             if ret:
                 raise ExecutionError(
                     "Failed to umount on volume %s "
-                    % cls.volname)
+                    % self.volname)
             g.log.info("Successfully umounted %s on client %s",
-                       cls.volname, mount_obj.client_system)
-            ret = rmdir(mount_obj.client_system, mount_obj.mountpoint)
+                       self.volname, self.client)
+            ret = rmdir(self.client, mount_point)
             if not ret:
                 raise ExecutionError(
-                    ret, "Failed to remove directory mount directory.")
+                    "Failed to remove directory mount directory.")
             g.log.info("Mount directory is removed successfully")
 
         # stopping all volumes
-        g.log.info("Starting to Cleanup all Volumes")
-        volume_list = get_volume_list(cls.mnode)
+        volume_list = get_volume_list(self.mnode)
         for volume in volume_list:
-            ret = cleanup_volume(cls.mnode, volume)
+            ret = cleanup_volume(self.mnode, volume)
             if not ret:
                 raise ExecutionError("Failed to cleanup Volume %s" % volume)
             g.log.info("Volume: %s cleanup is done", volume)
         g.log.info("Successfully Cleanedup all Volumes")
 
-        # calling GlusterBaseClass tearDownClass
-        cls.get_super_method(cls, 'tearDownClass')()
+        # calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_mount_point_not_go_to_rofs(self):
         """
@@ -249,3 +241,4 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         self.assertTrue(
             validate_io_procs(self.all_mounts_procs, self.mounts),
             "IO failed on some of the clients")
+        self.io_validation_complete = True
