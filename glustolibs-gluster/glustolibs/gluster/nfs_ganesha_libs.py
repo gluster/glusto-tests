@@ -100,24 +100,25 @@ class NfsGaneshaClusterSetupClass(GlusterBaseClass):
                            "healthy state")
                 ganesha_ha_file = ("/var/run/gluster/shared_storage/"
                                    "nfs-ganesha/ganesha-ha.conf")
+                g_node = cls.servers_in_nfs_ganesha_cluster[0]
 
                 g.log.info("Collecting server details of existing "
                            "nfs ganesha cluster")
-                conn = g.rpyc_get_connection(
-                    cls.servers_in_nfs_ganesha_cluster[0], user="root")
-                if not conn:
-                    tmp_node = cls.servers_in_nfs_ganesha_cluster[0]
-                    g.log.error("Unable to get connection to 'root' of node"
-                                " %s", tmp_node)
-                    return False
 
-                if not conn.modules.os.path.exists(ganesha_ha_file):
+                # Check whether ganesha ha file exists
+                cmd = "[ -f {} ]".format(ganesha_ha_file)
+                ret, _, _ = g.run(g_node, cmd)
+                if ret:
                     g.log.error("Unable to locate %s", ganesha_ha_file)
                     return False
-                with conn.builtin.open(ganesha_ha_file, "r") as fhand:
-                    ganesha_ha_contents = fhand.read()
-                g.rpyc_close_connection(
-                    host=cls.servers_in_nfs_ganesha_cluster[0], user="root")
+
+                # Read contents of ganesha_ha_file
+                cmd = "cat {}".format(ganesha_ha_file)
+                ret, ganesha_ha_contents, _ = g.run(g_node, cmd)
+                if ret:
+                    g.log.error("Failed to read %s", ganesha_ha_file)
+                    return False
+
                 servers_in_existing_cluster = re.findall(r'VIP_(.*)\=.*',
                                                          ganesha_ha_contents)
 
