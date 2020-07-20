@@ -14,13 +14,14 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from random import choice
 import string
+from random import choice
+from sys import version_info
 
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import set_volume_options
 
 
@@ -31,6 +32,7 @@ class TestChangeReserveLimit(GlusterBaseClass):
     erroneous values.
     """
 
+    # pylint: disable=redefined-builtin
     def setUp(self):
         self.get_super_method(self, 'setUp')()
         ret = self.setup_volume()
@@ -60,20 +62,26 @@ class TestChangeReserveLimit(GlusterBaseClass):
         # Creation of random data for storage.reserve volume option
         # Data has: alphabets, numbers, punctuations and their combinations
         key = 'storage.reserve'
+
+        # Make `unicode` compatible with py2/py3
+        if version_info.major == 3:
+            unicode = str
+
         for char_type in (string.ascii_letters, string.punctuation,
                           string.printable):
 
             # Remove quotes from the generated string
             temp_val = self.get_random_string(char_type)
-            temp_val = temp_val.translate({39: None, 35: None})
-
+            temp_val = unicode(temp_val).translate({39: None, 35: None})
             value = "'{}'".format(temp_val)
             ret = set_volume_options(self.mnode, self.volname, {key: value})
-            self.assertFalse(ret, "Unexpected: Erroneous value {}, to option "
-                             "{} should result in failure".format(value, key))
+            self.assertFalse(
+                ret, "Unexpected: Erroneous value {}, to option "
+                "{} should result in failure".format(value, key))
 
         # Passing an out of range value
         for value in ('-1%', '-101%', '101%', '-1', '-101'):
             ret = set_volume_options(self.mnode, self.volname, {key: value})
-            self.assertFalse(ret, "Unexpected: Erroneous value {}, to option "
-                             "{} should result in failure".format(value, key))
+            self.assertFalse(
+                ret, "Unexpected: Erroneous value {}, to option "
+                "{} should result in failure".format(value, key))
