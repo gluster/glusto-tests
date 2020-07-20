@@ -21,7 +21,8 @@ from unittest import SkipTest
 
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.brick_libs import bring_bricks_offline
+from glustolibs.gluster.brick_libs import (bring_bricks_offline,
+                                           get_online_bricks_list)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.glusterdir import mkdir
@@ -52,6 +53,8 @@ class TestEcQuotaError(GlusterBaseClass):
         cls.get_super_method(cls, 'setUpClass')()
         if cls.volume_type == 'distributed-dispersed':
             raise SkipTest('BZ #1707813 limits the functionality of fallocate')
+        if cls.volume_type == 'dispersed':
+            raise SkipTest('BZ #1339144 is being hit intermittently')
         cls.script_path = '/usr/share/glustolibs/io/scripts/fd_writes.py'
         ret = upload_scripts(cls.clients, cls.script_path)
         if not ret:
@@ -86,15 +89,19 @@ class TestEcQuotaError(GlusterBaseClass):
             raise ExecutionError('Failed to unmount and cleanup volume')
         self.get_super_method(self, 'tearDown')()
 
-    def _get_free_space_in_gb(self, host, path):
+    def _get_space_in_gb(self, host, path, size='free'):
         """
-        Return available space on the provided `path`
+        Return available or total space on the provided `path`
+        Kwargs:
+            size (str) : total/free(default) size to be queried on `path`
         """
         space_avail = get_disk_usage(host, path)
         self.assertIsNotNone(
             space_avail, 'Failed to get disk usage stats of '
             '{} on {}'.format(host, path))
-        return ceil(space_avail['free'])
+        if size == 'total':
+            return int(ceil(space_avail['total']))
+        return int(ceil(space_avail['free']))
 
     def _insert_bp(self, host, logpath):
         """
@@ -112,18 +119,31 @@ class TestEcQuotaError(GlusterBaseClass):
         Perform `fallocate -l <alloc_size> <fqpath>` on <client>
         """
 
-        # Delete the file if exists (sparsefile is created on absolute sizes)
-        ret = remove_file(self.client, self.fqpath, force=True)
+        # Delete the files if exists (sparsefile is created on absolute sizes)
+        ret = remove_file(self.client, self.fqpath + '*', force=True)
         self.assertTrue(
-            ret, 'Not able to delete existing file for '
-            '`fallocate` of new file')
+            ret, 'Unable to delete existing file for `fallocate` of new file')
         sleep(5)
-        ret, _, _ = g.run(
-            self.client, 'fallocate -l {}G {}'.format(self.alloc_size,
-                                                      self.fqpath))
-        self.assertEqual(
-            ret, 0, 'Not able to fallocate {}G to {} file on {}'.format(
-                self.alloc_size, self.fqpath, self.client))
+
+        # Create multiple sparsefiles rather than one big file
+        sizes = [self.alloc_size]
+        if self.alloc_size >= self.brick_size:
+            sizes = ([self.brick_size // 2] *
+                     (self.alloc_size // self.brick_size))
+            sizes *= 2
+            sizes.append(self.alloc_size % self.brick_size)
+            rem_size = self.alloc_size - sum(sizes)
+            if rem_size:
+                sizes.append(rem_size)
+
+        for count, size in enumerate(sizes, start=1):
+            ret, _, _ = g.run(
+                self.client,
+                'fallocate -l {}G {}{}'.format(size, self.fqpath, count))
+            self.assertEqual(
+                ret, 0, 'Not able to fallocate {}* file on {}'.format(
+                    self.fqpath, self.client))
+            count += 1
 
     def _validate_error_in_mount_log(self, pattern, exp_pre=True):
         """
@@ -182,8 +202,14 @@ class TestEcQuotaError(GlusterBaseClass):
             self.all_mount_procs.append(proc)
 
         # fallocate a large file and perform IO on remaining space
-        self.free_disk_size = self._get_free_space_in_gb(
-            self.client, self.m_point)
+        online_bricks = get_online_bricks_list(self.mnode, self.volname)
+        self.assertIsNotNone(online_bricks, 'Failed to get list of online '
+                             'bricks')
+        brick_node, brick_path = online_bricks[0].split(':')
+        self.brick_size = self._get_space_in_gb(brick_node,
+                                                brick_path,
+                                                size='total')
+        self.free_disk_size = self._get_space_in_gb(self.client, self.m_point)
         self.fqpath = self.m_point + '/sparsefile'
         self.rem_size = 1  # Only 1G will be available to the mount
         self.alloc_size = self.free_disk_size - self.rem_size
@@ -302,7 +328,7 @@ class TestEcQuotaError(GlusterBaseClass):
         self.assertEqual(ret, 0, 'Not able to expand quota limit on /dir/dir1')
         sleep(10)
         self.fqpath = self.m_point + '/dir/dir1'
-        self.rem_size = self._get_free_space_in_gb(self.client, self.fqpath)
+        self.rem_size = self._get_space_in_gb(self.client, self.fqpath)
         proc = g.run_async(
             self.client,
             self.cmd.format(self.fqpath, self.rem_size * 3, self.bp_count))
