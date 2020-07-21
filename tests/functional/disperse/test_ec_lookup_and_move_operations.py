@@ -14,8 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from random import choice, sample
-import os
+from random import sample
+from unittest import SkipTest
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -25,7 +25,6 @@ from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            are_bricks_online)
 from glustolibs.gluster.heal_libs import monitor_heal_completion
 from glustolibs.gluster.glusterdir import mkdir
-from glustolibs.gluster.mount_ops import create_mount_objs
 from glustolibs.gluster.volume_ops import volume_start
 from glustolibs.gluster.volume_libs import get_subvols
 from glustolibs.misc.misc_libs import upload_scripts
@@ -38,25 +37,11 @@ class TestEcLookupAndMoveOperations(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        # pylint: disable=unsubscriptable-object
         cls.get_super_method(cls, 'setUpClass')()
 
-        # As the test requires three clients using one of the
-        # server as third client and choosing it randomly
-        cls.third_client = choice(cls.servers[1:])
-        cls.clients.extend([cls.third_client])
-        newmount = {
-            'protocol': cls.mount_type,
-            'server': cls.mnode,
-            'volname': cls.volume['name'],
-            'client': {'host': cls.third_client},
-            'mountpoint': (os.path.join(
-                "/mnt", '_'.join([cls.volume['name'],
-                                  cls.mount_type]))),
-            'options': '',
-        }
-        new_mount = create_mount_objs([newmount])
-        cls.mounts.extend(new_mount)
+        # Check for availability of atleast 3 clients
+        if len(cls.clients) < 3:
+            raise SkipTest("This test requires atleast 3 clients")
 
         # Upload IO scripts for running IO on mounts
         cls.script_upload_path = (
@@ -75,7 +60,6 @@ class TestEcLookupAndMoveOperations(GlusterBaseClass):
         # Setup volume and mount it on three clients.
         if not self.setup_volume_and_mount_volume(self.mounts):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
-        g.log.info("Successful in Setup Volume and Mount Volume")
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
@@ -90,7 +74,6 @@ class TestEcLookupAndMoveOperations(GlusterBaseClass):
         # Unmount and cleanup the volume
         if not self.unmount_volume_and_cleanup_volume(self.mounts):
             raise ExecutionError("Unable to unmount and cleanup volume")
-        g.log.info("Unmount and volume cleanup is successful")
 
     def _run_create_files(self, file_count, base_name, mpoint, client):
         """Run create files using file_dir_op.py"""
@@ -156,15 +139,17 @@ class TestEcLookupAndMoveOperations(GlusterBaseClass):
         # Perform a lookup in loop from client3 for 20 iterations
         cmd = ("ls -R {}".format(self.mounts[2].mountpoint))
         counter = 20
-        while counter > 0:
+        while counter:
             ret, _, err = g.run(self.mounts[2].client_system, cmd)
             self.assertEqual(ret, 0, "ls while mv operation being carried"
                                      " failed with {}".format(err))
-            g.log.debug("ls successful for the %s time", counter)
+            g.log.debug("ls successful for the %s time", 21-counter)
             counter -= 1
 
         self.assertTrue(validate_io_procs(self.mount_procs, self.mounts),
                         "IO failed on the clients")
+        # Emptying mount_procs for not validating IO in tearDown
+        self.mount_procs *= 0
 
     def test_ec_lookup_and_move_operations_few_bricks_are_offline(self):
         """
