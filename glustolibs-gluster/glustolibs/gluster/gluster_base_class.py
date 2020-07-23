@@ -1054,7 +1054,7 @@ class GlusterBaseClass(TestCase):
         if (self.error_or_failure_exists or
                 self._is_error_or_failure_exists()):
             ret = self.scratch_cleanup(self.error_or_failure_exists)
-            g.log.warn(ret)
+            g.log.info(ret)
         return self.get_super_method(self, 'doCleanups')()
 
     @classmethod
@@ -1063,5 +1063,5 @@ class GlusterBaseClass(TestCase):
                 cls._is_error_or_failure_exists()):
             ret = cls.scratch_cleanup(
                 GlusterBaseClass.error_or_failure_exists)
-            g.log.warn(ret)
+            g.log.info(ret)
         return cls.get_super_method(cls, 'doClassCleanups')()
