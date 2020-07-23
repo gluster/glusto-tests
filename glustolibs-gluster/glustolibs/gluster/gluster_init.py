@@ -290,10 +290,10 @@ def get_gluster_version(host):
         host(str): IP of the host whose gluster version has to be checked.
 
     Returns:
-        (float): The gluster version value.
+        str: The gluster version value.
     """
     command = 'gluster --version'
     _, out, _ = g.run(host, command)
     g.log.info("The Gluster verion of the cluster under test is %s",
                out)
-    return float(out.split(' ')[1])
+    return out.split(' ')[1]

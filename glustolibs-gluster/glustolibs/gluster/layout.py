@@ -19,7 +19,6 @@
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.brickdir import BrickDir
-from glustolibs.gluster.gluster_init import get_gluster_version
 
 
 class Layout(object):
@@ -35,20 +34,19 @@ class Layout(object):
         self._brickdirs = []
         for brickdir_path in self._pathinfo['brickdir_paths']:
             (host, _) = brickdir_path.split(':')
-            if get_gluster_version(host) >= 6.0:
-                ret = get_volume_type(brickdir_path)
-                if ret in ('Replicate', 'Disperse', 'Arbiter'):
-                    g.log.info("Cannot get layout as volume under test is"
-                               " Replicate/Disperse/Arbiter and DHT"
-                               " pass-through was enabled after Gluster 6.")
+            ret = get_volume_type(brickdir_path)
+            if ret in ('Replicate', 'Disperse', 'Arbiter'):
+                g.log.info("Cannot get layout as volume under test is"
+                           " Replicate/Disperse/Arbiter and DHT"
+                           " pass-through was enabled after Gluster 6.0")
+            else:
+                brickdir = BrickDir(brickdir_path)
+                if brickdir is None:
+                    g.log.error("Failed to get the layout")
                 else:
-                    brickdir = BrickDir(brickdir_path)
-                    if brickdir is None:
-                        g.log.error("Failed to get the layout")
-                    else:
-                        g.log.debug("%s: %s" % (brickdir.path,
-                                    brickdir.hashrange))
-                        self._brickdirs.append(brickdir)
+                    g.log.debug("%s: %s" % (brickdir.path,
+                                            brickdir.hashrange))
+                    self._brickdirs.append(brickdir)
 
     def __init__(self, pathinfo):
         """Init the layout class
@@ -80,9 +78,8 @@ class Layout(object):
 
         for brickdir_path in self._pathinfo['brickdir_paths']:
             (host, _) = brickdir_path.split(':')
-            if (get_gluster_version(host) >= 6.0 and
-                    get_volume_type(brickdir_path) in ('Replicate', 'Disperse',
-                                                       'Arbiter')):
+            if get_volume_type(brickdir_path) in ('Replicate', 'Disperse',
+                                                  'Arbiter'):
                 g.log.info("Cannot check for layout completeness as volume"
                            " under test is Replicate/Disperse/Arbiter and DHT"
                            " pass-though was enabled after Gluster 6.")

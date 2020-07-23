@@ -20,7 +20,6 @@
 import os
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_init import get_gluster_version
 from glustolibs.gluster.volume_libs import get_volume_type
 
 
@@ -81,11 +80,12 @@ def get_hashrange(brickdir_path):
     """
 
     (host, _) = brickdir_path.split(':')
-    gluster_version = get_gluster_version(host)
-    # Check for the Gluster version and then volume type
-    """If the GLuster version is lower than 6.0, the hash range
-       can be calculated for all volume types"""
-    if gluster_version < 6.0:
+    ret = get_volume_type(brickdir_path)
+    if ret in ('Replicate', 'Disperse', 'Arbiter'):
+        g.log.info("Cannot find hash-range for Replicate/Disperse/Arbiter"
+                   " volume type on Gluster 6.0 and higher.")
+        return "Skipping for Replicate/Disperse/Arbiter volume type"
+    else:
         ret = check_hashrange(brickdir_path)
         hash_range_low = ret[0]
         hash_range_high = ret[1]
@@ -94,24 +94,6 @@ def get_hashrange(brickdir_path):
         else:
             g.log.error("Could not get hashrange")
             return None
-    elif gluster_version >= 6.0:
-        ret = get_volume_type(brickdir_path)
-        if ret in ('Replicate', 'Disperse', 'Arbiter'):
-            g.log.info("Cannot find hash-range for Replicate/Disperse/Arbiter"
-                       " volume type on Gluster 6.0 and higher.")
-            return "Skipping for Replicate/Disperse/Arbiter volume type"
-        else:
-            ret = check_hashrange(brickdir_path)
-            hash_range_low = ret[0]
-            hash_range_high = ret[1]
-            if ret is not None:
-                return (hash_range_low, hash_range_high)
-            else:
-                g.log.error("Could not get hashrange")
-                return None
-    else:
-        g.log.info("Failed to get hash range")
-        return None
 
 
 def file_exists(host, filename):
@@ -149,22 +131,14 @@ class BrickDir(object):
 
     def _get_hashrange(self):
         """get the hash range for a brick from a remote system"""
-        gluster_version = get_gluster_version(self._host)
-        if gluster_version < 6.0:
+        ret = get_volume_type(self._path)
+        if ret in ('Replicate', 'Disperse', 'Arbiter'):
+            g.log.info("Cannot find hash-range as the volume type under"
+                       " test is Replicate/Disperse/Arbiter")
+        else:
             self._hashrange = get_hashrange(self._path)
             self._hashrange_low = self._hashrange[0]
             self._hashrange_high = self._hashrange[1]
-        elif gluster_version >= 6.0:
-            ret = get_volume_type(self._path)
-            if ret in ('Replicate', 'Disperse', 'Arbiter'):
-                g.log.info("Cannot find hash-range as the volume type under"
-                           " test is Replicate/Disperse/Arbiter")
-            else:
-                self._hashrange = get_hashrange(self._path)
-                self._hashrange_low = self._hashrange[0]
-                self._hashrange_high = self._hashrange[1]
-        else:
-            g.log.info("Failed to get hashrange")
 
     @property
     def path(self):
@@ -207,12 +181,10 @@ class BrickDir(object):
         if self.hashrange is None or self._hashrange_high is None:
             self._get_hashrange()
             if self._get_hashrange() is None:
-                gluster_version = get_gluster_version(self._host)
-                if gluster_version >= 6.0:
-                    ret = get_volume_type(self._path)
-                    if ret in ('Replicate', 'Disperse', 'Arbiter'):
-                        g.log.info("Cannot find hash-range as the volume type"
-                                   " under test is Replicate/Disperse/Arbiter")
+                ret = get_volume_type(self._path)
+                if ret in ('Replicate', 'Disperse', 'Arbiter'):
+                    g.log.info("Cannot find hash-range as the volume type"
+                               " under test is Replicate/Disperse/Arbiter")
             else:
                 return self._hashrange_high
 

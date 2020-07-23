@@ -29,7 +29,6 @@ import glustolibs.gluster.constants as k
 import glustolibs.gluster.exceptions as gex
 from glustolibs.gluster.brickdir import BrickDir
 from glustolibs.gluster.volume_libs import get_subvols, get_volume_type
-from glustolibs.gluster.gluster_init import get_gluster_version
 from glustolibs.misc.misc_libs import upload_scripts
 
 
@@ -39,9 +38,8 @@ def run_layout_tests(mnode, fqpath, layout, test_type):
     brick_path_list = ret.get('brickdir_paths')
     for brickdir_path in brick_path_list:
         (server_ip, _) = brickdir_path.split(':')
-        if (get_gluster_version(server_ip) >= 6.0 and
-                get_volume_type(brickdir_path) in ('Replicate', 'Disperse',
-                                                   'Arbiter')):
+        if get_volume_type(brickdir_path) in ('Replicate', 'Disperse',
+                                              'Arbiter'):
             g.log.info("Cannot check for layout completeness as"
                        " volume under test is Replicate/Disperse/Arbiter")
         else:
