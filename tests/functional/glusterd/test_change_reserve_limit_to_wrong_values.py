@@ -16,7 +16,6 @@
 
 import string
 from random import choice
-from sys import version_info
 
 from glusto.core import Glusto as g
 
@@ -31,8 +30,6 @@ class TestChangeReserveLimit(GlusterBaseClass):
     Test to validate behaviour of 'storage.reserve' option on supplying
     erroneous values.
     """
-
-    # pylint: disable=redefined-builtin
     def setUp(self):
         self.get_super_method(self, 'setUp')()
         ret = self.setup_volume()
@@ -63,16 +60,12 @@ class TestChangeReserveLimit(GlusterBaseClass):
         # Data has: alphabets, numbers, punctuations and their combinations
         key = 'storage.reserve'
 
-        # Make `unicode` compatible with py2/py3
-        if version_info.major == 3:
-            unicode = str
-
         for char_type in (string.ascii_letters, string.punctuation,
                           string.printable):
 
             # Remove quotes from the generated string
             temp_val = self.get_random_string(char_type)
-            temp_val = unicode(temp_val).translate({39: None, 35: None})
+            temp_val = temp_val.replace("'", "").replace("&", "")
             value = "'{}'".format(temp_val)
             ret = set_volume_options(self.mnode, self.volname, {key: value})
             self.assertFalse(
