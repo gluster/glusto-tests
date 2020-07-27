@@ -109,8 +109,8 @@ class TestEcTruncateFileWithBrickDown(GlusterBaseClass):
 
         # write data to the file
         cmd = ('''python -c "import os, sys;fd = os.open('{}', os.O_RDWR) ;'''
-               '''os.write(fd, 'This is test after truncate'); os.close(fd)"'''
-               .format(file_name))
+               '''os.write(fd, 'This is test after truncate'.encode());'''
+               ''' os.close(fd)"'''.format(file_name))
         ret, _, err = g.run(self.mounts[0].client_system, cmd)
         self.assertEqual(ret, 0, err)
         g.log.info("Data written successfully on to the file")
@@ -119,6 +119,7 @@ class TestEcTruncateFileWithBrickDown(GlusterBaseClass):
         ret = monitor_heal_completion(self.mnode, self.volname)
         self.assertTrue(ret, "Heal pending for file {}".format(file_name))
 
-        # check for any crashes
-        ret = is_core_file_created(self.servers, test_timestamp)
-        self.assertTrue(ret, "Cores found on the servers")
+        # check for any crashes on servers and client
+        for nodes in (self.servers, [self.clients[0]]):
+            ret = is_core_file_created(nodes, test_timestamp)
+            self.assertTrue(ret, "Cores found on the {} nodes".format(nodes))
