@@ -22,8 +22,8 @@ from copy import deepcopy
 from glusto.core import Glusto as g
 
 from glustolibs.gluster.nfs_ganesha_libs import (
-    NfsGaneshaClusterSetupClass, wait_for_nfs_ganesha_volume_to_get_exported)
-from glustolibs.gluster.gluster_base_class import runs_on
+    wait_for_nfs_ganesha_volume_to_get_exported)
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs, get_mounts_stat
@@ -37,7 +37,7 @@ from glustolibs.gluster.nfs_ganesha_ops import export_nfs_ganesha_volume
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
+class TestNewVolumeWhileIoInProgress(GlusterBaseClass):
     """
     Test cases to verify creation, export and mount of new volume while IO is
     going on another volume exported through nfs-ganesha.
@@ -49,12 +49,6 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
         Upload IO scripts to clients
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Upload IO scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -242,8 +236,3 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
             if not ret:
                 raise ExecutionError("Failed to cleanup volume %s", volume)
             g.log.info("Volume %s deleted successfully", volume)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)

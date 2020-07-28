@@ -60,6 +60,8 @@ from glustolibs.gluster.volume_ops import (
     set_volume_options, volume_reset, volume_start)
 from glustolibs.io.utils import log_mounts_info
 from glustolibs.gluster.geo_rep_libs import setup_master_and_slave_volumes
+from glustolibs.gluster.nfs_ganesha_ops import (
+    teardown_nfs_ganesha_cluster)
 from glustolibs.misc.misc_libs import kill_process
 
 
@@ -279,7 +281,7 @@ class GlusterBaseClass(TestCase):
                                        process_ids=out.strip().split('\n'))
                     if not ret:
                         g.log.error("Unable to kill process {}".format(
-                                    out.strip().split('\n')))
+                            out.strip().split('\n')))
                         return False
                 if not shared_storage_mounted:
                     cmd_list = (
@@ -986,8 +988,8 @@ class GlusterBaseClass(TestCase):
                     mount_dict['volname'] = cls.slave_volume
                     mount_dict['server'] = cls.mnode_slave
                     mount_dict['mountpoint'] = path_join(
-                            "/mnt", '_'.join([cls.slave_volname,
-                                              cls.mount_type]))
+                        "/mnt", '_'.join([cls.slave_volname,
+                                          cls.mount_type]))
                 cls.slave_mounts = create_mount_objs(slave_mount_dict_list)
 
             # Defining clients from mounts.
@@ -1027,6 +1029,30 @@ class GlusterBaseClass(TestCase):
                 datetime.now().strftime('%H_%M_%d_%m_%Y'))
         cls.glustotest_run_id = g.config['glustotest_run_id']
 
+        if cls.enable_nfs_ganesha:
+            g.log.info("Setup NFS_Ganesha")
+            cls.num_of_nfs_ganesha_nodes = int(cls.num_of_nfs_ganesha_nodes)
+            cls.servers_in_nfs_ganesha_cluster = (
+                cls.servers[:cls.num_of_nfs_ganesha_nodes])
+            cls.vips_in_nfs_ganesha_cluster = (
+                cls.vips[:cls.num_of_nfs_ganesha_nodes])
+
+            # Obtain hostname of servers in ganesha cluster
+            cls.ganesha_servers_hostname = []
+            for ganesha_server in cls.servers_in_nfs_ganesha_cluster:
+                ret, hostname, _ = g.run(ganesha_server, "hostname")
+                if ret:
+                    raise ExecutionError("Failed to obtain hostname of %s"
+                                         % ganesha_server)
+                hostname = hostname.strip()
+                g.log.info("Obtained hostname: IP- %s, hostname- %s",
+                           ganesha_server, hostname)
+                cls.ganesha_servers_hostname.append(hostname)
+            from glustolibs.gluster.nfs_ganesha_libs import setup_nfs_ganesha
+            ret = setup_nfs_ganesha(cls)
+            if not ret:
+                raise ExecutionError("Failed to setup nfs ganesha")
+
         msg = "Setupclass: %s : %s" % (cls.__name__, cls.glustotest_run_id)
         g.log.info(msg)
         cls.inject_msg_in_gluster_logs(msg)
@@ -1065,3 +1091,17 @@ class GlusterBaseClass(TestCase):
                 GlusterBaseClass.error_or_failure_exists)
             g.log.info(ret)
         return cls.get_super_method(cls, 'doClassCleanups')()
+
+    @classmethod
+    def delete_nfs_ganesha_cluster(cls):
+        ret = teardown_nfs_ganesha_cluster(
+            cls.servers_in_nfs_ganesha_cluster)
+        if not ret:
+            g.log.error("Teardown got failed. Hence, cleaning up "
+                        "nfs-ganesha cluster forcefully")
+            ret = teardown_nfs_ganesha_cluster(
+                cls.servers_in_nfs_ganesha_cluster, force=True)
+            if not ret:
+                raise ExecutionError("Force cleanup of nfs-ganesha "
+                                     "cluster failed")
+        g.log.info("Teardown nfs ganesha cluster succeeded")

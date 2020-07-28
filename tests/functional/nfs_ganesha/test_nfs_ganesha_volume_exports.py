@@ -26,9 +26,8 @@ from time import sleep
 
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.nfs_ganesha_libs import (
-    NfsGaneshaClusterSetupClass,
     wait_for_nfs_ganesha_volume_to_get_exported,
     wait_for_nfs_ganesha_volume_to_get_unexported)
 from glustolibs.gluster.nfs_ganesha_ops import (
@@ -49,23 +48,11 @@ from glustolibs.gluster.lib_utils import get_servers_unused_bricks_dict
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaVolumeExports(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaVolumeExports(GlusterBaseClass):
     """
         Tests to verify Nfs Ganesha exports, cluster enable/disable
         functionality.
     """
-    @classmethod
-    def setUpClass(cls):
-        """
-        Setup nfs-ganesha if not exists.
-        """
-        cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
     def setUp(self):
         """
@@ -250,16 +237,11 @@ class TestNfsGaneshaVolumeExports(NfsGaneshaClusterSetupClass):
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)
-
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaVolumeExportsWithIO(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaVolumeExportsWithIO(GlusterBaseClass):
     """
     Tests to verify nfs ganesha features when IO is in progress.
     """
@@ -270,12 +252,6 @@ class TestNfsGaneshaVolumeExportsWithIO(NfsGaneshaClusterSetupClass):
         Upload IO scripts to clients
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Upload IO scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -391,16 +367,11 @@ class TestNfsGaneshaVolumeExportsWithIO(NfsGaneshaClusterSetupClass):
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)
-
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaMultiVolumeExportsWithIO(GlusterBaseClass):
     """
     Tests to verify multiple volumes gets exported when IO is in progress.
     """
@@ -411,12 +382,6 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaClusterSetupClass):
         Upload IO scripts to clients
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Upload IO scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -568,16 +533,11 @@ class TestNfsGaneshaMultiVolumeExportsWithIO(NfsGaneshaClusterSetupClass):
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)
-
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaSubDirExportsWithIO(GlusterBaseClass):
     """
     Tests to verify nfs-ganesha sub directory exports.
     """
@@ -588,12 +548,6 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaClusterSetupClass):
         Upload IO scripts to clients
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Upload IO scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -807,8 +761,3 @@ class TestNfsGaneshaSubDirExportsWithIO(NfsGaneshaClusterSetupClass):
         if not ret:
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)

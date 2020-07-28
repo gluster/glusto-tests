@@ -19,40 +19,25 @@
         ACL functionality.
 """
 
+import time
+import re
 from glusto.core import Glusto as g
 from glustolibs.gluster.nfs_ganesha_ops import (
         set_acl,
         unexport_nfs_ganesha_volume)
 from glustolibs.gluster.nfs_ganesha_libs import (
-        NfsGaneshaClusterSetupClass,
-        wait_for_nfs_ganesha_volume_to_get_unexported)
-from glustolibs.gluster.gluster_base_class import runs_on
+    wait_for_nfs_ganesha_volume_to_get_unexported)
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
-import time
-import re
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaAcls(GlusterBaseClass):
     """
         Tests to verify Nfs Ganesha v4 ACL stability
     """
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Setup nfs-ganesha if not exists.
-        """
-        cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setuo nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
-
     def setUp(self):
         """
         Setup Volume

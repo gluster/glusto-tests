@@ -19,23 +19,21 @@
 """
 from glusto.core import Glusto as g
 
-from glustolibs.gluster.gluster_base_class import runs_on
-from glustolibs.gluster.nfs_ganesha_libs import (
-     NfsGaneshaClusterSetupClass)
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.misc.misc_libs import (
-     upload_scripts,
-     git_clone_and_compile)
+    upload_scripts,
+    git_clone_and_compile)
 from glustolibs.gluster.nfs_ganesha_ops import (
-     is_nfs_ganesha_cluster_in_healthy_state,
-     set_acl)
+    is_nfs_ganesha_cluster_in_healthy_state,
+    set_acl)
 from glustolibs.io.utils import validate_io_procs
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaSanity(GlusterBaseClass):
     """
         Tests to verify NFS Ganesha Sanity.
     """
@@ -46,12 +44,6 @@ class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
         Upload IO scripts to clients
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Upload IO scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
@@ -233,8 +225,3 @@ class TestNfsGaneshaSanity(NfsGaneshaClusterSetupClass):
                                  "Check log errors for more info")
         else:
             g.log.info("Test repo cleanup successfull on all clients")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)

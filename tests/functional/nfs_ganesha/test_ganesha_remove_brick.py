@@ -15,8 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaClusterSetupClass
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs, get_mounts_stat
@@ -28,7 +27,7 @@ from glustolibs.gluster.volume_libs import (
 @runs_on([['distributed', 'distributed-arbiter',
            'distributed-replicated', 'distributed-dispersed'],
           ['nfs']])
-class TestGaneshaRemoveBrick(NfsGaneshaClusterSetupClass):
+class TestGaneshaRemoveBrick(GlusterBaseClass):
     """
     This test case validates remove brick functionality on volumes exported
     through nfs-ganesha
@@ -41,12 +40,6 @@ class TestGaneshaRemoveBrick(NfsGaneshaClusterSetupClass):
         Upload IO scripts to clients
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Upload IO scripts for running IO on mounts
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
@@ -145,8 +138,3 @@ class TestGaneshaRemoveBrick(NfsGaneshaClusterSetupClass):
         if not ret:
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)

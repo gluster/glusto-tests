@@ -20,20 +20,19 @@
 """
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.nfs_ganesha_libs import (
-                NfsGaneshaClusterSetupClass,
-                wait_for_nfs_ganesha_volume_to_get_unexported)
+    wait_for_nfs_ganesha_volume_to_get_unexported)
 from glustolibs.io.utils import validate_io_procs, get_mounts_stat
 from glustolibs.gluster.nfs_ganesha_ops import (
-                set_root_squash,
-                unexport_nfs_ganesha_volume)
+    set_root_squash,
+    unexport_nfs_ganesha_volume)
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaRootSquash(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaRootSquash(GlusterBaseClass):
     """
     Tests to verify Nfs Ganesha v3/v4 rootsquash stability
     Steps:
@@ -45,20 +44,6 @@ class TestNfsGaneshaRootSquash(NfsGaneshaClusterSetupClass):
     6. Check for owner and group for any file
     7. Edit file created by root user
     """
-    @classmethod
-    def setUpClass(cls):
-        """
-        Setup nfs-ganesha if not exists.
-        """
-        cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster"
-                                 "ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
-
     def setUp(self):
         """
         Setup Volume
@@ -146,7 +131,7 @@ class TestNfsGaneshaRootSquash(NfsGaneshaClusterSetupClass):
         for mount_obj in self.mounts:
             cmd = ("echo hello > %s/file10" % mount_obj.mountpoint)
             ret, _, _ = g.run(mount_obj.client_system, cmd)
-            self.assertEqual(ret, 1,  "nfsnobody user editing file created by "
+            self.assertEqual(ret, 1, "nfsnobody user editing file created by "
                              "root user should FAIL")
             g.log.info("nfsnobody user failed to edit file "
                        "created by root user")
@@ -175,8 +160,3 @@ class TestNfsGaneshaRootSquash(NfsGaneshaClusterSetupClass):
             g.log.info("Successfull unmount and cleanup of volume")
         else:
             raise ExecutionError("Failed to unmount and cleanup volume")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)

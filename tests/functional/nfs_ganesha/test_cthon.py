@@ -20,8 +20,7 @@
 """
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import runs_on
-from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaClusterSetupClass
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.io.utils import run_cthon
 from glustolibs.misc.misc_libs import git_clone_and_compile
@@ -30,7 +29,7 @@ from glustolibs.misc.misc_libs import git_clone_and_compile
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestCthon(NfsGaneshaClusterSetupClass):
+class TestCthon(GlusterBaseClass):
     """
         Cthon test on NFS Ganesha v4.0, v4.1
     """
@@ -41,12 +40,6 @@ class TestCthon(NfsGaneshaClusterSetupClass):
         Setup nfs-ganesha if not exists.
         """
         cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
 
         # Cloning the cthon test repo
         cls.dir_name = "repo_dir"
