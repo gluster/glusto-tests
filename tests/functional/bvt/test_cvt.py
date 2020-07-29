@@ -41,13 +41,15 @@ from glustolibs.gluster.volume_libs import (
 from glustolibs.gluster.volume_libs import (
     log_volume_info_and_status, expand_volume, shrink_volume,
     replace_brick_from_volume, wait_for_volume_process_to_be_online)
+from glustolibs.gluster.glusterfile import get_fattr_list
 from glustolibs.gluster.rebalance_ops import (rebalance_start,
                                               wait_for_rebalance_to_complete,
                                               rebalance_status)
 from glustolibs.gluster.brick_libs import (select_bricks_to_bring_offline,
                                            bring_bricks_offline,
                                            bring_bricks_online,
-                                           are_bricks_offline)
+                                           are_bricks_offline,
+                                           get_all_bricks)
 from glustolibs.gluster.heal_libs import monitor_heal_completion
 from glustolibs.gluster.quota_ops import (quota_enable, quota_disable,
                                           quota_limit_usage,
@@ -294,6 +296,19 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         # Shrinking volume by removing bricks from volume when IO in progress
         g.log.info("Start removing bricks from volume when IO in progress")
         ret = shrink_volume(self.mnode, self.volname)
+
+        # Temporary code:
+        # Additional checks to gather infomartion from all
+        # servers for Bug 1810901.
+        if not ret and self.volume_type == 'distributed-dispersed':
+            for brick_path in get_all_bricks(self.mnode, self.volname):
+                node, path = brick_path.split(':')
+                ret, out, _ = g.run(node, 'find {}/'.format(path))
+                g.log.info(out)
+                for filedir in out.split('\n'):
+                    ret = get_fattr_list(node, filedir)
+                    g.log.info(ret)
+
         self.assertTrue(ret, ("Failed to shrink the volume when IO in "
                               "progress on volume %s", self.volname))
         g.log.info("Shrinking volume when IO in progress is successful on "
