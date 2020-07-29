@@ -22,6 +22,7 @@ import os
 import subprocess
 
 from glusto.core import Glusto as g
+from glustolibs.gluster.glusterfile import file_exists
 from glustolibs.gluster.mount_ops import GlusterMount
 from glustolibs.gluster.volume_libs import get_subvols
 from glustolibs.misc.misc_libs import upload_scripts
@@ -1023,3 +1024,48 @@ def open_file_fd(mountpoint, time, client, start_range=0,
                    mountpoint, start_range, end_range, time))
     proc = g.run_async(client, cmd)
     return proc
+
+
+def run_linux_untar(clients, mountpoint, dirs=('.')):
+    """Run linux kernal untar on a given mount point
+
+    Args:
+      clients(str|list): Client nodes on which I/O
+                         has to be started.
+      mountpoint(str): Mount point where the volume is
+                       mounted.
+    Kwagrs:
+       dirs(tuple): A tuple of dirs where untar has to
+                    started. (Default:('.'))
+    Returns:
+       list: Returns a list of process object else None
+    """
+    # Checking and convering clients to list.
+    if not isinstance(clients, list):
+        clients = [clients]
+
+    list_of_procs = []
+    for client in clients:
+        # Download linux untar to root, so that it can be
+        # utilized in subsequent run_linux_untar() calls.
+        cmd = ("wget https://cdn.kernel.org/pub/linux/kernel/"
+               "v5.x/linux-5.4.54.tar.xz")
+        if not file_exists(client, '/root/linux-5.4.54.tar.xz'):
+            ret, _, _ = g.run(client, cmd)
+            if ret:
+                return None
+
+        for directory in dirs:
+            # copy linux tar to dir
+            cmd = ("cp /root/linux-5.4.54.tar.xz {}/{}"
+                   .format(mountpoint, directory))
+            ret, _, _ = g.run(client, cmd)
+            if ret:
+                return None
+            # Start linux untar
+            cmd = ("cd {}/{};tar -xvf linux-5.4.54.tar.xz"
+                   .format(mountpoint, directory))
+            proc = g.run_async(client, cmd)
+            list_of_procs.append(proc)
+
+    return list_of_procs
