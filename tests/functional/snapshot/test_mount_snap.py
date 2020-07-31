@@ -84,14 +84,17 @@ class TestSnapMountSnapshot(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mounts)
         all_mounts_procs = []
+        self.counter = 1
         for mount_obj in self.mounts:
             cmd = ("/usr/bin/env python %s create_files "
-                   "-f 10 --base-file-name file %s" % (
+                   "-f 10 --base-file-name file%d %s" % (
                        self.script_upload_path,
+                       self.counter,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
+            self.counter += 100
 
         # Validate I/O
         self.assertTrue(

@@ -112,9 +112,9 @@ class SnapRSOnline(GlusterBaseClass):
                        "--num-of-files 2 %s" % (
                            self.script_upload_path,
                            self.counter, mount_obj.mountpoint))
-
                 proc = g.run_async(mount_obj.client_system, cmd,
                                    user=mount_obj.user)
+                self.counter += 100
                 self.all_mounts_procs.append(proc)
             self.io_validation_complete = False
 
