@@ -20,15 +20,14 @@
 """
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.nfs_ganesha_libs import (
-                NfsGaneshaClusterSetupClass,
-                wait_for_nfs_ganesha_volume_to_get_unexported,
-                wait_for_nfs_ganesha_volume_to_get_exported)
+    wait_for_nfs_ganesha_volume_to_get_unexported,
+    wait_for_nfs_ganesha_volume_to_get_exported)
 from glustolibs.io.utils import get_mounts_stat
 from glustolibs.gluster.nfs_ganesha_ops import (
-                set_root_squash,
-                unexport_nfs_ganesha_volume)
+    set_root_squash,
+    unexport_nfs_ganesha_volume)
 from glustolibs.gluster.volume_ops import (volume_stop, volume_start)
 from glustolibs.gluster.lib_utils import (append_string_to_file)
 from glustolibs.gluster.glusterfile import set_file_permissions
@@ -37,20 +36,7 @@ from glustolibs.gluster.glusterfile import set_file_permissions
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaRootSquash(NfsGaneshaClusterSetupClass):
-    @classmethod
-    def setUpClass(cls):
-        """
-        Setup nfs-ganesha if not exists.
-        """
-        cls.get_super_method(cls, 'setUpClass')()
-
-        # Setup nfs-ganesha
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster "
-                                 "ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
+class TestNfsGaneshaRootSquash(GlusterBaseClass):
 
     def setUp(self):
         """
@@ -189,8 +175,3 @@ class TestNfsGaneshaRootSquash(NfsGaneshaClusterSetupClass):
             g.log.info("Successful unmount and cleanup of volume")
         else:
             raise ExecutionError("Failed to unmount and cleanup volume")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.get_super_method(cls, 'tearDownClass')(
-            delete_nfs_ganesha_cluster=False)
