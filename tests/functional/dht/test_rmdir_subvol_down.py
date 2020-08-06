@@ -87,7 +87,8 @@ class TestLookupDir(GlusterBaseClass):
         # Find a non hashed subvolume(or brick)
         nonhashed_subvol, count = find_nonhashed_subvol(self.subvols,
                                                         "parent", "child")
-        self.assertIsNotNone("Error in finding nonhashed value")
+        self.assertIsNotNone(nonhashed_subvol,
+                             "Error in finding nonhashed value")
         g.log.info("nonhashed_subvol %s", nonhashed_subvol._host)
 
         # Bring nonhashed_subbvol offline
