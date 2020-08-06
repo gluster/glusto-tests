@@ -293,6 +293,24 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         g.log.info("Successful in logging volume info and status of volume %s",
                    self.volname)
 
+        # Temporary code:
+        # Additional checks to gather infomartion from all
+        # servers for Bug 1810901 and setting log level to debug.
+        for opt in ('diagnostics.brick-log-level',
+                    'diagnostics.client-log-level '):
+            ret = set_volume_options(self.mnode, self.volname,
+                                     {opt: 'DEBUG'})
+            if not ret:
+                g.log.error('Failed to set volume option %s', opt)
+        if self.volume_type == 'distributed-dispersed':
+            for brick_path in get_all_bricks(self.mnode, self.volname):
+                node, path = brick_path.split(':')
+                ret, out, _ = g.run(node, 'find {}/'.format(path))
+                g.log.info(out)
+                for filedir in out.split('\n'):
+                    ret = get_fattr_list(node, filedir, encode_hex=True)
+                    g.log.info(ret)
+
         # Shrinking volume by removing bricks from volume when IO in progress
         g.log.info("Start removing bricks from volume when IO in progress")
         ret = shrink_volume(self.mnode, self.volname)
@@ -306,7 +324,7 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
                 ret, out, _ = g.run(node, 'find {}/'.format(path))
                 g.log.info(out)
                 for filedir in out.split('\n'):
-                    ret = get_fattr_list(node, filedir)
+                    ret = get_fattr_list(node, filedir, encode_hex=True)
                     g.log.info(ret)
 
         self.assertTrue(ret, ("Failed to shrink the volume when IO in "

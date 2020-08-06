@@ -119,18 +119,25 @@ def get_fattr(host, fqpath, fattr):
     return None
 
 
-def get_fattr_list(host, fqpath):
+def get_fattr_list(host, fqpath, encode_hex=False):
     """List of xattr for filepath on remote system.
 
     Args:
         host (str): The hostname/ip of the remote system.
         fqpath (str): The fully-qualified path to the file.
 
+    Kwargs:
+       encode_hex(bool): Fetch xattr in hex if True
+                         (Default:False)
+
     Returns:
         Dictionary of xattrs on success. None on fail.
     """
-    command = "getfattr --absolute-names -d -m - %s" % fqpath
-    rcode, rout, rerr = g.run(host, command)
+    cmd = "getfattr --absolute-names -d -m - {}".format(fqpath)
+    if encode_hex:
+        cmd = ("getfattr --absolute-names -d -m - -e hex {}"
+               .format(fqpath))
+    rcode, rout, rerr = g.run(host, cmd)
 
     if rcode == 0:
         xattr_list = {}
