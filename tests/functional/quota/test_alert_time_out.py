@@ -278,9 +278,9 @@ class QuotaTimeOut(GlusterBaseClass):
         g.log.info("Files creation stopped on mountpoint once exceeded "
                    "hard limit")
 
-        # Inserting sleep of 2 seconds so the alert message gets enough time
+        # Inserting sleep of 6 seconds so the alert message gets enough time
         # to be logged
-        time.sleep(2)
+        time.sleep(6)
 
         # Append unique string to the brick log
         g.log.info("Appending string 'appended_string_6' to the log:")
