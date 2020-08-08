@@ -33,6 +33,7 @@ from glustolibs.gluster.nfs_ganesha_ops import (
     configure_ports_on_clients,
     ganesha_client_firewall_settings)
 from glustolibs.gluster.volume_libs import is_volume_exported
+from glustolibs.gluster.lib_utils import is_rhel7
 
 
 def setup_nfs_ganesha(cls):
@@ -115,10 +116,11 @@ def setup_nfs_ganesha(cls):
         return False
     g.log.info("Nfs-ganesha Cluster exists is in healthy state")
 
-    ret = configure_ports_on_clients(cls.clients)
-    if not ret:
-        g.log.error("Failed to configure ports on clients")
-        return False
+    if is_rhel7(cls.clients):
+        ret = configure_ports_on_clients(cls.clients)
+        if not ret:
+            g.log.error("Failed to configure ports on clients")
+            return False
 
     ret = ganesha_client_firewall_settings(cls.clients)
     if not ret:

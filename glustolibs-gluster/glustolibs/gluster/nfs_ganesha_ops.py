@@ -25,7 +25,8 @@
 import os
 from glusto.core import Glusto as g
 from glustolibs.gluster.glusterdir import mkdir
-from glustolibs.gluster.lib_utils import add_services_to_firewall
+from glustolibs.gluster.lib_utils import (add_services_to_firewall,
+                                          is_rhel7)
 from glustolibs.gluster.shared_storage_ops import enable_shared_storage
 from glustolibs.gluster.peer_ops import peer_probe_servers
 
@@ -670,12 +671,13 @@ def create_nfs_ganesha_cluster(servers, vips):
     # pylint: disable=too-many-statements
     ganesha_mnode = servers[0]
 
-    # Configure ports in ganesha servers
-    g.log.info("Defining statd service ports")
-    ret = configure_ports_on_servers(servers)
-    if not ret:
-        g.log.error("Failed to set statd service ports on nodes.")
-        return False
+    # Configure ports in ganesha servers for RHEL7
+    if is_rhel7(servers):
+        g.log.info("Defining statd service ports")
+        ret = configure_ports_on_servers(servers)
+        if not ret:
+            g.log.error("Failed to set statd service ports on nodes.")
+            return False
 
     # Firewall settings for nfs-ganesha
     ret = ganesha_server_firewall_settings(servers)
@@ -945,7 +947,6 @@ def cluster_auth_setup(servers):
         True(bool): If configuration of cluster services is success
         False(bool): If failed to configure cluster services
     """
-    result = True
     for node in servers:
         # Enable pacemaker.service
         ret, _, _ = g.run(node, "systemctl enable pacemaker.service")
@@ -969,14 +970,16 @@ def cluster_auth_setup(servers):
             g.log.error("unable to set password for hacluster on %s", node)
             return False
 
-    # Perform cluster authentication between the nodes
-    for node in servers:
-        ret, _, _ = g.run(node, "pcs cluster auth %s -u hacluster -p "
-                                "hacluster" % ' '.join(servers))
-        if ret != 0:
-            g.log.error("pcs cluster auth command failed on %s", node)
-            result = False
-    return result
+        # Perform cluster authentication between the nodes
+        auth_type = 'cluster' if is_rhel7(servers) else 'host'
+        for node in servers:
+            ret, _, _ = g.run(node, "pcs %s auth %s -u hacluster -p hacluster"
+                                    % (auth_type, ' '.join(servers)))
+            if ret:
+                g.log.error("pcs %s auth command failed on %s",
+                            auth_type, node)
+                return False
+        return True
 
 
 def configure_ports_on_servers(servers):
