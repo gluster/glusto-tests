@@ -108,12 +108,13 @@ def get_fattr(host, fqpath, fattr):
     Returns:
         getfattr result on success. None on fail.
     """
-    command = ("getfattr --absolute-names --only-values -n '%s' %s" %
+    command = ("getfattr --absolute-names -e hex "
+               "-n '%s' %s" %
                (fattr, fqpath))
     rcode, rout, rerr = g.run(host, command)
 
-    if rcode == 0:
-        return rout.strip()
+    if not rcode:
+        return rout.strip().split('=')[1]
 
     g.log.error('getfattr failed: %s' % rerr)
     return None
