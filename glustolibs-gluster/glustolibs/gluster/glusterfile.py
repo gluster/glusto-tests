@@ -97,22 +97,24 @@ def get_mountpoint(host, fqpath):
     return None
 
 
-def get_fattr(host, fqpath, fattr):
+def get_fattr(host, fqpath, fattr, encode="hex"):
     """getfattr for filepath on remote system
 
     Args:
         host (str): The hostname/ip of the remote system.
         fqpath (str): The fully-qualified path to the file.
         fattr (str): name of the fattr to retrieve
-
+    Kwargs:
+        encode(str): The supported types of encoding are
+                     [hex|text|base64]
+                     Defaults to hex type of encoding
     Returns:
         getfattr result on success. None on fail.
     """
-    command = ("getfattr --absolute-names -e hex "
+    command = ("getfattr --absolute-names -e '%s' "
                "-n '%s' %s" %
-               (fattr, fqpath))
+               (encode, fattr, fqpath))
     rcode, rout, rerr = g.run(host, command)
-
     if not rcode:
         return rout.strip().split('=')[1]
 
