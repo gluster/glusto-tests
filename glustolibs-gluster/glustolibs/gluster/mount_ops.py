@@ -336,10 +336,10 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
 
     if mtype == 'nfs':
         if not options:
-            options = "-o vers=3"
+            options = "-o vers=4.1"
 
         elif options and 'vers' not in options:
-            options = options + ",vers=3"
+            options = options + ",vers=4.1"
 
     if mserver:
         mcmd = ("mount -t %s %s %s:/%s %s" %
