@@ -131,8 +131,8 @@ class RebalanceValidation(GlusterBaseClass):
         # Log Volume Info and Status before expanding the volume.
         g.log.info("Logging volume info and Status before expanding volume")
         ret = log_volume_info_and_status(self.mnode, self.volname)
-        g.log.error(ret, ("Logging volume info and status failed on "
-                          "volume %s", self.volname))
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
         g.log.info("Logging volume info and status was successful for volume "
                    "%s", self.volname)
 
