@@ -44,7 +44,8 @@ class TestDhtCustomXattrClass(GlusterBaseClass):
         for mount_object in self.mounts:
             for fname in self.files_and_soft_links:
                 attr_val = get_fattr(mount_object.client_system,
-                                     fname, 'user.foo')
+                                     fname, 'user.foo',
+                                     encode='text')
                 self.assertEqual(attr_val, xattr_val,
                                  "Custom xattr not found from mount.")
         g.log.info("Custom xattr found on mount point.")
@@ -59,7 +60,7 @@ class TestDhtCustomXattrClass(GlusterBaseClass):
             for fname in files:
                 attr_val = get_fattr(node,
                                      "{}/{}".format(brick_path, fname),
-                                     'user.foo')
+                                     'user.foo', encode='text')
                 self.assertEqual(attr_val, xattr_val,
                                  "Custom xattr not visible on bricks")
         g.log.info("Custom xattr found on bricks.")
@@ -104,7 +105,7 @@ class TestDhtCustomXattrClass(GlusterBaseClass):
         for mount_object in self.mounts:
             for fname in list_of_all_files:
                 ret = get_fattr(mount_object.client_system,
-                                fname, 'user.foo')
+                                fname, 'user.foo', encode='text')
                 self.assertIsNone(ret,
                                   "Custom attribute visible at mount "
                                   "point even after deletion")
@@ -118,7 +119,7 @@ class TestDhtCustomXattrClass(GlusterBaseClass):
                 if fname.split('/')[3] in files_on_bricks]
             for fname in files:
                 ret = get_fattr(node, "{}/{}".format(brick_path, fname),
-                                'user.foo')
+                                'user.foo', encode='text')
                 self.assertIsNone(ret,
                                   "Custom attribute visible on "
                                   "brick even after deletion")
@@ -216,13 +217,13 @@ class TestDhtCustomXattrClass(GlusterBaseClass):
         self.set_xattr_user_foo(self.list_of_files, 'bar2')
 
         # Check if custom xattr is set to all the regular files
-        self.check_custom_xattr_visible('bar2')
+        self.check_custom_xattr_visible("bar2")
 
         # Change the custom xattr on all the regular files
         self.set_xattr_user_foo(self.list_of_files, 'ABC')
 
         # Check if xattr is set to all the regular files
-        self.check_custom_xattr_visible('ABC')
+        self.check_custom_xattr_visible("ABC")
 
         # Delete Custom xattr from all regular files
         self.delete_xattr_user_foo(self.list_of_files)
@@ -238,13 +239,13 @@ class TestDhtCustomXattrClass(GlusterBaseClass):
         self.set_xattr_user_foo(list_of_softlinks, 'bar2')
 
         # Check if custom xattr is set to all the regular files
-        self.check_custom_xattr_visible('bar2')
+        self.check_custom_xattr_visible("bar2")
 
         # Change the custom xattr on all the regular files
         self.set_xattr_user_foo(list_of_softlinks, 'ABC')
 
         # Check if xattr is set to all the regular files
-        self.check_custom_xattr_visible('ABC')
+        self.check_custom_xattr_visible("ABC")
 
         # Delete Custom xattr from all regular files
         self.delete_xattr_user_foo(list_of_softlinks)

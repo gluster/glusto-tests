@@ -117,7 +117,8 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
                         mount_point, folder_name)
             ret = get_fattr(mount_point.client_system,
                             mount_point.mountpoint,
-                            'trusted.glusterfs.pathinfo')
+                            'trusted.glusterfs.pathinfo',
+                            encode="text")
             self.assertIsNotNone(ret,
                                  "trusted.glusterfs.pathinfo is not "
                                  "presented on %s:%s" %
@@ -139,7 +140,7 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
             g.log.debug('Check xarttr user.foo on %s:%s',
                         mount_point.client_system, folder_name)
             ret = get_fattr(mount_point.client_system, folder_name,
-                            'user.foo')
+                            'user.foo', encode="text")
             self.assertEqual(ret, 'bar2',
                              "Xattr attribute user.foo is not presented on "
                              "mount point %s and directory %s" %
@@ -153,7 +154,8 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
                 brick_path = dir_prefix.format(root=brick_dir,
                                                client_index=mount_index)
 
-                ret = get_fattr(brick_server, brick_path, 'user.foo')
+                ret = get_fattr(brick_server, brick_path, 'user.foo',
+                                encode="text")
 
                 g.log.debug('Check custom xattr for directory on brick %s:%s',
                             brick_server, brick_path)
@@ -177,7 +179,8 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
             g.log.debug('Looking if custom extra attribute user.foo is '
                         'presented on mount or on bricks after deletion')
             self.assertIsNone(get_fattr(mount_point.client_system,
-                                        folder_name, 'user.foo'),
+                                        folder_name, 'user.foo',
+                                        encode="text"),
                               "Xattr user.foo is presented on mount point"
                               " %s:%s after deletion" %
                               (mount_point.mountpoint, folder_name))
@@ -277,7 +280,7 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
             g.log.debug('Check mountpoint and bricks for custom xattribute')
             self.assertEqual('bar2', get_fattr(mount_point.client_system,
                                                linked_folder_name,
-                                               'user.foo'),
+                                               'user.foo', encode="text"),
                              'Custom xattribute is not presented on '
                              'mount point %s:%s' %
                              (mount_point.client_system, linked_folder_name))
@@ -297,7 +300,8 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
                     continue
 
                 self.assertEqual(get_fattr(brick_server, brick_path,
-                                           'user.foo'), 'bar2',
+                                           'user.foo', encode="text"),
+                                 'bar2',
                                  "Actual: custom attribute not "
                                  "found on brick %s:%s" % (
                                      brick_server, brick_path))
@@ -319,7 +323,8 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
                         "after deletion", mount_point.client_system,
                         linked_folder_name)
             self.assertIsNone(get_fattr(mount_point.client_system,
-                                        linked_folder_name, 'user.foo'),
+                                        linked_folder_name, 'user.foo',
+                                        encode="text"),
                               "Expected: xattr user.foo to be not presented on"
                               " %s:%s" % (mount_point.client_system,
                                           linked_folder_name))
@@ -339,7 +344,7 @@ class TestDirectoryCustomExtendedAttributes(GlusterBaseClass):
                     continue
 
                 self.assertIsNone(get_fattr(brick_server, brick_path,
-                                            'user.foo'),
+                                            'user.foo', encode="text"),
                                   "Extended custom attribute is presented on "
                                   "%s:%s after deletion" % (brick_server,
                                                             brick_path))

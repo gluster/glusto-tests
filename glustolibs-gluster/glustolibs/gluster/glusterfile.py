@@ -116,7 +116,7 @@ def get_fattr(host, fqpath, fattr, encode="hex"):
                (encode, fattr, fqpath))
     rcode, rout, rerr = g.run(host, command)
     if not rcode:
-        return rout.strip().split('=')[1]
+        return rout.strip().split('=')[1].replace('"', '')
 
     g.log.error('getfattr failed: %s' % rerr)
     return None
@@ -400,7 +400,8 @@ def get_pathinfo(host, fqpath):
         A dictionary of pathinfo data for a remote file. None on fail.
     """
     pathinfo = {}
-    pathinfo['raw'] = get_fattr(host, fqpath, 'trusted.glusterfs.pathinfo')
+    pathinfo['raw'] = get_fattr(host, fqpath, 'trusted.glusterfs.pathinfo',
+                                encode="text")
     pathinfo['brickdir_paths'] = re.findall(r".*?POSIX.*?:(\S+)\>",
                                             pathinfo['raw'])
 
@@ -444,7 +445,8 @@ def get_dht_linkto_xattr(host, fqpath):
     Returns:
         Return value of get_fattr trusted.glusterfs.dht.linkto call.
     """
-    linkto_xattr = get_fattr(host, fqpath, 'trusted.glusterfs.dht.linkto')
+    linkto_xattr = get_fattr(host, fqpath, 'trusted.glusterfs.dht.linkto',
+                             encode="text")
 
     return linkto_xattr
 
