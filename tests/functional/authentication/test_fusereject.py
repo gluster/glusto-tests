@@ -28,8 +28,7 @@ from glustolibs.gluster.mount_ops import (mount_volume, is_mounted,
 from glustolibs.gluster.brick_libs import get_all_bricks, are_bricks_online
 
 
-@runs_on([['replicated'],
-          ['glusterfs']])
+@runs_on([['replicated'], ['glusterfs']])
 class AuthRejectVol(GlusterBaseClass):
     """
     Create a replicated volume and start the volume and check
@@ -40,18 +39,18 @@ class AuthRejectVol(GlusterBaseClass):
         """
         Creating a replicated volume and checking if it is started
         """
+        # Calling GlusterBaseClass Setup
+        self.get_super_method(self, 'setUp')()
+
         ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
-        g.log.info("Volume %s has been setup successfully", self.volname)
 
         # Check if volume is started
         volinfo = get_volume_info(self.mnode, self.volname)
         if volinfo[self.volname]['statusStr'] != "Started":
             raise ExecutionError("Volume has not Started")
         g.log.info("Volume is started")
-        # Calling GlusterBaseClass Setup
-        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         """
@@ -64,13 +63,10 @@ class AuthRejectVol(GlusterBaseClass):
                 raise ExecutionError("Failed to unmount volume from client"
                                      " %s" % client)
             g.log.info("Unmounted Volume from client %s successfully", client)
-        g.log.info("Cleaning up volume")
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Cleanup the "
                                  "Volume %s" % self.volname)
-        g.log.info("Volume deleted successfully "
-                   ": %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
@@ -106,7 +102,6 @@ class AuthRejectVol(GlusterBaseClass):
 
         # Fetching all the bricks
         self.mountpoint = "/mnt/testvol"
-        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
         self.assertIsNotNone(bricks_list, "Brick list is empty")
         g.log.info("Brick List : %s", bricks_list)
@@ -114,7 +109,6 @@ class AuthRejectVol(GlusterBaseClass):
         # Check are bricks online
         ret = are_bricks_online(self.mnode, self.volname, bricks_list)
         self.assertTrue(ret, "All bricks are not online")
-        g.log.info("All bricks are online")
 
         # Using this way to check because of bug 1586036
         # Mounting volume
@@ -144,10 +138,8 @@ class AuthRejectVol(GlusterBaseClass):
 
         # Mounting the vol on client2
         # Check bricks are online
-        g.log.info("Brick List : %s", bricks_list)
         ret = are_bricks_online(self.mnode, self.volname, bricks_list)
         self.assertTrue(ret, "All bricks are not online")
-        g.log.info("All bricks are online")
 
         # Mounting Volume
         ret, _, _ = mount_volume(self.volname, self.mount_type,
@@ -162,7 +154,6 @@ class AuthRejectVol(GlusterBaseClass):
                          user='root')
         self.assertTrue(out, "Volume %s has failed to mount"
                         % self.volname)
-        g.log.info("Volume is mounted successfully %s", self.volname)
 
         # Reset Volume
         ret, _, _ = volume_reset(mnode=self.mnode, volname=self.volname)
@@ -170,10 +161,8 @@ class AuthRejectVol(GlusterBaseClass):
         g.log.info("Volume %s reset operation is successful", self.volname)
 
         # Checking if bricks are online
-        g.log.info("Brick List : %s", bricks_list)
         ret = are_bricks_online(self.mnode, self.volname, bricks_list)
         self.assertTrue(ret, "All bricks are not online")
-        g.log.info("All bricks are online")
 
         # Mounting Volume
         ret, _, _ = mount_volume(self.volname, self.mount_type,

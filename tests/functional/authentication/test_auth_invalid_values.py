@@ -27,9 +27,8 @@ from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.volume_libs import is_volume_exported
 
 
-@runs_on([['replicated', 'distributed', 'distributed-replicated',
-           'dispersed', 'distributed-dispersed'],
-          ['glusterfs', 'nfs']])
+@runs_on([['replicated', 'distributed', 'distributed-replicated', 'dispersed',
+           'distributed-dispersed'], ['glusterfs', 'nfs']])
 class AuthInvalidValues(GlusterBaseClass):
     """
     Tests to verify negative scenario in authentication allow and reject
@@ -42,13 +41,10 @@ class AuthInvalidValues(GlusterBaseClass):
         """
         cls.get_super_method(cls, 'setUpClass')()
         # Create and start volume
-        g.log.info("Starting volume setup process %s", cls.volname)
         ret = cls.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup "
                                  "and start volume %s" % cls.volname)
-        g.log.info("Successfully created and started the volume: %s",
-                   cls.volname)
 
     def set_invalid_auth(self, auth_opt, values_list):
         """
@@ -157,8 +153,9 @@ class AuthInvalidValues(GlusterBaseClass):
         """
         Cleanup volume
         """
-        g.log.info("Cleaning up volume")
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to cleanup volume.")
-        g.log.info("Volume cleanup was successful.")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()

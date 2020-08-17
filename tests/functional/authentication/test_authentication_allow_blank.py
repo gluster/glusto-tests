@@ -28,8 +28,7 @@ from glustolibs.gluster.volume_libs import cleanup_volume
 
 
 @runs_on([['replicated', 'distributed-replicated', 'dispersed',
-           'distributed-dispersed'],
-          ['glusterfs']])
+           'distributed-dispersed'], ['glusterfs']])
 class AuthAllowEmptyString(GlusterBaseClass):
     """
     Tests to verify auth.allow functionality on Volume and Fuse subdir
@@ -38,13 +37,12 @@ class AuthAllowEmptyString(GlusterBaseClass):
         """
         Setup Volume
         """
+        # Calling GlusterBaseClass Setup
+        self.get_super_method(self, 'setUp')()
+
         ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup volume")
-        g.log.info("Volume %s has been setup successfully", self.volname)
-
-        # Calling GlusterBaseClass Setup
-        self.get_super_method(self, 'setUp')()
 
     def test_validate_authallow(self):
         """
@@ -76,5 +74,6 @@ class AuthAllowEmptyString(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to Cleanup the "
                                  "Volume %s" % self.volname)
-        g.log.info("Volume deleted successfully "
-                   ": %s", self.volname)
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()

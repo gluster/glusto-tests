@@ -28,8 +28,7 @@ from glustolibs.gluster.auth_ops import set_auth_allow, set_auth_reject
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
-           'dispersed', 'distributed-dispersed'],
-          ['glusterfs']])
+           'dispersed', 'distributed-dispersed'], ['glusterfs']])
 class FuseAuthRejectAllow(GlusterBaseClass):
     """
     Tests to verify auth.reject and auth.allow volume options in volume and
@@ -42,13 +41,10 @@ class FuseAuthRejectAllow(GlusterBaseClass):
         """
         cls.get_super_method(cls, 'setUpClass')()
         # Create and start volume
-        g.log.info("Starting volume setup process %s", cls.volname)
         ret = cls.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup "
                                  "and start volume %s" % cls.volname)
-        g.log.info("Successfully created and started the volume: %s",
-                   cls.volname)
 
     def authenticated_mount(self, mount_obj):
         """
@@ -167,13 +163,11 @@ class FuseAuthRejectAllow(GlusterBaseClass):
         auth_dict = {'all': [self.mounts[0].client_system]}
         ret = set_auth_reject(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.reject volume option.")
-        g.log.info("Successfully set auth.reject option on volume")
 
         # Setting auth.allow on volume for client2 using ip
         auth_dict = {'all': [self.mounts[1].client_system]}
         ret = set_auth_allow(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.allow volume option")
-        g.log.info("Successfully set auth.allow option on volume")
 
         # Trying to mount volume on client1
         self.unauthenticated_mount(self.mounts[0])
@@ -213,13 +207,11 @@ class FuseAuthRejectAllow(GlusterBaseClass):
         auth_dict = {'all': [hostname_client1.strip()]}
         ret = set_auth_reject(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.reject volume option.")
-        g.log.info("Successfully set auth.reject option on volume")
 
         # Setting auth.allow on volume for client2 using hostname
         auth_dict = {'all': [hostname_client2.strip()]}
         ret = set_auth_allow(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.allow volume option")
-        g.log.info("Successfully set auth.allow option on volume")
 
         # Trying to mount volume on client1
         self.unauthenticated_mount(self.mounts[0])
@@ -251,13 +243,11 @@ class FuseAuthRejectAllow(GlusterBaseClass):
         auth_dict = {'/d1': [self.mounts[0].client_system]}
         ret = set_auth_reject(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.reject volume option.")
-        g.log.info("Successfully set auth.reject option.")
 
         # Setting auth.allow on d1 for client2 using ip
         auth_dict = {'/d1': [self.mounts[1].client_system]}
         ret = set_auth_allow(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.allow volume option")
-        g.log.info("Successfully set auth.allow option.")
 
         # Creating mount object for sub-directory mount on client1
         mount_obj_client1 = copy.deepcopy(self.mounts[0])
@@ -291,13 +281,11 @@ class FuseAuthRejectAllow(GlusterBaseClass):
         auth_dict = {'/d1': [hostname_client1.strip()]}
         ret = set_auth_reject(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.reject volume option.")
-        g.log.info("Successfully set auth.reject option.")
 
         # Setting auth.allow on d1 for client2 using hostname
         auth_dict = {'/d1': [hostname_client2.strip()]}
         ret = set_auth_allow(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set auth.allow volume option")
-        g.log.info("Successfully set auth.allow option.")
 
         # Trying to mount d1 on client1
         self.unauthenticated_mount(mount_obj_client1)
@@ -322,8 +310,9 @@ class FuseAuthRejectAllow(GlusterBaseClass):
         """
         Cleanup volume
         """
-        g.log.info("Cleaning up volume")
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to cleanup volume.")
-        g.log.info("Volume cleanup was successful.")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()

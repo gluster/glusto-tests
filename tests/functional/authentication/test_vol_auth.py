@@ -30,27 +30,26 @@ from glustolibs.gluster.brick_libs import get_all_bricks, are_bricks_online
 from glustolibs.gluster.volume_libs import cleanup_volume
 
 
-@runs_on([['replicated'],
-          ['glusterfs']])
+@runs_on([['replicated'], ['glusterfs']])
 class AuthRejectVol(GlusterBaseClass):
     """
     Create a replicated volume and start the volume and check
     if volume is started
     """
     def setUp(self):
+        # Calling GlusterBaseClass Setup
+        self.get_super_method(self, 'setUp')()
+
         # Setup Volume to create a replicated volume
         ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup volume %s" % self.volname)
-        g.log.info("Volume %s has been setup successfully", self.volname)
 
         # Check if volume is started
         volinfo = get_volume_info(self.mnode, self.volname)
         if volinfo[self.volname]['statusStr'] != "Started":
             raise ExecutionError("Volume has not Started")
         g.log.info("Volume is started.")
-        # Calling GlusterBaseClass Setup
-        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         # tearDown for every test
@@ -59,8 +58,6 @@ class AuthRejectVol(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to Cleanup the "
                                  "Volume %s" % self.volname)
-        g.log.info("Volume deleted successfully "
-                   ": %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
@@ -90,7 +87,6 @@ class AuthRejectVol(GlusterBaseClass):
         for client in self.clients:
             # Fetching all the bricks
             self.mountpoint = '/mnt/testvol'
-            g.log.info("Fetching bricks for the volume : %s", self.volname)
             bricks_list = get_all_bricks(self.mnode, self.volname)
             self.assertIsNotNone(bricks_list, "Brick list is empty")
             g.log.info("Brick List : %s", bricks_list)
@@ -98,7 +94,6 @@ class AuthRejectVol(GlusterBaseClass):
             # Check are bricks online
             ret = are_bricks_online(self.mnode, self.volname, bricks_list)
             self.assertTrue(ret, "All bricks are not online")
-            g.log.info("All bricks are online")
 
             # Creating directory to mount
             cmd = ("mkdir -p /mnt/testvol")
@@ -138,7 +133,6 @@ class AuthRejectVol(GlusterBaseClass):
 
         # Check if bricks are online and  Mounting the vol on client1
         # Fetching bricks
-        g.log.info("Fetching bricks for the volume : %s", self.volname)
         bricks_list = get_all_bricks(self.mnode, self.volname)
         self.assertIsNotNone(bricks_list, "Brick list is empty")
         g.log.info("Brick List : %s", bricks_list)
@@ -146,7 +140,6 @@ class AuthRejectVol(GlusterBaseClass):
         # Checking if bricks are online
         ret = are_bricks_online(self.mnode, self.volname, bricks_list)
         self.assertTrue(ret, "All bricks are not online")
-        g.log.info("All bricks are online")
 
         # Creating directory to mount
         cmd = ("mkdir -p /mnt/testvol")

@@ -25,8 +25,7 @@ from glustolibs.gluster.auth_ops import set_auth_allow
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
-           'dispersed', 'distributed-dispersed'],
-          ['glusterfs']])
+           'dispersed', 'distributed-dispersed'], ['glusterfs']])
 class FuseAuthAllow(GlusterBaseClass):
     """
     Tests to verify auth.allow feature on fuse mount.
@@ -38,13 +37,10 @@ class FuseAuthAllow(GlusterBaseClass):
         """
         cls.get_super_method(cls, 'setUpClass')()
         # Create and start volume
-        g.log.info("Starting volume setup process %s", cls.volname)
         ret = cls.setup_volume()
         if not ret:
             raise ExecutionError("Failed to setup "
                                  "and start volume %s" % cls.volname)
-        g.log.info("Successfully created and started the volume: %s",
-                   cls.volname)
 
     def authenticated_mount(self, mount_obj):
         """
@@ -147,7 +143,6 @@ class FuseAuthAllow(GlusterBaseClass):
         auth_dict = {'all': [self.mounts[0].client_system]}
         ret = set_auth_allow(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set authentication")
-        g.log.info("Successfully set authentication on volume")
 
         # Mounting volume on client1
         self.authenticated_mount(self.mounts[0])
@@ -179,7 +174,6 @@ class FuseAuthAllow(GlusterBaseClass):
         auth_dict = {'all': [hostname_client1.strip()]}
         ret = set_auth_allow(self.volname, self.mnode, auth_dict)
         self.assertTrue(ret, "Failed to set authentication")
-        g.log.info("Successfully set authentication on volume")
 
         # Mounting volume on client1
         self.authenticated_mount(self.mounts[0])
@@ -204,8 +198,9 @@ class FuseAuthAllow(GlusterBaseClass):
         """
         Cleanup volume
         """
-        g.log.info("Cleaning up volume")
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to cleanup volume.")
-        g.log.info("Volume cleanup was successful.")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
