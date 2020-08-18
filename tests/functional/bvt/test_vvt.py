@@ -49,8 +49,6 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
-        g.log.info("Upload io scripts to clients %s for running IO on "
-                   "mounts", cls.clients)
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
         ret = upload_scripts(cls.clients, cls.script_upload_path)
@@ -67,21 +65,17 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         self.get_super_method(self, 'setUp')()
 
         # Setup_Volume
-        g.log.info("Starting to Setup Volume %s", self.volname)
         ret = self.setup_volume()
         if not ret:
             raise ExecutionError("Failed to Setup Volume %s" % self.volname)
-        g.log.info("Successful in Setup Volume %s", self.volname)
 
     def tearDown(self):
         """Cleanup the volume
         """
         # Cleanup Volume
-        g.log.info("Starting to Setup Volume %s", self.volname)
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Setup_Volume %s" % self.volname)
-        g.log.info("Successful in Setup Volume %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
@@ -93,7 +87,6 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         start of the volume.
         """
         # Verify volume processes are online
-        g.log.info("Verify volume %s processes are online", self.volname)
         ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
         self.assertTrue(ret, ("Volume %s : All process are not online" %
                               self.volname))
@@ -101,27 +94,21 @@ class VolumeAccessibilityTests(GlusterBaseClass):
                    self.volname)
 
         # Stop Volume
-        g.log.info("Stopping Volume %s", self.volname)
         ret, _, _ = volume_stop(self.mnode, self.volname, force=True)
         self.assertEqual(ret, 0, "Failed to stop volume %s" % self.volname)
         g.log.info("Successfully stopped volume %s", self.volname)
 
         # Start Volume
-        g.log.info("Starting Volume %s", self.volname)
         ret, _, _ = volume_start(self.mnode, self.volname)
         self.assertEqual(ret, 0, "Failed to start volume %s" % self.volname)
         g.log.info("Successfully started volume %s", self.volname)
 
         # Wait for volume processes to be online
-        g.log.info("Wait for volume processes to be online")
         ret = wait_for_volume_process_to_be_online(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to wait for volume %s processes to "
                               "be online", self.volname))
-        g.log.info("Successful in waiting for volume %s processes to be "
-                   "online", self.volname)
 
         # Log Volume Info and Status
-        g.log.info("Logging Volume %s Info and Status", self.volname)
         ret = log_volume_info_and_status(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to Log volume %s info and status",
                               self.volname))
@@ -129,7 +116,6 @@ class VolumeAccessibilityTests(GlusterBaseClass):
                    self.volname)
 
         # Verify volume's all process are online
-        g.log.info("Verify volume %s processes are online", self.volname)
         ret = verify_all_process_of_volume_are_online(self.mnode, self.volname)
         self.assertTrue(ret, ("Volume %s : All process are not online" %
                               self.volname))
@@ -137,7 +123,6 @@ class VolumeAccessibilityTests(GlusterBaseClass):
                    self.volname)
 
         # Log Volume Info and Status
-        g.log.info("Logging Volume %s Info and Status", self.volname)
         ret = log_volume_info_and_status(self.mnode, self.volname)
         self.assertTrue(ret, ("Failed to Log volume %s info and status",
                               self.volname))
@@ -145,8 +130,6 @@ class VolumeAccessibilityTests(GlusterBaseClass):
                    self.volname)
 
         # Check if glusterd is running on all servers(expected: active)
-        g.log.info("Check if glusterd is running on all servers"
-                   "(expected: active)")
         ret = is_glusterd_running(self.servers)
         self.assertEqual(ret, 0, "Glusterd is not running on all servers")
         g.log.info("Glusterd is running on all the servers")
@@ -156,10 +139,8 @@ class VolumeAccessibilityTests(GlusterBaseClass):
         """Test File Directory Creation on the volume.
         """
         # Mount Volume
-        g.log.info("Starting to Mount Volume %s", self.volname)
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, ("Failed to Mount Volume %s", self.volname))
-        g.log.info("Successful in Mounting Volume %s", self.volname)
 
         # Start IO on all mounts.
         all_mounts_procs = []
@@ -178,22 +159,16 @@ class VolumeAccessibilityTests(GlusterBaseClass):
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
-            count = count + 10
+            count += 10
 
         # Validate IO
-        g.log.info("Validating IO's")
         ret = validate_io_procs(all_mounts_procs, self.mounts)
         self.assertTrue(ret, "IO failed on some of the clients")
-        g.log.info("Successfully validated all io's")
 
         # Get stat of all the files/dirs created.
-        g.log.info("Get stat of all the files/dirs created.")
         ret = get_mounts_stat(self.mounts)
         self.assertTrue(ret, "Stat failed on some of the clients")
-        g.log.info("Successfully got stat of all files/dirs created")
 
         # UnMount Volume
-        g.log.info("Starting to Unmount Volume %s", self.volname)
         ret = self.unmount_volume(self.mounts)
         self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
-        g.log.info("Successfully Unmounted Volume %s", self.volname)

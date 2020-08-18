@@ -41,14 +41,12 @@ class ValidateSosreportBehavior(GlusterBaseClass):
                                                  volume_create_force=False)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
-        g.log.info("Successful in Setup Volume and Mount Volume")
 
     def tearDown(self):
         """tearDown"""
         ret = self.unmount_volume_and_cleanup_volume(mounts=[self.mounts[0]])
         if not ret:
             raise ExecutionError("Failed to umount the vol & cleanup Volume")
-        g.log.info("Successful in umounting the volume and Cleanup")
         self.get_super_method(self, 'tearDown')()
 
     def test_sosreport_behavior_for_glusterfs(self):

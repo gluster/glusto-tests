@@ -32,11 +32,13 @@ from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 class VerifyVolumeSanity(GlusterBaseClass):
 
     def setUp(self):
+
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
+
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup Volume and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         self.assertTrue(ret, ("Failed to Setup_Volume and Mount_Volume"))
-        g.log.info("Successful in Setup Volume and Mount Volume")
 
     def test_volume_sanity(self):
         """
@@ -78,7 +80,8 @@ class VerifyVolumeSanity(GlusterBaseClass):
     def tearDown(self):
 
         # Stopping the volume
-        g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         self.assertTrue(ret, ("Failed to Unmount Volume and Cleanup Volume"))
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
