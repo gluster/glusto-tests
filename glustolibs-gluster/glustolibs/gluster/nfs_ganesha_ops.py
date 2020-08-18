@@ -970,16 +970,16 @@ def cluster_auth_setup(servers):
             g.log.error("unable to set password for hacluster on %s", node)
             return False
 
-        # Perform cluster authentication between the nodes
-        auth_type = 'cluster' if is_rhel7(servers) else 'host'
-        for node in servers:
-            ret, _, _ = g.run(node, "pcs %s auth %s -u hacluster -p hacluster"
-                                    % (auth_type, ' '.join(servers)))
-            if ret:
-                g.log.error("pcs %s auth command failed on %s",
-                            auth_type, node)
-                return False
-        return True
+    # Perform cluster authentication between the nodes
+    auth_type = 'cluster' if is_rhel7(servers) else 'host'
+    for node in servers:
+        ret, _, _ = g.run(node, "pcs %s auth %s -u hacluster -p hacluster"
+                          % (auth_type, ' '.join(servers)))
+        if ret:
+            g.log.error("pcs %s auth command failed on %s",
+                        auth_type, node)
+            return False
+    return True
 
 
 def configure_ports_on_servers(servers):
