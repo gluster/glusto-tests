@@ -1686,7 +1686,8 @@ def get_volume_type(brickdir_path):
     # Adding import here to avoid cyclic imports
     from glustolibs.gluster.brick_libs import get_all_bricks
     (host, brick_path_info) = brickdir_path.split(':')
-    path_info = brick_path_info[:-1]
+    path_info = (brick_path_info[:-2] if brick_path_info.endswith("//")
+                 else brick_path_info[:-1])
     for volume in get_volume_list(host):
         brick_paths = [brick.split(':')[1] for brick in get_all_bricks(host,
                                                                        volume)]
