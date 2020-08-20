@@ -88,6 +88,14 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterBaseClass):
                    cls.clients)
 
         cls.counter = 1
+
+        # Temporary code:
+        # Additional checks to gather infomartion from all
+        # servers for Bug 1810901 and setting log level to debug.
+        ret = set_volume_options(cls.mnode, 'all',
+                                 {'cluster.daemon-log-level': 'DEBUG'})
+        if not ret:
+            g.log.error('Failed to set cluster.daemon-log-level to DEBUG')
         # int: Value of counter is used for dirname-start-num argument for
         # file_dir_ops.py create_deep_dirs_with_files.
 
@@ -116,6 +124,18 @@ class GlusterBasicFeaturesSanityBaseClass(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
+
+        # Temporary code:
+        # Additional checks to gather infomartion from all
+        # servers for Bug 1810901 and setting log level to debug.
+        for opt in ('diagnostics.brick-log-level',
+                    'diagnostics.client-log-level',
+                    'diagnostics.brick-sys-log-level',
+                    'diagnostics.client-sys-log-level'):
+            ret = set_volume_options(self.mnode, self.volname,
+                                     {opt: 'DEBUG'})
+            if not ret:
+                g.log.error('Failed to set volume option %s', opt)
 
         # Start IO on mounts
         g.log.info("Starting IO on all mounts...")
@@ -296,18 +316,15 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
         # Temporary code:
         # Additional checks to gather infomartion from all
         # servers for Bug 1810901 and setting log level to debug.
-        for opt in ('diagnostics.brick-log-level',
-                    'diagnostics.client-log-level '):
-            ret = set_volume_options(self.mnode, self.volname,
-                                     {opt: 'DEBUG'})
-            if not ret:
-                g.log.error('Failed to set volume option %s', opt)
         if self.volume_type == 'distributed-dispersed':
             for brick_path in get_all_bricks(self.mnode, self.volname):
                 node, path = brick_path.split(':')
                 ret, out, _ = g.run(node, 'find {}/'.format(path))
                 g.log.info(out)
                 for filedir in out.split('\n'):
+                    ret, out, _ = g.run(node, 'ls -l {}'.format(filedir))
+                    g.log.info("Return value for ls -l command: %s", ret)
+                    g.log.info(out)
                     ret = get_fattr_list(node, filedir, encode_hex=True)
                     g.log.info(ret)
 
@@ -324,6 +341,9 @@ class TestGlusterShrinkVolumeSanity(GlusterBasicFeaturesSanityBaseClass):
                 ret, out, _ = g.run(node, 'find {}/'.format(path))
                 g.log.info(out)
                 for filedir in out.split('\n'):
+                    ret, out, _ = g.run(node, 'ls -l {}'.format(filedir))
+                    g.log.info("Return value for ls -l command: %s", ret)
+                    g.log.info(out)
                     ret = get_fattr_list(node, filedir, encode_hex=True)
                     g.log.info(ret)
 
