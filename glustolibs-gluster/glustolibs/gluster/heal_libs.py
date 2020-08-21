@@ -135,7 +135,8 @@ def are_all_self_heal_daemons_are_online(mnode, volname):
         return False
 
 
-def monitor_heal_completion(mnode, volname, timeout_period=1200, bricks=None):
+def monitor_heal_completion(mnode, volname, timeout_period=1200,
+                            bricks=None, interval_check=120):
     """Monitors heal completion by looking into .glusterfs/indices/xattrop
         directory of every brick for certain time. When there are no entries
         in all the brick directories then heal is successful. Otherwise heal is
@@ -150,6 +151,8 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200, bricks=None):
     Kwargs:
         bricks : list of bricks to monitor heal, if not provided
                  heal will be monitored on all bricks of volume
+        interval_check : Time in seconds, for every given interval checks
+                         the heal info, defaults to 120.
 
     Return:
         bool: True if heal is complete within timeout_period. False otherwise
@@ -181,8 +184,8 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200, bricks=None):
         if heal_complete:
             break
         else:
-            time.sleep(120)
-            time_counter = time_counter - 120
+            time.sleep(interval_check)
+            time_counter = time_counter - interval_check
 
     if heal_complete and bricks:
         # In EC volumes, check heal completion only on online bricks
