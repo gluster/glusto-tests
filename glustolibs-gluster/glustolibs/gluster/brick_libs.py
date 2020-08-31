@@ -21,6 +21,7 @@ from math import floor
 import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.brickmux_ops import is_brick_mux_enabled
+from glustolibs.gluster.gluster_init import restart_glusterd
 from glustolibs.gluster.volume_ops import (get_volume_info, get_volume_status)
 from glustolibs.gluster.volume_libs import (get_subvols,
                                             get_client_quorum_info,
@@ -209,10 +210,9 @@ def bring_bricks_online(mnode, volname, bricks_list,
                            "the bricks '%s' online", volname, bricks_list)
 
         elif bring_brick_online_method == 'glusterd_restart':
-            bring_brick_online_command = "service glusterd restart"
             brick_node, _ = brick.split(":")
-            ret, _, _ = g.run(brick_node, bring_brick_online_command)
-            if ret != 0:
+            ret = restart_glusterd(brick_node)
+            if not ret:
                 g.log.error("Unable to restart glusterd on node %s",
                             brick_node)
                 _rc = False
