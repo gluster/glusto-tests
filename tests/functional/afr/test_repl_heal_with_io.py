@@ -125,7 +125,7 @@ class TestHealWithIO(GlusterBaseClass):
         if self.volume_type.find('distributed') >= 0:
             hashed_subvol, index = find_hashed_subvol(
                 subvols, '',
-                self.file_path.rsplit('/', maxsplit=1)[1])
+                self.file_path.rsplit('/', 1)[1])
             self.assertIsNotNone(hashed_subvol,
                                  'Unable to find hashed subvolume')
         return index
