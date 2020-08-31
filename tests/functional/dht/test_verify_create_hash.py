@@ -104,7 +104,7 @@ class TestCreateFile(GlusterBaseClass):
         for brickdir in brickobject:
             count += 1
             ret = brickdir.hashrange_contains_hash(filehash)
-            if ret == 1:
+            if ret:
                 hash_subvol = subvols[count]
                 ret, _, err = g.run(brickdir._host, ("stat %s/file1" %
                                                      brickdir._fqpath))
