@@ -1105,3 +1105,213 @@ class GlusterBaseClass(TestCase):
                 raise ExecutionError("Force cleanup of nfs-ganesha "
                                      "cluster failed")
         g.log.info("Teardown nfs ganesha cluster succeeded")
+
+    @classmethod
+    def start_memory_and_cpu_usage_logging(cls, interval=60, count=100):
+        """Upload logger script and start logging usage on cluster
+
+        Kawrgs:
+         interval(int): Time interval after which logs are to be collected
+                        (Default: 60)
+         count(int): Number of samples to be collected(Default: 100)
+
+        Returns:
+         proc_dict(dict):Dictionary of logging processes
+        """
+        # imports are added inside function to make it them
+        # optional and not cause breakage on installation
+        # which don't use the resource leak library
+        from glustolibs.io.memory_and_cpu_utils import (
+            check_upload_memory_and_cpu_logger_script,
+            log_memory_and_cpu_usage_on_cluster)
+
+        # Checking if script is present on servers or not if not then
+        # upload it to servers.
+        if not check_upload_memory_and_cpu_logger_script(cls.servers):
+            return None
+
+        # Checking if script is present on clients or not if not then
+        # upload it to clients.
+        if not check_upload_memory_and_cpu_logger_script(cls.clients):
+            return None
+
+        # Start logging on servers and clients
+        proc_dict = log_memory_and_cpu_usage_on_cluster(
+            cls.servers, cls.clients, cls.id(), interval, count)
+
+        return proc_dict
+
+    @classmethod
+    def compute_and_print_usage_stats(cls, proc_dict, kill_proc=False):
+        """Compute and print CPU and memory usage statistics
+
+        Args:
+         proc_dict(dict):Dictionary of logging processes
+
+        Kwargs:
+         kill_proc(bool): Kill logging process if true else wait
+                          for process to complete execution
+        """
+        # imports are added inside function to make it them
+        # optional and not cause breakage on installation
+        # which don't use the resource leak library
+        from glustolibs.io.memory_and_cpu_utils import (
+            wait_for_logging_processes_to_stop, kill_all_logging_processes,
+            compute_data_usage_stats_on_servers,
+            compute_data_usage_stats_on_clients)
+
+        # Wait or kill running logging process
+        if kill_proc:
+            nodes = cls.servers + cls.clients
+            ret = kill_all_logging_processes(proc_dict, nodes, cluster=True)
+            if not ret:
+                g.log.error("Unable to stop logging processes.")
+        else:
+            ret = wait_for_logging_processes_to_stop(proc_dict, cluster=True)
+            if not ret:
+                g.log.error("Processes didn't complete still running.")
+
+        # Compute and print stats for servers
+        ret = compute_data_usage_stats_on_servers(cls.servers, cls.id())
+        g.log.info('*' * 50)
+        g.log.info(ret)  # TODO: Make logged message more structured
+        g.log.info('*' * 50)
+
+        # Compute and print stats for clients
+        ret = compute_data_usage_stats_on_clients(cls.clients, cls.id())
+        g.log.info('*' * 50)
+        g.log.info(ret)  # TODO: Make logged message more structured
+        g.log.info('*' * 50)
+
+    @classmethod
+    def check_for_memory_leaks_and_oom_kills_on_servers(cls, gain=30.0):
+        """Check for memory leaks and OOM kills on servers
+
+        Kwargs:
+         gain(float): Accepted amount of leak for a given testcase in MB
+                      (Default:30)
+
+        Returns:
+         bool: True if memory leaks or OOM kills are observed else false
+        """
+        # imports are added inside function to make it them
+        # optional and not cause breakage on installation
+        # which don't use the resource leak library
+        from glustolibs.io.memory_and_cpu_utils import (
+            check_for_memory_leaks_in_glusterd,
+            check_for_memory_leaks_in_glusterfs,
+            check_for_memory_leaks_in_glusterfsd,
+            check_for_oom_killers_on_servers)
+
+        # Check for memory leaks on glusterd
+        if check_for_memory_leaks_in_glusterd(cls.servers, cls.id(), gain):
+            g.log.error("Memory leak on glusterd.")
+            return True
+
+        # Check for memory leaks on shd
+        if check_for_memory_leaks_in_glusterfs(cls.servers, cls.id(), gain):
+            g.log.error("Memory leak on shd.")
+            return True
+
+        # Check for memory leaks on brick processes
+        if check_for_memory_leaks_in_glusterfsd(cls.servers, cls.id(), gain):
+            g.log.error("Memory leak on brick process.")
+            return True
+
+        # Check OOM kills on servers for all gluster server processes
+        ret = check_for_oom_killers_on_servers(cls.servers)
+        if not ret:
+            g.log.error('OOM kills present on servers.')
+            return True
+        return False
+
+    @classmethod
+    def check_for_memory_leaks_and_oom_kills_on_clients(cls, gain=30):
+        """Check for memory leaks and OOM kills on clients
+
+        Kwargs:
+         gain(float): Accepted amount of leak for a given testcase in MB
+                      (Default:30)
+
+        Returns:
+         bool: True if memory leaks or OOM kills are observed else false
+        """
+        # imports are added inside function to make it them
+        # optional and not cause breakage on installation
+        # which don't use the resource leak library
+        from glustolibs.io.memory_and_cpu_utils import (
+            check_for_memory_leaks_in_glusterfs_fuse,
+            check_for_oom_killers_on_clients)
+
+        # Check for memory leak on glusterfs fuse process
+        if check_for_memory_leaks_in_glusterfs_fuse(cls.clients, cls.id(),
+                                                    gain):
+            g.log.error("Memory leaks observed on FUSE clients.")
+            return True
+
+        # Check for oom kills on clients
+        if check_for_oom_killers_on_clients(cls.clients):
+            g.log.error("OOM kills present on clients.")
+            return True
+        return False
+
+    @classmethod
+    def check_for_cpu_usage_spikes_on_servers(cls, threshold=3):
+        """Check for CPU usage spikes on servers
+
+        Kwargs:
+         threshold(int): Accepted amount of instances of 100% CPU usage
+                        (Default:3)
+        Returns:
+         bool: True if CPU spikes are more than threshold else False
+        """
+        # imports are added inside function to make it them
+        # optional and not cause breakage on installation
+        # which don't use the resource leak library
+        from glustolibs.io.memory_and_cpu_utils import (
+            check_for_cpu_usage_spikes_on_glusterd,
+            check_for_cpu_usage_spikes_on_glusterfs,
+            check_for_cpu_usage_spikes_on_glusterfsd)
+
+        # Check for CPU usage spikes on glusterd
+        if check_for_cpu_usage_spikes_on_glusterd(cls.servers, cls.id(),
+                                                  threshold):
+            g.log.error("CPU usage spikes observed more than threshold "
+                        "on glusterd.")
+            return True
+
+        # Check for CPU usage spikes on shd
+        if check_for_cpu_usage_spikes_on_glusterfs(cls.servers, cls.id(),
+                                                   threshold):
+            g.log.error("CPU usage spikes observed more than threshold "
+                        "on shd.")
+            return True
+
+        # Check for CPU usage spikes on brick processes
+        if check_for_cpu_usage_spikes_on_glusterfsd(cls.servers, cls.id(),
+                                                    threshold):
+            g.log.error("CPU usage spikes observed more than threshold "
+                        "on shd.")
+            return True
+        return False
+
+    @classmethod
+    def check_for_cpu_spikes_on_clients(cls, threshold=3):
+        """Check for CPU usage spikes on clients
+
+        Kwargs:
+         threshold(int): Accepted amount of instances of 100% CPU usage
+                        (Default:3)
+        Returns:
+         bool: True if CPU spikes are more than threshold else False
+        """
+        # imports are added inside function to make it them
+        # optional and not cause breakage on installation
+        # which don't use the resource leak library
+        from glustolibs.io.memory_and_cpu_utils import (
+            check_for_cpu_usage_spikes_on_glusterfs_fuse)
+
+        ret = check_for_cpu_usage_spikes_on_glusterfs_fuse(cls.clients,
+                                                           cls.id(),
+                                                           threshold)
+        return ret
