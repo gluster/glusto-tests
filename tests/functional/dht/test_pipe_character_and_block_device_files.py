@@ -147,9 +147,9 @@ class TestPipeCharacterAndBlockDeviceFiles(GlusterBaseClass):
                 self.assertTrue(ret, "Unable to find file {} on brick {}"
                                 .format(fname, path))
                 brick_text = brick_path.split('/')[:-1]
-                brick_text[0] = gethostbyname(brick_text[0][:-1]) + ":"
-                present_brick_list.append(
-                    '/'.join(brick_text))
+                if brick_text[0][0:2].isdigit():
+                    brick_text[0] = gethostbyname(brick_text[0][:-1]) + ":"
+                present_brick_list.append('/'.join(brick_text))
 
             # Check on other bricks where file doesn't exist
             brick_list = get_all_bricks(self.mnode, self.volname)
