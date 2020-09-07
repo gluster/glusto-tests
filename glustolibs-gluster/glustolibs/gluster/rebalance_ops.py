@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -401,3 +401,76 @@ def get_remove_brick_status(mnode, volname, bricks_list):
             else:
                 remove_brick_status[element.tag] = element.text
     return remove_brick_status
+
+
+def wait_for_remove_brick_to_complete(mnode, volname, bricks_list,
+                                      timeout=1200):
+    """Waits for the remove brick to complete
+
+    Args:
+        mnode (str): Node on which command has to be executed.
+        volname (str): volume name
+        bricks_list (str): List of bricks participating in
+        remove-brick operation
+
+    Kwargs:
+        timeout (int): timeout value in seconds to wait for remove brick
+            to complete
+
+    Returns:
+        True on success, False otherwise
+
+    Examples:
+        >>> wait_for_remove_brick_to_complete("abc.com", "testvol")
+    """
+
+    count = 0
+    while count < timeout:
+        status_info = get_remove_brick_status(mnode, volname, bricks_list)
+        if status_info is None:
+            return False
+        status = status_info['aggregate']['statusStr']
+        if status == 'completed':
+            g.log.info("Remove brick is successfully completed in %s sec",
+                       count)
+            return True
+        elif status == 'failed':
+            g.log.error(" Remove brick failed on one or more nodes. "
+                        "Check remove brick status for more details")
+            return False
+        else:
+            time.sleep(10)
+            count += 10
+            g.log.error("Remove brick operation has not completed. "
+                        "Wait timeout is %s" % count)
+    return False
+
+
+def set_rebalance_throttle(mnode, volname, throttle_type='normal'):
+    """Sets rebalance throttle
+
+    Args:
+        mnode (str): Node on which cmd has to be executed.
+        volname (str): volume name
+
+    Kwargs:
+        throttle_type (str): throttling type (lazy|normal|aggressive)
+            Defaults to 'normal'
+
+    Returns:
+        tuple: Tuple containing three elements (ret, out, err).
+            The first element 'ret' is of type 'int' and is the return value
+            of command execution.
+
+            The second element 'out' is of type 'str' and is the stdout value
+            of the command execution.
+
+            The third element 'err' is of type 'str' and is the stderr value
+            of the command execution.
+
+    Example:
+        set_rebalance_throttle(mnode, testvol, throttle_type='aggressive')
+    """
+    cmd = ("gluster volume set {} rebal-throttle {}".format
+           (volname, throttle_type))
+    return g.run(mnode, cmd)

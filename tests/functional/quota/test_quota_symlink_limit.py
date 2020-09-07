@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ class QuotaUniqueSoftLimit(GlusterBaseClass):
         which is used in tests
         """
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup and Mount Volume %s",
@@ -45,20 +45,17 @@ class QuotaUniqueSoftLimit(GlusterBaseClass):
                                  % cls.volname)
         g.log.info("Successful in Setup and Mount Volume %s", cls.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume and umount volume from client
-        """
-        # Stopping the volume
-        g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
-        if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+    def tearDown(self):
 
-        # Calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_quota_symlink_limit(self):
         """

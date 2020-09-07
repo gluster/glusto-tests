@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -33,27 +33,24 @@ class QuotaDeemStatfsAndQuotad(GlusterBaseClass):
         """
         setup volume and initialize necessary variables
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting to Setup Volume")
         ret = cls.setup_volume()
         if not ret:
             raise ExecutionError("Failed to Setup_Volume")
         g.log.info("Successful in Setup Volume")
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume
-        """
-        # stopping the volume and clean up the volume
-        g.log.info("Starting to Cleanup Volume")
-        ret = cls.cleanup_volume()
-        if not ret:
-            raise ExecutionError("Failed to Cleanup Volume")
-        g.log.info("Successful in Cleanup Volume")
+    def tearDown(self):
 
-        # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Cleanup Volume")
+        ret = self.cleanup_volume()
+        if not ret:
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_quota_deem_statfs_quotad(self):
         """

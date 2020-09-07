@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -34,20 +34,21 @@ from glustolibs.gluster.glusterfile import file_exists, move_file
 
 
 @runs_on([['distributed-replicated', 'replicated', 'distributed',
-           'dispersed', 'distributed-dispersed'],
-          ['glusterfs', 'nfs']])
+           'dispersed', 'distributed-dispersed', 'arbiter',
+           'distributed-arbiter'],
+          ['glusterfs']])
 class TestDHTRenameDirectory(GlusterBaseClass):
     """DHT Tests - rename directory
     Scenarios:
-    1 - Rename directory when destination is not presented
-    2 - Rename directory when destination is presented
+    1 - Rename directory when destination is not present
+    2 - Rename directory when destination is present
     """
 
     def setUp(self):
         """
         Setup and mount volume or raise ExecutionError
         """
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -97,8 +98,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
         return True
 
     def test_rename_directory_no_destination_folder(self):
-        """Test rename directory with no destination folder
-        """
+        """Test rename directory with no destination folder"""
         dirs = {
             'initial': '{root}/folder_{client_index}',
             'new_folder': '{root}/folder_renamed{client_index}'
@@ -107,7 +107,6 @@ class TestDHTRenameDirectory(GlusterBaseClass):
         for mount_index, mount_obj in enumerate(self.mounts):
             client_host = mount_obj.client_system
             mountpoint = mount_obj.mountpoint
-
             initial_folder = dirs['initial'].format(
                 root=mount_obj.mountpoint,
                 client_index=mount_index
@@ -125,6 +124,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             self.assertTrue(file_exists(client_host, initial_folder))
             g.log.info('Created source directory %s on mount point %s',
                        initial_folder, mountpoint)
+
             # Create files and directories
             ret = self.create_files(client_host, initial_folder, self.files,
                                     content='Textual content')
@@ -135,7 +135,7 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             ret = validate_files_in_dir(client_host, mountpoint,
                                         test_type=FILE_ON_HASHED_BRICKS)
             self.assertTrue(ret, "Expected - Files and dirs are stored "
-                                 "on hashed bricks")
+                            "on hashed bricks")
             g.log.info('Files and dirs are stored on hashed bricks')
 
             new_folder_name = dirs['new_folder'].format(
@@ -237,8 +237,9 @@ class TestDHTRenameDirectory(GlusterBaseClass):
             ret = validate_files_in_dir(client_host, mountpoint,
                                         test_type=FILE_ON_HASHED_BRICKS)
             self.assertTrue(ret, "Expected - Files and dirs are stored "
-                                 "on hashed bricks")
+                            "on hashed bricks")
             g.log.info('Files and dirs are stored on hashed bricks')
+
             # Rename source folder to destination
             ret = move_file(client_host, initial_folder,
                             new_folder_name)
@@ -288,5 +289,6 @@ class TestDHTRenameDirectory(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
+
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(self)
+        self.get_super_method(self, 'tearDown')()

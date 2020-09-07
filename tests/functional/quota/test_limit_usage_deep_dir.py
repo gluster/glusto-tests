@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import random
+
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
@@ -31,24 +32,21 @@ from glustolibs.gluster.glusterdir import (mkdir,
                                            rmdir)
 
 
-@runs_on([['distributed-replicated', 'replicated', 'distributed',
-           'dispersed', 'distributed-dispersed'],
+@runs_on([['distributed-replicated', 'replicated', 'distributed'],
           ['glusterfs', 'nfs']])
 class LimitUsageDeepDir(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -57,7 +55,7 @@ class LimitUsageDeepDir(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
 
@@ -80,7 +78,7 @@ class LimitUsageDeepDir(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_limit_usage_deep_dir(self):
         # pylint: disable=too-many-statements
@@ -180,9 +178,10 @@ class LimitUsageDeepDir(GlusterBaseClass):
             # Data creation
             # Creates one file of rand[0] size in each dir
             rand = random.sample([1, 10, 512], 1)
-            cmd = ("python %s create_files --fixed-file-size %sk %s/%s"
-                   % (self.script_upload_path, rand[0],
-                      mount_object.mountpoint, dir_list[0]))
+            cmd = ("/usr/bin/env python %s create_files "
+                   "--fixed-file-size %sk %s/%s" % (
+                       self.script_upload_path,
+                       rand[0], mount_object.mountpoint, dir_list[0]))
 
             ret, _, _ = g.run(mount_object.client_system, cmd)
             self.assertFalse(ret, "Failed to create files")

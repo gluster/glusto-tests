@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
 from glustolibs.gluster.quota_ops import (quota_enable, quota_limit_usage)
@@ -32,16 +33,14 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -50,7 +49,7 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
 
@@ -73,7 +72,7 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_quota_limit_dir_breadth(self):
         """
@@ -101,8 +100,8 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
 
         g.log.info("Creating Directories on %s:%s",
                    client, mount_dir)
-        cmd = ('python %s create_deep_dir -d 0 -l 10 %s'
-               % (self.script_upload_path, mount_dir))
+        cmd = "/usr/bin/env python %s create_deep_dir -d 0 -l 10 %s" % (
+            self.script_upload_path, mount_dir)
 
         proc = g.run_async(client, cmd, user=mount_obj.user)
         self.all_mounts_procs.append(proc)
@@ -150,10 +149,10 @@ class QuotaLimitDirBreadth(GlusterBaseClass):
         g.log.info("Creating Files on %s:%s", client, mount_dir)
         for i in range(1, 11):
             dir_name = "/user" + str(i)
-            cmd = ("python %s create_files -f 10 --fixed-file-size 1M "
-                   "%s/%s"
-                   % (self.script_upload_path, mount_dir,
-                      dir_name))
+            cmd = ("/usr/bin/env python %s create_files -f 10 "
+                   "--fixed-file-size 1M %s/%s" % (
+                       self.script_upload_path,
+                       mount_dir, dir_name))
 
             ret, _, _ = g.run(client, cmd)
             self.assertFalse(ret, "Failed to create files in %s"

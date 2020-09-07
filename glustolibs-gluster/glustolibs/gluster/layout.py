@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,11 +28,25 @@ class Layout(object):
     """
     def _get_layout(self):
         """Discover brickdir data and cache in instance for further use"""
+        # Adding here to avoid cyclic imports
+        from glustolibs.gluster.volume_libs import get_volume_type
+
         self._brickdirs = []
         for brickdir_path in self._pathinfo['brickdir_paths']:
-            brickdir = BrickDir(brickdir_path)
-            g.log.debug("%s: %s" % (brickdir.path, brickdir.hashrange))
-            self._brickdirs.append(brickdir)
+            (host, _) = brickdir_path.split(':')
+            ret = get_volume_type(brickdir_path)
+            if ret in ('Replicate', 'Disperse', 'Arbiter'):
+                g.log.info("Cannot get layout as volume under test is"
+                           " Replicate/Disperse/Arbiter and DHT"
+                           " pass-through was enabled after Gluster 6.0")
+            else:
+                brickdir = BrickDir(brickdir_path)
+                if brickdir is None:
+                    g.log.error("Failed to get the layout")
+                else:
+                    g.log.debug("%s: %s" % (brickdir.path,
+                                            brickdir.hashrange))
+                    self._brickdirs.append(brickdir)
 
     def __init__(self, pathinfo):
         """Init the layout class
@@ -59,48 +73,60 @@ class Layout(object):
         ends at 32-bits high,
         and has no holes or overlaps
         """
-        joined_hashranges = []
-        for brickdir in self.brickdirs:
-            # join all of the hashranges into a single list
-            joined_hashranges += brickdir.hashrange
-        g.log.debug("joined range list: %s" % joined_hashranges)
-        # remove duplicate hashes
-        collapsed_ranges = list(set(joined_hashranges))
-        # sort the range list for good measure
-        collapsed_ranges.sort()
+        # Adding here to avoid cyclic imports
+        from glustolibs.gluster.volume_libs import get_volume_type
 
-        # first hash in the list is 0?
-        if collapsed_ranges[0] != 0:
-            g.log.error('First hash in range (%d) is not zero' %
-                        collapsed_ranges[0])
-            return False
+        for brickdir_path in self._pathinfo['brickdir_paths']:
+            (host, _) = brickdir_path.split(':')
+            if get_volume_type(brickdir_path) in ('Replicate', 'Disperse',
+                                                  'Arbiter'):
+                g.log.info("Cannot check for layout completeness as volume"
+                           " under test is Replicate/Disperse/Arbiter and DHT"
+                           " pass-though was enabled after Gluster 6.")
+            else:
+                joined_hashranges = []
+                for brickdir in self.brickdirs:
+                    # join all of the hashranges into a single list
+                    joined_hashranges += brickdir.hashrange
+                g.log.debug("joined range list: %s" % joined_hashranges)
+                # remove duplicate hashes
+                collapsed_ranges = list(set(joined_hashranges))
+                # sort the range list for good measure
+                collapsed_ranges.sort()
 
-        # last hash in the list is 32-bits high?
-        if collapsed_ranges[-1] != int(0xffffffff):
-            g.log.error('Last hash in ranges (%s) is not 0xffffffff' %
-                        hex(collapsed_ranges[-1]))
-            return False
+                # first hash in the list is 0?
+                if collapsed_ranges[0] != 0:
+                    g.log.error('First hash in range (%d) is not zero' %
+                                collapsed_ranges[0])
+                    return False
 
-        # remove the first and last hashes
-        clipped_ranges = collapsed_ranges[1:-1]
-        g.log.debug('clipped: %s' % clipped_ranges)
+                # last hash in the list is 32-bits high?
+                if collapsed_ranges[-1] != int(0xffffffff):
+                    g.log.error('Last hash in ranges (%s) is not 0xffffffff' %
+                                hex(collapsed_ranges[-1]))
+                    return False
 
-        # walk through the list in pairs and look for diff == 1
-        iter_ranges = iter(clipped_ranges)
-        for first in iter_ranges:
-            second = next(iter_ranges)
-            hash_difference = second - first
-            g.log.debug('%d - %d = %d' % (second, first, hash_difference))
-            if hash_difference > 1:
-                g.log.error("Layout has holes")
+                # remove the first and last hashes
+                clipped_ranges = collapsed_ranges[1:-1]
+                g.log.debug('clipped: %s' % clipped_ranges)
 
-                return False
-            elif hash_difference < 1:
-                g.log.error("Layout has overlaps")
+                # walk through the list in pairs and look for diff == 1
+                iter_ranges = iter(clipped_ranges)
+                for first in iter_ranges:
+                    second = next(iter_ranges)
+                    hash_difference = second - first
+                    g.log.debug('%d - %d = %d' % (second, first,
+                                                  hash_difference))
+                    if hash_difference > 1:
+                        g.log.error("Layout has holes")
 
-                return False
+                        return False
+                    elif hash_difference < 1:
+                        g.log.error("Layout has overlaps")
 
-        return True
+                        return False
+
+                return True
 
     @property
     def has_zero_hashranges(self):

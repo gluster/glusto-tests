@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,10 @@ from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.volume_ops import set_volume_options, get_volume_info
-from glustolibs.gluster.gluster_init import start_glusterd, is_glusterd_running
+from glustolibs.gluster.volume_ops import (
+    set_volume_options, get_volume_info)
+from glustolibs.gluster.gluster_init import (
+    start_glusterd, wait_for_glusterd_to_start)
 from glustolibs.gluster.volume_libs import setup_volume
 from glustolibs.gluster.peer_ops import (peer_probe_servers,
                                          peer_detach_servers,
@@ -34,8 +36,7 @@ from glustolibs.gluster.peer_ops import (peer_probe_servers,
 class VolumeInfoSync(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -59,7 +60,7 @@ class VolumeInfoSync(GlusterBaseClass):
             raise ExecutionError("Failed to probe detached "
                                  "servers %s" % self.servers)
 
-            # stopping the volume and Cleaning up the volume
+        # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Cleanup the Volume %s"
@@ -67,7 +68,7 @@ class VolumeInfoSync(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_sync_functinality(self):
 
@@ -105,15 +106,9 @@ class VolumeInfoSync(GlusterBaseClass):
         ret = start_glusterd(random_server)
         self.assertTrue(ret, "Failed to start glusterd on %s" % random_server)
 
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(random_server)
-            if not ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 0, "glusterd is not running on %s"
-                         % random_server)
+        ret = wait_for_glusterd_to_start(random_server)
+        self.assertTrue(ret, "glusterd is not running on %s"
+                        % random_server)
         g.log.info("glusterd is started and running on %s", random_server)
 
         # volume info should be synced across the cluster
@@ -153,15 +148,9 @@ class VolumeInfoSync(GlusterBaseClass):
         ret = start_glusterd(random_server)
         self.assertTrue(ret, "Failed to start glusterd on %s" % random_server)
 
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(random_server)
-            if not ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 0, "glusterd is not running on %s"
-                         % random_server)
+        ret = wait_for_glusterd_to_start(random_server)
+        self.assertTrue(ret, "glusterd is not running on %s"
+                        % random_server)
         g.log.info("glusterd is started and running on %s", random_server)
 
         # peer status should be synced across the cluster

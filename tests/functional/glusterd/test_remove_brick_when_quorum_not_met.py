@@ -30,8 +30,7 @@ from glustolibs.gluster.brick_ops import remove_brick
 class TestRemoveBrickWhenQuorumNotMet(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -58,13 +57,6 @@ class TestRemoveBrickWhenQuorumNotMet(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Servers are not in connected state")
 
-        # Setting quorum ratio to 51%
-        ret = set_volume_options(self.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
-        if not ret:
-            raise ExecutionError("Failed to set server quorum ratio on %s"
-                                 % self.volname)
-
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
@@ -72,7 +64,7 @@ class TestRemoveBrickWhenQuorumNotMet(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_remove_brick_when_quorum_not_met(self):
 

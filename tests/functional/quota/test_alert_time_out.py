@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 
 import time
 import random
-import string
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.lib_utils import (search_pattern_in_file,
@@ -45,7 +44,7 @@ class QuotaTimeOut(GlusterBaseClass):
         which is used in tests
         """
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup and Mount Volume %s",
@@ -56,20 +55,17 @@ class QuotaTimeOut(GlusterBaseClass):
                                  % cls.volname)
         g.log.info("Successful in Setup and Mount Volume %s", cls.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume and umount volume from client
-        """
-        # Stopping the volume
-        g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
-        if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+    def tearDown(self):
 
-        # Calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Unmount and cleanup original volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
+        if not ret:
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_alert_time_out(self):
         """
@@ -163,7 +159,7 @@ class QuotaTimeOut(GlusterBaseClass):
         # Get the brick log file path for a random node
         bricks = get_all_bricks(self.mnode, self.volname)
         selected_node, brick_path = random.choice(bricks[0:6]).split(':')
-        brickpath = string.replace(brick_path, '/', '-')
+        brickpath = str.replace(brick_path, '/', '-')
         brickpathfinal = brickpath[1:]
         brick_log = "/var/log/glusterfs/bricks/%s.log" % brickpathfinal
 
@@ -282,9 +278,9 @@ class QuotaTimeOut(GlusterBaseClass):
         g.log.info("Files creation stopped on mountpoint once exceeded "
                    "hard limit")
 
-        # Inserting sleep of 2 seconds so the alert message gets enough time
+        # Inserting sleep of 6 seconds so the alert message gets enough time
         # to be logged
-        time.sleep(2)
+        time.sleep(6)
 
         # Append unique string to the brick log
         g.log.info("Appending string 'appended_string_6' to the log:")

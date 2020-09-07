@@ -31,7 +31,7 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
 
     def setUp(self):
 
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -111,7 +111,7 @@ class TestVolumeOptionSetWithMaxcharacters(GlusterBaseClass):
             raise ExecutionError("Peers are not in connected state.")
         g.log.info("Peers are in connected state.")
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_enabling_gluster_debug_mode(self):
 

@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
     def setUp(self):
         """Setup Volume"""
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume Volume
         g.log.info("Starting to Setup Volume")
@@ -134,14 +134,14 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         for index, mount_obj in enumerate(self.mounts, start=1):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 10 %s" % (script_location,
-                                             index + 10,
-                                             mount_obj.mountpoint))
+                   "--num-of-files 10 %s" % (
+                       script_location, index + 10,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             # Expand volume
@@ -180,4 +180,4 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
             g.log.info("Volume deleted successfully : %s", volume)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

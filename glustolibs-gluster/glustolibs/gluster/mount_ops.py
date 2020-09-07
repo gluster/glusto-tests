@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -336,10 +336,10 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
 
     if mtype == 'nfs':
         if not options:
-            options = "-o vers=3"
+            options = "-o vers=4.1"
 
         elif options and 'vers' not in options:
-            options = options + ",vers=3"
+            options = options + ",vers=4.1"
 
     if mserver:
         mcmd = ("mount -t %s %s %s:/%s %s" %
@@ -356,23 +356,10 @@ def mount_volume(volname, mtype, mpoint, mserver, mclient, options='',
 
         # Check if client is running rhel. If so add specific options
         cifs_options = ""
-        try:
-            conn = g.rpyc_get_connection(mclient, user=user)
-            if conn is None:
-                g.log.error("Unable to get connection to %s on node %s"
-                            " in mount_volume()", user, mclient)
-                return (1, '', '')
-
-            os, version, name = conn.modules.platform.linux_distribution()
-            if "Santiago" in name:
-                cifs_options = "sec=ntlmssp"
-        except Exception as e:
-            g.log.error("Exception occurred while getting the platform "
-                        "of node %s: %s", mclient, str(e))
-            return (1, '', '')
-        finally:
-            g.rpyc_close_connection(host=mclient, user=user)
-
+        cmd = "cat /etc/redhat-release | grep Santiago"
+        ret, _, _ = g.run(mclient, cmd, user=user)
+        if not ret:
+            cifs_options = "sec=ntlmssp"
         mcmd = ("mount -t cifs -o username=%s,password=%s,%s "
                 "\\\\\\\\%s\\\\gluster-%s %s" % (smbuser, smbpasswd,
                                                  cifs_options, mserver,

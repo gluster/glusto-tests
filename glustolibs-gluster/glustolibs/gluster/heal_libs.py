@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2016 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -135,7 +135,8 @@ def are_all_self_heal_daemons_are_online(mnode, volname):
         return False
 
 
-def monitor_heal_completion(mnode, volname, timeout_period=1200):
+def monitor_heal_completion(mnode, volname, timeout_period=1200,
+                            bricks=None, interval_check=120):
     """Monitors heal completion by looking into .glusterfs/indices/xattrop
         directory of every brick for certain time. When there are no entries
         in all the brick directories then heal is successful. Otherwise heal is
@@ -146,6 +147,12 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200):
         volname : Name of the volume
         heal_monitor_timeout : time until which the heal monitoring to be done.
                                Default: 1200 i.e 20 minutes.
+
+    Kwargs:
+        bricks : list of bricks to monitor heal, if not provided
+                 heal will be monitored on all bricks of volume
+        interval_check : Time in seconds, for every given interval checks
+                         the heal info, defaults to 120.
 
     Return:
         bool: True if heal is complete within timeout_period. False otherwise
@@ -158,7 +165,7 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200):
 
     # Get all bricks
     from glustolibs.gluster.brick_libs import get_all_bricks
-    bricks_list = get_all_bricks(mnode, volname)
+    bricks_list = bricks or get_all_bricks(mnode, volname)
     if bricks_list is None:
         g.log.error("Unable to get the bricks list. Hence unable to verify "
                     "whether self-heal-daemon process is running or not "
@@ -177,10 +184,15 @@ def monitor_heal_completion(mnode, volname, timeout_period=1200):
         if heal_complete:
             break
         else:
-            time.sleep(120)
-            time_counter = time_counter - 120
+            time.sleep(interval_check)
+            time_counter = time_counter - interval_check
 
-    if heal_complete:
+    if heal_complete and bricks:
+        # In EC volumes, check heal completion only on online bricks
+        # and `gluster volume heal info` fails for an offline brick
+        return True
+
+    if heal_complete and not bricks:
         heal_completion_status = is_heal_complete(mnode, volname)
         if heal_completion_status is True:
             g.log.info("Heal has successfully completed on volume %s" %
@@ -341,7 +353,7 @@ def get_self_heal_daemon_pid(nodes):
     """
     glustershd_pids = {}
     _rc = True
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
     cmd = r"pgrep -f glustershd | grep -v ^$$\$"
     g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))
@@ -395,30 +407,26 @@ def do_bricks_exist_in_shd_volfile(mnode, volname, brick_list):
     host = brick = None
     parse = False
 
-    # Establish connection to mnode
-    conn = g.rpyc_get_connection(mnode)
-    if conn is None:
-        g.log.info("Not able to establish connection to node %s" % mnode)
+    cmd = "cat {0}".format(GLUSTERSHD)
+    ret, out, _ = g.run(mnode, cmd)
+    if ret:
+        g.log.error("Unable to cat the GLUSTERSHD file.")
         return False
-    try:
-        fd = conn.builtins.open(GLUSTERSHD)
-        for each_line in fd:
-            each_line = each_line.strip()
-            if volume_clients in each_line:
-                parse = True
-            elif "end-volume" in each_line:
-                if parse:
-                    brick_list_server_vol.append("%s:%s" % (host, brick))
-                parse = False
-            elif parse:
-                if "option remote-subvolume" in each_line:
-                    brick = each_line.split(" ")[2]
-                if "option remote-host" in each_line:
-                    host = each_line.split(" ")[2]
+    fd = out.split('\n')
 
-    except IOError as e:
-        g.log.info("I/O error ({0}): {1}".format(e.errno, e.strerror))
-        return False
+    for each_line in fd:
+        each_line = each_line.strip()
+        if volume_clients in each_line:
+            parse = True
+        elif "end-volume" in each_line:
+            if parse:
+                brick_list_server_vol.append("%s:%s" % (host, brick))
+            parse = False
+        elif parse:
+            if "option remote-subvolume" in each_line:
+                brick = each_line.split(" ")[2]
+            if "option remote-host" in each_line:
+                host = each_line.split(" ")[2]
 
     g.log.info("Brick List from volume info : %s" % brick_list)
     g.log.info("Brick List from glustershd server volume "
@@ -447,7 +455,7 @@ def is_shd_daemonized(nodes, timeout=120):
     """
     counter = 0
     flag = 0
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
     while counter < timeout:
         ret, pids = get_self_heal_daemon_pid(nodes)
@@ -483,7 +491,7 @@ def bring_self_heal_daemon_process_offline(nodes):
         bool : True on successfully bringing self-heal daemon process offline.
                False otherwise
     """
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     failed_nodes = []
@@ -513,3 +521,33 @@ def bring_self_heal_daemon_process_offline(nodes):
         _rc = False
 
     return _rc
+
+
+def is_shd_daemon_running(mnode, node, volname):
+    """
+    Verifies whether the shd daemon is up and running on a particular node by
+    checking the existence of shd pid and parsing the get volume status output.
+
+    Args:
+        mnode (str): The first node in servers list
+        node (str): The node to be checked for whether the glustershd
+                    process is up or not
+        volname (str): Name of the volume created
+
+    Returns:
+        boolean: True if shd is running on the node, False, otherwise
+    """
+
+    # Get glustershd pid from node.
+    ret, glustershd_pids = get_self_heal_daemon_pid(node)
+    if not ret and glustershd_pids[node] != -1:
+        return False
+    # Verifying glustershd process is no longer running from get status.
+    vol_status = get_volume_status(mnode, volname)
+    if vol_status is None:
+        return False
+    try:
+        _ = vol_status[volname][node]['Self-heal Daemon']
+        return True
+    except KeyError:
+        return False

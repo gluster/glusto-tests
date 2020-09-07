@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import cleanup_volume
-from glustolibs.gluster.volume_libs import (get_volume_options,
-                                            set_volume_options)
+from glustolibs.gluster.volume_ops import (get_volume_options,
+                                           set_volume_options)
 
 
 @runs_on([['replicated'], ['glusterfs']])
@@ -32,7 +32,7 @@ class LowerGlusterOpVersion(GlusterBaseClass):
     def setUp(self):
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         # Creating Volume
         g.log.info("Started creating volume")
         ret = self.setup_volume()
@@ -43,7 +43,7 @@ class LowerGlusterOpVersion(GlusterBaseClass):
     def tearDown(self):
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
         # stopping the volume and Cleaning up the volume
         ret = cleanup_volume(self.mnode, self.volname)
         if not ret:

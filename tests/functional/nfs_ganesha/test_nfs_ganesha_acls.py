@@ -19,45 +19,30 @@
         ACL functionality.
 """
 
+import time
+import re
 from glusto.core import Glusto as g
 from glustolibs.gluster.nfs_ganesha_ops import (
         set_acl,
         unexport_nfs_ganesha_volume)
 from glustolibs.gluster.nfs_ganesha_libs import (
-        NfsGaneshaClusterSetupClass,
-        wait_for_nfs_ganesha_volume_to_get_unexported)
+    wait_for_nfs_ganesha_volume_to_get_unexported)
 from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
-import time
-import re
 
 
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaAcls(GlusterBaseClass):
     """
         Tests to verify Nfs Ganesha v4 ACL stability
     """
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Setup nfs-ganesha if not exists.
-        """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
-
-        # Setup nfs-ganesha
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setuo nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
-
     def setUp(self):
         """
         Setup Volume
         """
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup and mount volume
         g.log.info("Starting to setip and mount volume %s", self.volname)
@@ -152,7 +137,3 @@ class TestNfsGaneshaAcls(NfsGaneshaClusterSetupClass):
             g.log.info("Successfull unmount and cleanup of volume")
         else:
             raise ExecutionError("Failed to unmount and cleanup volume")
-
-    @classmethod
-    def tearDownClass(cls):
-        NfsGaneshaClusterSetupClass.tearDownClass.im_func(cls)

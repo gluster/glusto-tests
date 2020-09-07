@@ -51,13 +51,14 @@ How to install gdeploy:
 
 To install glusto-tests dependencies:
 --------------------------------------------------
-- `python-docx` and `numpy` has to be installed to run IO and validate it on client node.
+- `python-docx`, `sh` and `numpy` has to be installed to run IO and validate it on client node.
     - To install run :
 
 			    # curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
 			    # python get-pip.py
 			    # pip install --pre python-docx
 			    # pip install numpy
+			    # pip install sh
 
 - `arequal` needs to be installed on all servers and clients.
 	- To install download the below repo into /etc/yum.repos.d/
@@ -134,6 +135,19 @@ The most common used is Pytest.
 				# glusto -c config.yml --pytest='-v -s -k test_demo1'
 
 For more info about running tests on PyUnit, Pytest and Nose Tests, refer the [docs](http://glusto.readthedocs.io/en/latest/userguide/glusto.html#options-for-running-unit-tests).
+
+glusto-tests can also be executed using `tox`:
+
+       # tox -e functional -- glusto -c 'config.yml' --pytest='-v -s -k test_demo1'
+
+glusto-tests can also be executed with python3 using `tox`:
+
+       # tox -e functional3 -- glusto -c 'config.yml' --pytest='-v -s -k test_demo1'
+
+**NOTE:**
+- Please note that glusto-tests is not completely compatible with python3.
+- You would not need to install the glusto or glusto-tests libraries while running it
+  using `tox`. For more info about tox refer the [docs](https://tox.readthedocs.io/en/latest/#).
 
 Writing tests in glusto-tests:
 ----------------------------------

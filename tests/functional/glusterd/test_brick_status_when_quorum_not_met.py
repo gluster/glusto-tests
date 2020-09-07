@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,11 +23,13 @@ from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import set_volume_options
-from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
-                                             is_glusterd_running)
+from glustolibs.gluster.gluster_init import (
+    is_glusterd_running, start_glusterd, stop_glusterd)
 from glustolibs.gluster.brick_libs import (are_bricks_offline,
                                            get_all_bricks)
 from glustolibs.gluster.volume_ops import get_volume_status
+from glustolibs.gluster.peer_ops import (
+    peer_probe_servers, is_peer_connected, wait_for_peers_to_connect)
 
 
 @runs_on([['distributed-replicated'], ['glusterfs']])
@@ -38,7 +40,7 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         ret = self.setup_volume()
@@ -54,27 +56,19 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         if ret:
             ret = start_glusterd(self.servers)
             if not ret:
-                raise ExecutionError("Glusterd not started on some of "
-                                     "the servers")
+                raise ExecutionError("Failed to start glusterd on %s"
+                                     % self.servers)
+        # Takes 5 seconds to restart glusterd into peer connected state
+        sleep(5)
+        g.log.info("Glusterd started successfully on %s", self.servers)
+
         # checking for peer status from every node
-        count = 0
-        while count < 80:
-            ret = self.validate_peers_are_connected()
-            if ret:
-                break
-            sleep(2)
-            count += 1
-
+        ret = is_peer_connected(self.mnode, self.servers)
         if not ret:
-            raise ExecutionError("Servers are not in peer probed state")
-
-        # Setting quorum ratio to 51%
-        ret = set_volume_options(self.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
-        self.assertTrue(ret, "Failed to set quorum ratio to 51 percentage on "
-                             "servers %s" % self.servers)
-        g.log.info("Able to set server quorum ratio to 51 percentage "
-                   "on servers %s", self.servers)
+            ret = peer_probe_servers(self.mnode, self.servers)
+            if not ret:
+                raise ExecutionError("Failed to peer probe failed in "
+                                     "servers %s" % self.servers)
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
@@ -83,7 +77,7 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_remove_brick_status(self):
         '''
@@ -138,12 +132,16 @@ class TestBrickStatusWhenQuorumNotMet(GlusterBaseClass):
         g.log.info("Glusterd started successfully on all servers except "
                    "last node %s", self.servers[1:5])
 
+        self.assertTrue(
+            wait_for_peers_to_connect(self.mnode, self.servers[1:5]),
+            "Peers are not in connected state")
+
         # Verfiying node count in volume status after glusterd
         # started on servers, Its not possible to check the brick status
         # immediately after glusterd start, that's why verifying that all
         # glusterd started nodes available in gluster volume status or not
         count = 0
-        while count < 50:
+        while count < 200:
             vol_status = get_volume_status(self.mnode, self.volname)
             servers_count = len(vol_status[self.volname].keys())
             if servers_count == 5:

@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ class TestActivateDeactivate(GlusterBaseClass):
         setup volume and initialize necessary variables
         """
 
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s:", cls.__name__)
         # Setup volume and mount
         g.log.info("Starting to Setup Volume")
@@ -58,23 +58,15 @@ class TestActivateDeactivate(GlusterBaseClass):
         if ret != 0:
             raise ExecutionError("Snapshot Delete Failed")
         g.log.info("Successfully deleted all snapshots")
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume & mount
-        """
-        # stopping the volume and clean up the volume
-        g.log.info("Starting to Cleanup Volume")
-        ret = cls.cleanup_volume()
+        # Cleanup-volume
+        ret = self.cleanup_volume()
         if not ret:
-            raise ExecutionError("Failed to Cleanup Volume and mount")
-        g.log.info("Successful in Cleanup Volume and mount")
+            raise ExecutionError("Failed to Cleanup Volume")
+        g.log.info("Successful in Cleanup Volume")
 
-        # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_activate_deactivate(self):
         # pylint: disable=too-many-branches, too-many-statements

@@ -295,7 +295,7 @@ def share_volume_over_smb(mnode, volname, smb_users_info):
         g.log.error("Failed to enable mounting volumes using SMB")
         return False
     g.log.info("Successfully enabled mounting volumes using SMV for the "
-               "smbusers: %s", str(smb_users_info.keys()))
+               "smbusers: %s", str(list(smb_users_info.keys())))
 
     # Verify if volume is shared
     ret = is_volume_exported(mnode, volname, "smb")

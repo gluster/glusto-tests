@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -60,15 +60,6 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Servers are not in peer probed state")
 
-        # Setting Quorum ratio to 51%
-        ret = set_volume_options(self.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
-        if not ret:
-            raise ExecutionError("Failed to set server quorum ratio on %s"
-                                 % self.servers)
-        g.log.info("Able to set server quorum ratio successfully on %s",
-                   self.servers)
-
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
@@ -86,7 +77,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
                                          "dir's of deleted volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_replace_brick_quorum(self):
 
@@ -156,7 +147,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         # on one of the server, Its not possible to check the brick status
         # immediately in volume status after glusterd stop
         count = 0
-        while count < 100:
+        while count < 200:
             vol_status = get_volume_status(self.mnode, self.volname)
             servers_count = len(vol_status[self.volname].keys())
             if servers_count == 5:
@@ -204,7 +195,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
         # on one of the servers, Its not possible to check the brick status
         # immediately in volume status after glusterd start
         count = 0
-        while count < 100:
+        while count < 200:
             vol_status = get_volume_status(self.mnode, self.volname)
             servers_count = len(vol_status[self.volname].keys())
             if servers_count == 6:
@@ -214,7 +205,7 @@ class TestReplaceBrickWhenQuorumNotMet(GlusterBaseClass):
 
         # Checking bricks are online or not
         count = 0
-        while count < 100:
+        while count < 200:
             ret = are_bricks_online(self.mnode, self.volname,
                                     self.brick_list[0:6])
             if ret:

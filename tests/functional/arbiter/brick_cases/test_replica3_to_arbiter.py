@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,25 +30,12 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
     """Class for testing Volume Type Change from replicated to
         Arbitered volume
     """
-    @classmethod
-    def setUpClass(cls):
-        # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
-
-        # Overriding the volume type to specifically test the volume type
-
-        if cls.volume_type == "replicated":
-            cls.volume['voltype'] = {
-                'type': 'replicated',
-                'replica_count': 3,
-                'transport': 'tcp'}
-
     def setUp(self):
         """
         Setup Volume
         """
-        # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(self)
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume
         g.log.info("Starting to Setup Volume")
@@ -68,7 +55,7 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
         g.log.info("Successful Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Clearing bricks
         for subvol in self.subvols:
@@ -112,8 +99,7 @@ class GlusterArbiterVolumeTypeClass(GlusterBaseClass):
         g.log.info("Adding bricks to convert to Arbiter Volume")
         replica_arbiter = {'replica_count': 1, 'arbiter_count': 1}
         ret = expand_volume(self.mnode, self.volname, self.servers,
-                            self.all_servers_info, add_to_hot_tier=False,
-                            **replica_arbiter)
+                            self.all_servers_info, **replica_arbiter)
         self.assertTrue(ret, "Failed to expand the volume  %s" % self.volname)
         g.log.info("Changing volume to arbiter volume is successful %s",
                    self.volname)

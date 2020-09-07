@@ -38,7 +38,7 @@ class FuseSubDirAuthAllowFqdn(GlusterBaseClass):
         """
         Setup and mount volume
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Setup Volume and Mount Volume
         g.log.info("Starting volume setup and mount %s",
                    cls.volname)

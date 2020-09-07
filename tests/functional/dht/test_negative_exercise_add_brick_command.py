@@ -37,12 +37,12 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
     def setUpClass(cls):
         """Upload the necessary scripts to run tests"""
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
     def setUp(self):
         """Setup Volume"""
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume Volume
         g.log.info("Starting to Setup Volume")
@@ -65,7 +65,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
             g.log.info("Volume deleted successfully : %s", volume)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_brick_without_volname(self):
         """Test add-brick command without volume"""
@@ -158,7 +158,7 @@ class AddBrickAlreadyPartOfAnotherVolume(GlusterBaseClass):
                 raise ExecutionError("Unable to delete volume %s" % volume)
             g.log.info("Volume deleted successfully : %s", volume)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_brick_already_part_of_another_volume(self):
         """ Test adding bricks to the volume which are already part of another

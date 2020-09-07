@@ -31,7 +31,7 @@ class TestProfileStartWithQuorumNotMet(GlusterBaseClass):
     def setUp(self):
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -42,16 +42,6 @@ class TestProfileStartWithQuorumNotMet(GlusterBaseClass):
 
     def tearDown(self):
 
-        # Setting Quorum ratio to 51%
-        self.quorum_perecent = {'cluster.server-quorum-ratio': '51%'}
-        ret = set_volume_options(self.mnode, 'all', self.quorum_perecent)
-        if not ret:
-            raise ExecutionError("gluster volume set all cluster."
-                                 "server-quorum-ratio percentage "
-                                 "Failed :%s" % self.servers)
-        g.log.info("gluster volume set all cluster.server-quorum-ratio 51 "
-                   "percentage enabled successfully on :%s", self.servers)
-
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
@@ -59,7 +49,7 @@ class TestProfileStartWithQuorumNotMet(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_profile_start_with_quorum_not_met(self):
         # pylint: disable=too-many-statements

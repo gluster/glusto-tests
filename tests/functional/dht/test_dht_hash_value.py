@@ -38,7 +38,8 @@ from glustolibs.gluster.glusterfile import (file_exists, get_fattr,
           ['glusterfs']])
 class TestDHTHashValue(GlusterBaseClass):
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
+
         # Setup Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
 
@@ -216,4 +217,4 @@ class TestDHTHashValue(GlusterBaseClass):
         if not ret:
             g.log.error("Failed to Setup and Mount Volume")
             raise ExecutionError('Failed to unmount and clean volumes')
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
         from mountpoint
 """
 
-
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.brick_libs import get_all_bricks
@@ -35,16 +35,14 @@ class TestAddBrickFunctionality(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.counter = 1
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -56,7 +54,7 @@ class TestAddBrickFunctionality(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -78,7 +76,7 @@ class TestAddBrickFunctionality(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_brick_log_messages(self):
         '''
@@ -103,7 +101,7 @@ class TestAddBrickFunctionality(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 5 "

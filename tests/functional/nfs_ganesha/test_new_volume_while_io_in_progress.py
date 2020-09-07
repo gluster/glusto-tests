@@ -1,4 +1,4 @@
-#  Copyright (C) 2018-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@
 """
 from copy import deepcopy
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.nfs_ganesha_libs import (
-    NfsGaneshaClusterSetupClass, wait_for_nfs_ganesha_volume_to_get_exported)
-from glustolibs.gluster.gluster_base_class import runs_on
+    wait_for_nfs_ganesha_volume_to_get_exported)
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs, get_mounts_stat
@@ -36,7 +37,7 @@ from glustolibs.gluster.nfs_ganesha_ops import export_nfs_ganesha_volume
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
+class TestNewVolumeWhileIoInProgress(GlusterBaseClass):
     """
     Test cases to verify creation, export and mount of new volume while IO is
     going on another volume exported through nfs-ganesha.
@@ -47,22 +48,14 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
         Setup nfs-ganesha if not exists.
         Upload IO scripts to clients
         """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload IO scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
@@ -97,13 +90,14 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -242,9 +236,3 @@ class TestNewVolumeWhileIoInProgress(NfsGaneshaClusterSetupClass):
             if not ret:
                 raise ExecutionError("Failed to cleanup volume %s", volume)
             g.log.info("Volume %s deleted successfully", volume)
-
-    @classmethod
-    def tearDownClass(cls):
-        (NfsGaneshaClusterSetupClass.
-         tearDownClass.
-         im_func(cls, delete_nfs_ganesha_cluster=False))

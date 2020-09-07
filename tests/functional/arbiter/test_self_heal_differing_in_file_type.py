@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,10 +29,12 @@ from glustolibs.gluster.heal_libs import (monitor_heal_completion,
                                           is_volume_in_split_brain,
                                           is_shd_daemonized)
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs)
+from glustolibs.io.utils import (
+    collect_mounts_arequal, validate_io_procs,
+    wait_for_io_to_complete)
 
 
-@runs_on([['replicated', 'distributed-replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'cifs', 'nfs']])
 class TestSelfHeal(GlusterBaseClass):
     """
@@ -44,26 +46,14 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
-
-        # Overriding the volume type to specifically test the volume type
-        # Change from distributed-replicated to arbiter
-        if cls.volume_type == "distributed-replicated":
-            cls.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'dist_count': 2,
-                'replica_count': 3,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -72,7 +62,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
 
@@ -96,7 +86,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_self_heal_differing_in_file_type(self):
         """
@@ -147,11 +137,10 @@ class TestSelfHeal(GlusterBaseClass):
                            user=self.mounts[0].user)
         all_mounts_procs.append(proc)
 
-        # Validate IO
+        # wait for io to complete
         self.assertTrue(
-            validate_io_procs(all_mounts_procs, self.mounts),
-            "IO failed on some of the clients"
-        )
+            wait_for_io_to_complete(all_mounts_procs, self.mounts),
+            "Io failed to complete on some of the clients")
 
         # Get arequal before getting bricks offline
         g.log.info('Getting arequal before getting bricks offline...')
@@ -163,10 +152,7 @@ class TestSelfHeal(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
-            bricks_to_bring_offline_dict['hot_tier_bricks'] +
-            bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+        bricks_to_bring_offline = bricks_to_bring_offline_dict['volume_bricks']
 
         # Bring brick offline
         g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
@@ -190,9 +176,10 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Checking arequals before bringing bricks offline
         # and after bringing bricks offline
-        self.assertItemsEqual(result_before_offline, result_after_offline,
-                              'Checksums before and after '
-                              'bringing bricks offline are not equal')
+        self.assertEqual(sorted(result_before_offline),
+                         sorted(result_after_offline),
+                         'Checksums before and after bringing bricks'
+                         ' offline are not equal')
         g.log.info('Checksums before and after '
                    'bringing bricks offline are equal')
 
@@ -282,8 +269,9 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Checking arequals before bringing bricks online
         # and after bringing bricks online
-        self.assertItemsEqual(result_before_online, result_after_online,
-                              'Checksums before and '
-                              'after bringing bricks online are not equal')
+        self.assertEqual(sorted(result_before_online),
+                         sorted(result_after_online),
+                         'Checksums before and after bringing bricks'
+                         ' online are not equal')
         g.log.info('Checksums before and after bringing bricks online '
                    'are equal')

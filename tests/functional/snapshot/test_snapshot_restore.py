@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,7 +18,9 @@
 The purpose of this test is to validate restore of a snapshot.
 """
 
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -60,16 +62,14 @@ class SnapRestore(GlusterBaseClass):
     """
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
@@ -81,7 +81,7 @@ class SnapRestore(GlusterBaseClass):
         setUp method
         """
         # Setup_Volume
-        GlusterBaseClass.setUpClass.im_func(self)
+        self.get_super_method(self, 'setUp')()
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts,
                                                  volume_create_force=True)
         if not ret:
@@ -95,20 +95,14 @@ class SnapRestore(GlusterBaseClass):
         ret, _, _ = snap_delete_all(self.mnode)
         if not ret:
             raise ExecutionError("Snapshot delete failed.")
-        GlusterBaseClass.tearDown.im_func(self)
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume & mount
-        """
-        g.log.info("Starting volume and  mount cleanup")
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        # Unmount and cleanup-volume
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to cleanup volume and mount")
-        g.log.info("Cleanup successful for the volume and mount")
+            raise ExecutionError("Failed to Unmount and Cleanup Volume")
+        g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()
 
     def test_validate_snaps_restore(self):
         # pylint: disable=too-many-statements
@@ -118,13 +112,14 @@ class SnapRestore(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -175,13 +170,14 @@ class SnapRestore(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -254,13 +250,14 @@ class SnapRestore(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -36,7 +37,7 @@ from glustolibs.io.utils import (collect_mounts_arequal,
                                  list_all_files_and_dirs_mounts)
 
 
-@runs_on([['replicated', 'distributed-replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'cifs', 'nfs']])
 class TestSelfHeal(GlusterBaseClass):
     """
@@ -48,26 +49,14 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
-
-        # Overriding the volume type to specifically test the volume type
-        # Change from distributed-replicated to arbiter
-        if cls.volume_type == "distributed-replicated":
-            cls.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'dist_count': 2,
-                'replica_count': 3,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -76,7 +65,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -97,7 +86,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_entry_self_heal_heal_command(self):
         """
@@ -145,12 +134,13 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         g.log.info("Starting IO on %s:%s", self.mounts[0].client_system,
                    self.mounts[0].mountpoint)
-        cmd = ("python %s create_deep_dirs_with_files "
+        cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                "--dir-length 2 "
                "--dir-depth 2 "
                "--max-num-of-dirs 2 "
-               "--num-of-files 20 %s/files" % (self.script_upload_path,
-                                               self.mounts[0].mountpoint))
+               "--num-of-files 20 %s/files" % (
+                   self.script_upload_path,
+                   self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd,
                             user=self.mounts[0].user)
         self.assertFalse(ret, 'Failed to create the data for %s: %s'
@@ -160,13 +150,14 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Command list to do different operations with data -
         # create, rename, copy and delete
-        cmd_list = ["python %s create_files -f 20 %s/files",
-                    "python %s mv %s/files",
-                    # 'copy' command works incorrect. disable until fixed
-                    # "python %s copy --dest-dir %s/new_dir %s/files",
-                    "python %s delete %s"]
-
-        for cmd in cmd_list:
+        cmds = (
+            "/usr/bin/env python %s create_files -f 20 %s/files",
+            "/usr/bin/env python %s mv %s/files",
+            # 'copy' command works incorrect. disable until fixed
+            # "/usr/bin/env python %s copy --dest-dir %s/new_dir %s/files",
+            "/usr/bin/env python %s delete %s",
+        )
+        for cmd in cmds:
             # Get arequal before getting bricks offline
             g.log.info('Getting arequal before getting bricks offline...')
             ret, arequals = collect_mounts_arequal(self.mounts)
@@ -186,10 +177,8 @@ class TestSelfHeal(GlusterBaseClass):
             # Select bricks to bring offline
             bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
                 self.mnode, self.volname))
-            bricks_to_bring_offline = filter(None, (
-                bricks_to_bring_offline_dict['hot_tier_bricks'] +
-                bricks_to_bring_offline_dict['cold_tier_bricks'] +
-                bricks_to_bring_offline_dict['volume_bricks']))
+            bricks_to_bring_offline = (
+                bricks_to_bring_offline_dict['volume_bricks'])
 
             # Bring brick offline
             g.log.info('Bringing bricks %s offline...',

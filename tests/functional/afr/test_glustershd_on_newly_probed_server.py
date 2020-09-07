@@ -40,7 +40,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
     """
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.extra_servers = self.servers[-2:]
         self.servers = self.servers[:-2]
@@ -94,7 +94,7 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         g.log.info("Peer probe success for detached servers %s", self.servers)
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_glustershd_on_newly_probed_server(self):
         """
@@ -171,10 +171,10 @@ class SelfHealDaemonProcessTests(GlusterBaseClass):
         self.assertFalse(ret, ("Self Heal Daemon process is running even "
                                "after stopping volume %s" % self.volname))
         for node in pids:
-            self.assertEquals(pids[node][0], -1, ("Self Heal Daemon is still "
-                                                  "running on node %s even "
-                                                  "after stopping all "
-                                                  "volumes" % node))
+            self.assertEqual(
+                pids[node][0], -1,
+                "Self Heal Daemon is still running on node %s even "
+                "after stopping all volumes" % node)
         g.log.info("Expected : No self heal daemon process is running "
                    "after stopping all volumes")
 

@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 """ Description:
         Test Cases in this module tests the client side quorum.
 """
-
 import tempfile
 
 from glusto.core import Glusto as g
@@ -44,16 +43,14 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -153,7 +150,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -180,7 +177,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
             g.log.info("Listing all files and directories is successful")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
@@ -208,7 +205,7 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
                        cls.client)
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_client_side_quorum_auto_local_to_volume_not_cluster(self):
         """
@@ -229,9 +226,10 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
         for mount_point in self.mount_points:
             self.all_mounts_procs = []
             g.log.info('Creating files...')
-            command = ("python %s create_files -f 50 "
-                       "--fixed-file-size 1k %s"
-                       % (self.script_upload_path, mount_point))
+            command = ("/usr/bin/env python %s create_files -f 50 "
+                       "--fixed-file-size 1k %s" % (
+                           self.script_upload_path,
+                           mount_point))
 
             proc = g.run_async(self.mounts[0].client_system, command)
             self.all_mounts_procs.append(proc)
@@ -332,15 +330,15 @@ class ClientSideQuorumTestsMultipleVols(GlusterBaseClass):
         # merge two dicts (volname: file_to_delete) and (volname: mountpoint)
         temp_dict = [vols_file_list, self.mount_points_and_volnames]
         file_to_delete_to_mountpoint_dict = {}
-        for k in vols_file_list.iterkeys():
+        for k in vols_file_list:
             file_to_delete_to_mountpoint_dict[k] = (
                 tuple(file_to_delete_to_mountpoint_dict[k]
                       for file_to_delete_to_mountpoint_dict in
                       temp_dict))
 
         # create files on all volumes and check for result
-        for volname, file_and_mountpoint in \
-                file_to_delete_to_mountpoint_dict.iteritems():
+        for volname, file_and_mountpoint in (
+                file_to_delete_to_mountpoint_dict.items()):
             filename, mountpoint = file_and_mountpoint
 
             # check for ROFS error for read-only file system for

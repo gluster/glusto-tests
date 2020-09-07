@@ -233,7 +233,8 @@ def georep_create(mnode, mastervol, slaveip, slavevol, user=None, force=False):
     return g.run(mnode, cmd)
 
 
-def georep_config_get(mnode, mastervol, slaveip, slavevol, config_key):
+def georep_config_get(mnode, mastervol, slaveip, slavevol, config_key,
+                      user=None):
     """ All the available configurable geo-rep options can be got
         using the config_key and seeing what it has been set to
 
@@ -256,12 +257,17 @@ def georep_config_get(mnode, mastervol, slaveip, slavevol, config_key):
             of the command execution.
 
     """
-    cmd = ("gluster volume geo-replication %s %s::%s config %s" %
-           (mastervol, slaveip, slavevol, config_key))
+    if user:
+        cmd = ("gluster volume geo-replication %s %s@%s::%s config %s" %
+               (mastervol, user, slaveip, slavevol, config_key))
+    else:
+        cmd = ("gluster volume geo-replication %s %s::%s config %s" %
+               (mastervol, slaveip, slavevol, config_key))
     return g.run(mnode, cmd)
 
 
-def georep_config_set(mnode, mastervol, slaveip, slavevol, config, value):
+def georep_config_set(mnode, mastervol, slaveip, slavevol, config, value,
+                      user=None):
     """ All the available configurable geo-rep options can be set with a
         specific command if required or
         just with the config parameter
@@ -285,8 +291,12 @@ def georep_config_set(mnode, mastervol, slaveip, slavevol, config, value):
             of the command execution.
 
     """
-    cmd = ("gluster volume geo-replication %s %s::%s config %s %s" %
-           (mastervol, slaveip, slavevol, config, value))
+    if user:
+        cmd = ("gluster volume geo-replication %s %s@%s::%s config %s %s" %
+               (mastervol, user, slaveip, slavevol, config, value))
+    else:
+        cmd = ("gluster volume geo-replication %s %s::%s config %s %s" %
+               (mastervol, slaveip, slavevol, config, value))
     return g.run(mnode, cmd)
 
 

@@ -22,6 +22,7 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.gluster.glusterfile import file_exists
 from glustolibs.gluster.volume_ops import (get_volume_options,
                                            set_volume_options)
 
@@ -34,7 +35,7 @@ class TestMaxSupportedOpVersion(GlusterBaseClass):
         setUp method for every test
         """
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -52,7 +53,7 @@ class TestMaxSupportedOpVersion(GlusterBaseClass):
             raise ExecutionError("Failed Cleanup the Volume %s" % self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_op_version(self):
         '''
@@ -81,11 +82,9 @@ class TestMaxSupportedOpVersion(GlusterBaseClass):
         # Checking vol file exist in all servers or not
         file_path = '/var/lib/glusterd/vols/' + self.volname + '/info'
         for server in self.servers:
-            conn = g.rpyc_get_connection(server)
-            ret = conn.modules.os.path.isfile(file_path)
+            ret = file_exists(server, file_path)
             self.assertTrue(ret, "Vol file not found in server %s" % server)
             g.log.info("vol file found in server %s", server)
-        g.rpyc_close_deployed_servers()
 
         # Getting version number from vol info file
         # cmd: grepping  version from vol info file

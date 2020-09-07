@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,9 @@
 
 """
 
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -48,7 +50,7 @@ class TestValidateUss(GlusterBaseClass):
         setup volume and initialize necessary variables
         """
 
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Setup volume and mount
         g.log.info("Starting to Setup Volume and Mount Volume")
         ret = cls.setup_volume_and_mount_volume(mounts=cls.mounts)
@@ -59,11 +61,9 @@ class TestValidateUss(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients %s" % cls.clients)
@@ -89,23 +89,14 @@ class TestValidateUss(GlusterBaseClass):
         g.log.info("Successfully disabled uss for volume"
                    "%s", self.volname)
 
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
-
-    @classmethod
-    def tearDownClass(cls):
-        """
-        Clean up the volume & mount
-        """
-        # stopping the volume and clean up the volume
-        g.log.info("Starting to Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        # Unmount and cleanup-volume
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to Cleanup Volume and mount")
-        g.log.info("Successful in Cleanup Volume and mount")
+            raise ExecutionError("Failed to Unmount and Cleanup Volume")
+        g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
-        # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_validate_snaps_dir_over_uss(self):
 
@@ -124,14 +115,14 @@ class TestValidateUss(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 2 %s" % (self.script_upload_path,
-                                            self.counter,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 2 %s" % (
+                       self.script_upload_path,
+                       self.counter, mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -203,9 +194,10 @@ class TestValidateUss(GlusterBaseClass):
         g.log.info("Starting IO on all mounts...")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 10 --base-file-name file %s/.snaps/abc/"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python %s create_files "
+                   "-f 10 --base-file-name file %s/.snaps/abc/" % (
+                       self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

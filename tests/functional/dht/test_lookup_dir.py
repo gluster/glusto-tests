@@ -1,4 +1,4 @@
-#  Copyright (C) 2018-2019 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ class TestLookupDir(GlusterBaseClass):
         """
         Setup and mount volume or raise ExecutionError
         """
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -267,14 +267,14 @@ class TestLookupDir(GlusterBaseClass):
         ret = self.mkdir_nonhashed_down(subvols, parent_dir)
         self.assertTrue(ret, 'mkdir_nonhashed_down failed')
 
-    @classmethod
-    def tearDownClass(cls):
-        # Unmount Volume and Cleanup Volume
+    def tearDown(self):
+
+        # Unmount and cleanup original volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Successful in Unmount Volume and Cleanup Volume")
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()

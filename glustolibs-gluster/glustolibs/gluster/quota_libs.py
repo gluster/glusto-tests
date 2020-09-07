@@ -54,7 +54,7 @@ def quota_validate(mnode, volname, path, **kwargs):
         listinfo = quotalist[path]
 
     ret = True
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         if key and listinfo[key] != value:
             g.log.error("%s = %s does not match with expected value %s",
                         key, str(listinfo[key]), str(value))
@@ -97,7 +97,7 @@ def quota_fetch_daemon_pid(nodes):
     """
     quotad_pids = {}
     _rc = True
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
     cmd = r"pgrep -f quotad | grep -v ^$$\$"
     g.log.info("Executing cmd: %s on node %s" % (cmd, nodes))

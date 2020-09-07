@@ -1,28 +1,41 @@
 """ This Module demostrates how to use functions available in peer_ops module
 """
 
-import socket
 import random
 import re
+import socket
+
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass
+
 from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.gluster_base_class import (
+    GlusterBaseClass,
+    runs_on,
+)
 from glustolibs.gluster.peer_ops import (
-    pool_list, peer_probe, peer_status, peer_probe_servers,
-    nodes_from_pool_list, is_peer_connected, peer_detach, peer_detach_servers,
-    get_peer_status, get_pool_list)
+    get_peer_status,
+    get_pool_list,
+    is_peer_connected,
+    nodes_from_pool_list,
+    peer_detach,
+    peer_detach_servers,
+    peer_probe,
+    peer_probe_servers,
+    peer_status,
+    pool_list,
+)
 
 
+@runs_on([['distributed-replicated', 'replicated'],
+          ['glusterfs', 'nfs']])
 class DemoPeerOpsClass(GlusterBaseClass):
     """Demonstrating all the functions available in peer_ops module
     """
     @classmethod
     def setUpClass(cls):
-        """
-        """
         # Read all the cluster config from the g.config and assign it to
         # class variables
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Detach all the servers if it's already attached to the cluster
         nodes_in_pool_list = nodes_from_pool_list(cls.mnode)
@@ -67,9 +80,8 @@ class DemoPeerOpsClass(GlusterBaseClass):
                        server, out)
 
     def setUp(self):
-        """
-        """
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
+
         # Peer probe servers
         g.log.info("Peer Probe servers '%s'", self.servers)
         ret = peer_probe_servers(self.mnode, self.servers)
@@ -320,10 +332,11 @@ class DemoPeerOpsClass(GlusterBaseClass):
             g.log.info("Successfully detached servers %s from node %s",
                        nodes_in_pool_list, self.mnode)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
+        """Define it when you need to execute something else than super's
+           tearDownClass method.
         """
-        """
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()

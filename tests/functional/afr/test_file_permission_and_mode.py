@@ -57,7 +57,7 @@ class FileModeAndPermissionsTest(GlusterBaseClass):
             g.log.info('User %s successfully deleted on %s', user, host)
 
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Create user qa
         for mount_object in self.mounts:
@@ -96,7 +96,7 @@ class FileModeAndPermissionsTest(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_file_permissions(self):
         """

@@ -35,7 +35,7 @@ from glustolibs.gluster.exceptions import ExecutionError
 class TestVolumeCreate(GlusterBaseClass):
 
     def setUp(self):
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
         if not ret:
@@ -54,7 +54,7 @@ class TestVolumeCreate(GlusterBaseClass):
                 raise ExecutionError("Unable to delete volume %s" % volume)
             g.log.info("Volume deleted successfully : %s", volume)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_start_force(self):
 

@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ Description:
         IO running on the mount point.
 """
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.mount_ops import mount_volume
 from glustolibs.gluster.exceptions import (ExecutionError)
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -41,7 +42,7 @@ class TestValidateCifs(GlusterBaseClass):
         setup volume and initialize necessary variables
         """
 
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s:", cls.__name__)
         # Setup volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -53,11 +54,9 @@ class TestValidateCifs(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to "
                                  "clients %s" % cls.clients)
@@ -77,7 +76,7 @@ class TestValidateCifs(GlusterBaseClass):
         g.log.info("Successful in Cleanup Volume and mount")
 
         # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()
 
     def test_stat_prefetch(self):
 
@@ -99,7 +98,7 @@ class TestValidateCifs(GlusterBaseClass):
             self.assertEqual(ret, 0, "Cifs Mount Failed")
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_files -f 10000"
+            cmd = ("/usr/bin/env python %s create_files -f 10000"
                    " --base-file-name ctdb-cifs "
                    " --fixed-file-size 10k %s/samba/"
                    % (self.script_upload_path,

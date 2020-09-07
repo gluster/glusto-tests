@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,9 +21,10 @@
         is getting the gfids assigned on both the subvols of a dist-rep
         volume when lookup comes on that directory from the mount point.
 """
-
 import time
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.misc.misc_libs import upload_scripts
@@ -40,40 +41,40 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients %s" % cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
 
+    def setUp(self):
+
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
+
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup Volume and Mount Volume")
-        ret = cls.setup_volume_and_mount_volume(cls.mounts)
+        ret = self.setup_volume_and_mount_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
 
         # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+        g.log.info("Successful in cleaning up Volume %s", self.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()
 
     def verify_gfid(self, dirname):
         dir_gfids = dict()
@@ -113,8 +114,9 @@ class AssignGfidsOnAllSubvols(GlusterBaseClass):
 
         # Create a directory on the mount
         g.log.info("Creating a directory")
-        cmd = ("python %s create_deep_dir -d 0 -l 0 %s/dir1 "
-               % (self.script_upload_path, self.mounts[0].mountpoint))
+        cmd = "/usr/bin/env python %s create_deep_dir -d 0 -l 0 %s/dir1 " % (
+            self.script_upload_path,
+            self.mounts[0].mountpoint)
         ret, _, _ = g.run(self.clients[0], cmd)
         self.assertEqual(ret, 0, "Failed to create directory on mountpoint")
         g.log.info("Directory created successfully on mountpoint")

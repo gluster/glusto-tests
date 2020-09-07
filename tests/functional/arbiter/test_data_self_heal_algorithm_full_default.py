@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -33,7 +34,7 @@ from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs)
 
 
-@runs_on([['replicated', 'distributed-replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'cifs', 'nfs']])
 class TestSelfHeal(GlusterBaseClass):
     """
@@ -45,26 +46,14 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
-
-        # Overriding the volume type to specifically test the volume type
-        # Change from distributed-replicated to arbiter
-        if cls.volume_type == "distributed-replicated":
-            cls.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'dist_count': 2,
-                'replica_count': 3,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -73,7 +62,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -95,7 +84,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_data_self_heal_algorithm_full_default(self):
         """
@@ -126,8 +115,9 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Creating files
-        command = ("python %s create_files -f 100 %s"
-                   % (self.script_upload_path, self.mounts[0].mountpoint))
+        command = "/usr/bin/env python %s create_files -f 100 %s" % (
+            self.script_upload_path,
+            self.mounts[0].mountpoint)
 
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)
@@ -142,10 +132,7 @@ class TestSelfHeal(GlusterBaseClass):
         # Select bricks to bring offline
         bricks_to_bring_offline_dict = (select_bricks_to_bring_offline(
             self.mnode, self.volname))
-        bricks_to_bring_offline = filter(None, (
-            bricks_to_bring_offline_dict['hot_tier_bricks'] +
-            bricks_to_bring_offline_dict['cold_tier_bricks'] +
-            bricks_to_bring_offline_dict['volume_bricks']))
+        bricks_to_bring_offline = bricks_to_bring_offline_dict['volume_bricks']
 
         # Bring brick offline
         g.log.info('Bringing bricks %s offline...', bricks_to_bring_offline)
@@ -164,8 +151,10 @@ class TestSelfHeal(GlusterBaseClass):
         all_mounts_procs = []
         g.log.info("Modifying data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = ("python %s create_files -f 100 --fixed-file-size 1M %s"
-                   % (self.script_upload_path, self.mounts[0].mountpoint))
+        command = ("/usr/bin/env python %s create_files -f 100 "
+                   "--fixed-file-size 1M %s" % (
+                       self.script_upload_path,
+                       self.mounts[0].mountpoint))
 
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)
@@ -237,7 +226,8 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Checking arequals before bringing bricks online
         # and after bringing bricks online
-        self.assertItemsEqual(result_before_online, result_after_online,
-                              'Checksums are not equal')
+        self.assertEqual(sorted(result_before_online),
+                         sorted(result_after_online),
+                         'Checksums are not equal')
         g.log.info('Checksums before bringing bricks online '
                    'and after bringing bricks online are equal')

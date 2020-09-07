@@ -34,7 +34,7 @@ from glustolibs.gluster.volume_libs import (
 class QuotaNoDir(GlusterBaseClass):
     def setUp(self):
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Creating volume %s", (self.volname))
 
         # Setting up the volume
@@ -146,4 +146,4 @@ class QuotaNoDir(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

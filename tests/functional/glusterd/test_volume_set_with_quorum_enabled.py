@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 from glustolibs.gluster.volume_ops import set_volume_options
 from glustolibs.gluster.gluster_init import start_glusterd, stop_glusterd
 
@@ -29,7 +30,7 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
     def setUp(self):
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         g.log.info("Started creating volume")
@@ -50,25 +51,10 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
             g.log.info("Successfully started glusterd.")
 
             # Checking if peer is connected.
-            counter = 0
-            while counter < 30:
-                ret = self.validate_peers_are_connected()
-                counter += 1
-                if ret:
-                    break
-                sleep(3)
-            if not ret:
-                raise ExecutionError("Peer is not in connected state.")
+            ret = wait_for_peers_to_connect(self.mnode, self.servers)
+            self.assertTrue(ret, "glusterd is not connected %s with peer %s"
+                            % (self.mnode, self.servers))
             g.log.info("Peers is in connected state.")
-
-        # Setting Quorum ratio to 51%
-        self.quorum_perecent = {'cluster.server-quorum-ratio': '51%'}
-        ret = set_volume_options(self.mnode, 'all', self.quorum_perecent)
-        if not ret:
-            raise ExecutionError("gluster volume set all cluster.server-quorum"
-                                 "-ratio percentage Failed :%s" % self.servers)
-        g.log.info("gluster volume set all cluster.server-quorum-ratio 51 "
-                   "percentage enabled successfully on :%s", self.servers)
 
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
@@ -77,7 +63,7 @@ class TestVolumeSetOpWithQuorum(GlusterBaseClass):
         g.log.info("Volume deleted successfully : %s", self.volname)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_set_wit_quorum_enabled(self):
         # pylint: disable=too-many-statements

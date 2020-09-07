@@ -1,5 +1,5 @@
-#!/usr/bin/python
-# Copyright (c) 2016 Red Hat, Inc.
+#!/usr/bin/env python
+# Copyright (c) 2016-2019 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,24 +25,28 @@ setup(
     name=name,
     version=version,
     description='Glusto - Red Hat Gluster Libraries',
-    license='GPLv2+',
+    license='GPLv3+',
     author='Red Hat, Inc.',
     author_email='gluster-devel@gluster.org',
     url='http://www.gluster.org',
     packages=find_packages(),
     classifiers=[
-        'Development Status :: 4 - Beta'
-        'Environment :: Console'
-        'Intended Audience :: Developers'
-        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)'
-        'Operating System :: POSIX :: Linux'
-        'Programming Language :: Python'
-        'Programming Language :: Python :: 2'
-        'Programming Language :: Python :: 2.6'
-        'Programming Language :: Python :: 2.7'
-        'Topic :: Software Development :: Testing'
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: GNU General Public License v3 or '
+        'later (GPLv3+)',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Topic :: Software Development :: Testing',
     ],
     install_requires=['glusto'],
-    dependency_links=['http://github.com/loadtheaccumulator/glusto/tarball/master#egg=glusto'],
+    dependency_links=[
+        'http://github.com/loadtheaccumulator/glusto/tarball/master#egg=glusto'
+    ],
     namespace_packages = ['glustolibs']
 )

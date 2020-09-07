@@ -36,7 +36,7 @@ def scheduler_init(servers):
           scheduler_init("abc.com")
     """
 
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "snap_scheduler.py init"

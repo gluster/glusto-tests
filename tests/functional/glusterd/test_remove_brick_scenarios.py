@@ -33,7 +33,7 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes
         cls.volume['voltype'] = {
@@ -44,7 +44,7 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
 
     def setUp(self):
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Creating Volume
         ret = self.setup_volume_and_mount_volume(self.mounts)
@@ -62,7 +62,7 @@ class TestRemoveBrickScenarios(GlusterBaseClass):
             raise ExecutionError("Unable to delete volume % s" % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_remove_brick_scenarios(self):
         # pylint: disable=too-many-statements

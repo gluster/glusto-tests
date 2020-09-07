@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 # pylint: disable=too-many-statements, too-many-locals
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -36,16 +37,14 @@ class TestSelfHeal(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients %s" % cls.clients)
@@ -67,17 +66,17 @@ class TestSelfHeal(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
 
         # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        g.log.info("Starting to clean up Volume %s", self.volname)
+        ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+        g.log.info("Successful in cleaning up Volume %s", self.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Calling GlusterBaseClass teardown
+        self.get_super_method(self, 'tearDown')()
 
     def test_heal_gfid_1x3(self):
 
@@ -101,9 +100,10 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("creating a file from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 1 --base-file-name test_file --fixed-file-size 10k %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python %s create_files -f 1 "
+                   "--base-file-name test_file --fixed-file-size 10k %s" % (
+                       self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
@@ -133,9 +133,10 @@ class TestSelfHeal(GlusterBaseClass):
                    "from mount point")
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("python %s create_files "
-                   "-f 1 --base-file-name test_file --fixed-file-size 1M %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("/usr/bin/env python %s create_files -f 1 "
+                   "--base-file-name test_file --fixed-file-size 1M %s" % (
+                       self.script_upload_path,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

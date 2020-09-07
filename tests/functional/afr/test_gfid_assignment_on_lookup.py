@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ class AssignGfidOnLookup(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes
         if cls.volume_type == "replicated":
@@ -54,35 +54,33 @@ class AssignGfidOnLookup(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients %s" % cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
 
+    def setUp(self):
+
+        self.get_super_method(self, 'setUp')()
         # Setup Volume and Mount Volume
-        g.log.info("Starting to Setup Volume and Mount Volume")
-        ret = cls.setup_volume_and_mount_volume(cls.mounts)
+        ret = self.setup_volume_and_mount_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
 
         # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
             raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+        g.log.info("Successful in cleaning up Volume %s", self.volname)
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()
 
     def verify_gfid(self, dirname):
         dir_gfids = dict()

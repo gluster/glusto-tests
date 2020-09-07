@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
             raise ExecutionError("Unable to delete volume % s" % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_create_with_glusterd_restarts(self):
         # pylint: disable=too-many-statements
@@ -71,9 +71,14 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
                                        server_info_for_three_nodes)
         # Restarting glusterd in a loop
         restart_cmd = ("for i in `seq 1 5`; do "
-                       "service glusterd restart; sleep 3; "
+                       "service glusterd restart; "
+                       "systemctl reset-failed glusted; "
+                       "sleep 3; "
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
+
+        # After running restart in g.async adding 10 sec sleep
+        sleep(10)
 
         # Creating volumes using 3 servers
         ret, _, _ = volume_create(self.mnode, self.volname,
@@ -97,9 +102,14 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
 
         # Restarting glusterd in a loop
         restart_cmd = ("for i in `seq 1 5`; do "
-                       "service glusterd restart; sleep 3; "
+                       "service glusterd restart; "
+                       "systemctl reset-failed glusted; "
+                       "sleep 3; "
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
+
+        # After running restart in g.async adding 10 sec sleep
+        sleep(10)
 
         # Start the volume created.
         ret, _, _ = volume_start(self.mnode, self.volname)

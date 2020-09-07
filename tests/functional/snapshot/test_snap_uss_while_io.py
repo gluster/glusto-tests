@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@ Test Cases in this module tests the
 uss functionality while io is going on.
 
 """
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass
 from glustolibs.gluster.gluster_base_class import runs_on
@@ -30,7 +32,8 @@ from glustolibs.io.utils import (validate_io_procs,
 from glustolibs.gluster.snap_ops import (snap_create,
                                          snap_activate,
                                          snap_list)
-from glustolibs.gluster.uss_ops import (enable_uss, is_uss_enabled,
+from glustolibs.gluster.uss_ops import (disable_uss,
+                                        enable_uss, is_uss_enabled,
                                         is_snapd_running)
 from glustolibs.misc.misc_libs import upload_scripts
 
@@ -43,15 +46,13 @@ class SnapshotUssWhileIo(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.snap_count = 10
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients ")
@@ -60,7 +61,7 @@ class SnapshotUssWhileIo(GlusterBaseClass):
     def setUp(self):
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume and mount volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -69,12 +70,27 @@ class SnapshotUssWhileIo(GlusterBaseClass):
 
     def tearDown(self):
 
+        # Validate USS running
+        g.log.info("Validating USS enabled or disabled")
+        ret = is_uss_enabled(self.mnode, self.volname)
+        if not ret:
+            # Disable USS
+            ret, _, _ = disable_uss(self.mnode, self.volname)
+            if not ret:
+                raise ExecutionError("Failed to disable USS on volume"
+                                     "%s" % self.volname)
+            g.log.info("Successfully disabled USS on volume %s",
+                       self.volname)
+
         # Unmount and cleanup original volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
         ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
             raise ExecutionError("Failed to umount the vol & cleanup Volume")
         g.log.info("Successful in umounting the volume and Cleanup")
+
+        # Calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_snap_uss_while_io(self):
         # pylint: disable=too-many-statements
@@ -124,8 +140,10 @@ class SnapshotUssWhileIo(GlusterBaseClass):
                        "%s", mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_files -f 100 --fixed-file-size 1M %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python %s create_files -f 100 "
+                       "--fixed-file-size 1M %s" % (
+                           self.script_upload_path,
+                           mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

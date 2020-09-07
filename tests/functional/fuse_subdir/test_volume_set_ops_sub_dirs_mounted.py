@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
         operations when sub-dirs are mounted
 """
 import copy
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass,
                                                    runs_on)
 from glustolibs.gluster.glusterdir import mkdir
@@ -43,7 +45,7 @@ class VolumeSetOpsSubDirsMounted(GlusterBaseClass):
         """
         Setup and mount volume
         """
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         # Setup Volume and Mount Volume
         g.log.info("Starting volume setup and mount %s",
                    cls.volname)
@@ -56,11 +58,9 @@ class VolumeSetOpsSubDirsMounted(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Uploading IO scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
 
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
@@ -122,13 +122,14 @@ class VolumeSetOpsSubDirsMounted(GlusterBaseClass):
         for mount_obj in self.subdir_mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 2 "
                    "--dir-length 10 "
                    "--max-num-of-dirs 5 "
-                   "--num-of-files 5 %s" % (self.script_upload_path, count,
-                                            mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       self.script_upload_path, count,
+                       mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)

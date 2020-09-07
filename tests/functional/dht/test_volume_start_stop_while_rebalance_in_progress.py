@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,7 +13,6 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
 
 from glusto.core import Glusto as g
 
@@ -49,7 +48,7 @@ class RebalanceValidation(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -61,11 +60,9 @@ class RebalanceValidation(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  cls.clients)
@@ -89,14 +86,14 @@ class RebalanceValidation(GlusterBaseClass):
         for index, mount_obj in enumerate(cls.mounts, start=1):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 1 "
                    "--dir-length 2 "
                    "--max-num-of-dirs 2 "
-                   "--num-of-files 55 %s" % (cls.script_upload_path,
-                                             index + 10,
-                                             mount_obj.mountpoint))
+                   "--num-of-files 55 %s" % (
+                       cls.script_upload_path,
+                       index + 10, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             cls.all_mounts_procs.append(proc)
@@ -134,8 +131,8 @@ class RebalanceValidation(GlusterBaseClass):
         # Log Volume Info and Status before expanding the volume.
         g.log.info("Logging volume info and Status before expanding volume")
         ret = log_volume_info_and_status(self.mnode, self.volname)
-        g.log.error(ret, "Logging volume info and status failed on "
-                         "volume %s", self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
         g.log.info("Logging volume info and status was successful for volume "
                    "%s", self.volname)
 
@@ -211,14 +208,14 @@ class RebalanceValidation(GlusterBaseClass):
                                           self.volname))
         g.log.info("Volume %s state is \"Started\"", self.volname)
 
-    @classmethod
-    def tearDownClass(cls):
-        # Unmount Volume and Cleanup Volume
+    def tearDown(self):
+
+        # Unmount and cleanup original volume
         g.log.info("Starting to Unmount Volume and Cleanup Volume")
-        ret = cls.unmount_volume_and_cleanup_volume(mounts=cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to Unmount Volume and Cleanup Volume")
-        g.log.info("Volume %s unmount and cleanup: Success", cls.volname)
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()

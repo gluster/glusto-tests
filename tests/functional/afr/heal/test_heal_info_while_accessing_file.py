@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,8 +13,8 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import get_subvols
@@ -41,16 +41,14 @@ class TestSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -73,7 +71,7 @@ class TestSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -118,7 +116,7 @@ class TestSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_heal_info_shouldnot_list_files_being_accessed(self):
         """
@@ -152,8 +150,9 @@ class TestSelfHeal(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
 
             # Creating files
-            cmd = ("python %s create_files -f 100 %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = "/usr/bin/env python %s create_files -f 100 %s" % (
+                self.script_upload_path,
+                mount_obj.mountpoint)
 
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
@@ -214,9 +213,7 @@ class TestSelfHeal(GlusterBaseClass):
 
         # Compare dicts before accessing and while accessing
         g.log.info('Comparing entries before modifying and while modifying...')
-        ret = cmp(entries_before_accessing, entries_while_accessing)
-        self.assertEqual(ret, 0, 'Entries before modifying and while modifying'
-                                 'are not equal')
+        self.assertDictEqual(entries_before_accessing, entries_while_accessing)
         g.log.info('Comparison entries before modifying and while modifying'
                    'finished successfully.')
 

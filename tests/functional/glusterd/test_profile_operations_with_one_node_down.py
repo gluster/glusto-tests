@@ -1,4 +1,4 @@
-#  Copyright (C) 2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2019-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,9 +19,10 @@
     Tests to check basic profile operations with one node down.
 """
 
-from time import sleep
 from random import randint
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.profile_ops import (profile_start, profile_info,
@@ -30,8 +31,8 @@ from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.gluster.brick_libs import get_online_bricks_list
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
-                                             is_glusterd_running)
-from glustolibs.gluster.peer_ops import is_peer_connected
+                                             wait_for_glusterd_to_start)
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 
 
 @runs_on([['distributed-replicated', 'dispersed', 'distributed-dispersed'],
@@ -40,16 +41,14 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -58,7 +57,7 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
 
     def setUp(self):
 
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         # Creating Volume and mounting volume.
         ret = self.setup_volume_and_mount_volume(self.mounts)
         if not ret:
@@ -76,16 +75,11 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         g.log.info("Successfully started glusterd.")
 
         # Checking if peer is connected
-        counter = 0
-        while counter < 30:
-            ret = is_peer_connected(self.mnode, self.servers)
-            counter += 1
-            if ret:
-                break
-            sleep(3)
-        if not ret:
-            ExecutionError("Peers are not in connected state.")
-        g.log.info("Peers are in connected state.")
+        for server in self.servers:
+            ret = wait_for_peers_to_connect(self.mnode, server)
+            if not ret:
+                ExecutionError("Peers are not in connected state.")
+            g.log.info("Peers are in connected state.")
 
         # Unmounting and cleaning volume.
         ret = self.unmount_volume_and_cleanup_volume(self.mounts)
@@ -93,7 +87,7 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
             raise ExecutionError("Unable to delete volume % s" % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_profile_operations_with_one_node_down(self):
 
@@ -116,14 +110,14 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dir-depth 4 "
                    "--dirname-start-num %d "
                    "--dir-length 6 "
                    "--max-num-of-dirs 3 "
-                   "--num-of-files 5 %s"
-                   % (self.script_upload_path, counter,
-                      mount_obj.mountpoint))
+                   "--num-of-files 5 %s" % (
+                       self.script_upload_path,
+                       counter, mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
@@ -143,13 +137,11 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         ret = stop_glusterd(self.servers[self.random_server])
         self.assertTrue(ret, "Failed to stop glusterd on one node.")
         g.log.info("Successfully stopped glusterd on one node.")
-        counter = 0
-        while counter > 20:
-            ret = is_glusterd_running(self.servers[self.random_server])
-            if ret:
-                break
-            counter += 1
-            sleep(3)
+        ret = wait_for_glusterd_to_start(self.servers[self.random_server])
+        self.assertFalse(ret, "glusterd is still running on %s"
+                         % self.servers[self.random_server])
+        g.log.info("Glusterd stop on the nodes : %s "
+                   "succeeded", self.servers[self.random_server])
 
         # Getting and checking output of profile info.
         ret, out, _ = profile_info(self.mnode, self.volname)
@@ -196,13 +188,7 @@ class TestProfileOpeartionsWithOneNodeDown(GlusterBaseClass):
         g.log.info("Successfully started glusterd.")
 
         # Checking if peer is connected
-        counter = 0
-        while counter < 30:
-            ret = is_peer_connected(self.mnode, self.servers)
-            counter += 1
-            if ret:
-                break
-            sleep(3)
+        ret = wait_for_peers_to_connect(self.mnode, self.servers)
         self.assertTrue(ret, "Peers are not in connected state.")
         g.log.info("Peers are in connected state.")
 

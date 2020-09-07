@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
         Test cases in this module tests whether SHD heals the
         files in a directory when directory quota is exceeded.
 """
-
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.brick_libs import (get_all_bricks,
@@ -47,7 +47,7 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
     def setUpClass(cls):
 
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Override Volumes
         if cls.volume_type == "replicated":
@@ -60,11 +60,9 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients %s" % cls.clients)
@@ -78,27 +76,29 @@ class HealFilesWhenDirQuotaExceeded(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-    @classmethod
-    def tearDownClass(cls):
-
-        # Cleanup Volume
-        g.log.info("Starting to clean up Volume %s", cls.volname)
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+    def tearDown(self):
+        """
+        Cleanup and umount volume
+        """
+        # Cleanup and umount volume
+        g.log.info("Starting to Unmount Volume and Cleanup Volume")
+        ret = self.unmount_volume_and_cleanup_volume(mounts=self.mounts)
         if not ret:
-            raise ExecutionError("Failed to create volume")
-        g.log.info("Successful in cleaning up Volume %s", cls.volname)
+            raise ExecutionError("Failed to umount the vol & cleanup Volume")
+        g.log.info("Successful in umounting the volume and Cleanup")
 
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        # Calling GlusterBaseClass teardown
+        self.get_super_method(self, 'tearDown')()
 
-    def test_heal_when_dir_quota_exceeded_(self):
+    def test_heal_when_dir_quota_exceeded(self):
         # Create a directory to set the quota_limit_usage
         path = "/dir"
         g.log.info("Creating a directory")
         self.all_mounts_procs = []
         for mount_object in self.mounts:
-            cmd = ("python %s create_deep_dir -d 0 -l 0 %s%s "
-                   % (self.script_upload_path, mount_object.mountpoint,
-                      path))
+            cmd = "/usr/bin/env python %s create_deep_dir -d 0 -l 0 %s%s" % (
+                self.script_upload_path,
+                mount_object.mountpoint, path)
             ret = g.run(mount_object.client_system, cmd)
             self.assertTrue(ret, "Failed to create directory on mountpoint")
             g.log.info("Directory created successfully on mountpoint")

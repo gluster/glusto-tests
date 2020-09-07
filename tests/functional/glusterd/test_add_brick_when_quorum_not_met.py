@@ -20,8 +20,7 @@ from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import setup_volume
 from glustolibs.gluster.volume_ops import (set_volume_options,
-                                           get_volume_status,
-                                           volume_reset)
+                                           get_volume_status)
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
                                              is_glusterd_running)
 from glustolibs.gluster.brick_libs import get_all_bricks, are_bricks_offline
@@ -56,12 +55,6 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
 
         g.log.info("Peers are in connected state")
 
-        # reset quorum ratio to default
-        g.log.info("resetting quorum ratio")
-        ret, _, _ = volume_reset(self.mnode, 'all')
-        self.assertEqual(ret, 0, "Failed to reset quorum ratio")
-        g.log.info("Successfully resetted quorum ratio")
-
         # stopping the volume and Cleaning up the volume
         ret = self.cleanup_volume()
         if not ret:
@@ -78,7 +71,7 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
         g.log.info("Able to set server quorum ratio successfully on %s",
                    self.servers)
 
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_brick_when_quorum_not_met(self):
 
@@ -107,7 +100,7 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
 
         # bring down glusterd of half nodes
         num_of_servers = len(self.servers)
-        num_of_nodes_to_bring_down = num_of_servers/2
+        num_of_nodes_to_bring_down = num_of_servers//2
 
         for node in range(num_of_nodes_to_bring_down, num_of_servers):
             ret = stop_glusterd(self.servers[node])

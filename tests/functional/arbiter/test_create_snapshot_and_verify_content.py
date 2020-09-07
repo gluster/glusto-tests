@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.snap_ops import (snap_create, snap_restore)
@@ -24,10 +25,12 @@ from glustolibs.gluster.volume_libs import (
     wait_for_volume_process_to_be_online,
     get_subvols)
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.io.utils import collect_mounts_arequal
+from glustolibs.io.utils import (
+    collect_mounts_arequal,
+    validate_io_procs)
 
 
-@runs_on([['distributed-replicated', 'replicated'],
+@runs_on([['arbiter', 'distributed-arbiter'],
           ['glusterfs', 'nfs']])
 class TestArbiterSelfHeal(GlusterBaseClass):
     """
@@ -36,16 +39,14 @@ class TestArbiterSelfHeal(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -54,19 +55,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
-
-        # Setup Volumes
-        if self.volume_type == "distributed-replicated":
-            self.volume_configs = []
-
-            # Redefine distributed-replicated volume
-            self.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'replica_count': 3,
-                'dist_count': 2,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume and Mount Volume")
@@ -100,7 +89,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info('Clearing for all brick is successful')
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_create_snapshot_and_verify_content(self):
         """
@@ -117,20 +106,20 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create dirs with file
+        all_mounts_procs = []
         g.log.info('Creating dirs with file...')
-        command = ("python %s create_deep_dirs_with_files "
-                   "-d 2 "
-                   "-l 2 "
-                   "-n 2 "
-                   "-f 20 "
-                   "%s"
-                   % (self.script_upload_path, self.mounts[0].mountpoint))
+        command = ("/usr/bin/env python %s create_deep_dirs_with_files "
+                   "-d 2 -l 2 -n 2 -f 20 %s" % (
+                       self.script_upload_path,
+                       self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, command,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
 
-        ret, _, err = g.run(self.mounts[0].client_system, command,
-                            user=self.mounts[0].user)
-
-        self.assertFalse(ret, err)
-        g.log.info("IO is successful")
+        # Validate IO
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")
 
         # Get arequal before snapshot
         g.log.info('Getting arequal before snapshot...')
@@ -149,21 +138,20 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Generating data for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create dirs with file
+        all_mounts_procs = []
         g.log.info('Adding dirs with file...')
-        command = ("python %s create_deep_dirs_with_files "
-                   "-d 2 "
-                   "-l 2 "
-                   "-n 2 "
-                   "-f 20 "
-                   "%s"
-                   % (self.script_upload_path,
-                      self.mounts[0].mountpoint+'/new_files'))
+        command = ("/usr/bin/env python %s create_deep_dirs_with_files "
+                   "-d 2 -l 2 -n 2 -f 20 %s" % (
+                       self.script_upload_path,
+                       self.mounts[0].mountpoint+'/new_files'))
+        proc = g.run_async(self.mounts[0].client_system, command,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
 
-        ret, _, err = g.run(self.mounts[0].client_system, command,
-                            user=self.mounts[0].user)
-
-        self.assertFalse(ret, err)
-        g.log.info("IO is successful")
+        # Validate IO
+        self.assertTrue(
+            validate_io_procs(all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")
 
         # Stop the volume
         g.log.info("Stopping %s ...", self.volname)

@@ -29,7 +29,7 @@ class TestUUID(GlusterBaseClass):
 
     def setUp(self):
 
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -60,7 +60,7 @@ class TestUUID(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to probe detached "
                                  "servers %s" % self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_uuid_in_volume_info_xml(self):
 

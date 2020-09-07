@@ -108,3 +108,14 @@ clients_info:
         host: client-vm1
     client-vm2: &client2
         host: client-vm2
+
+# This section defines the details about geo-rep clusters to be created.
+# Define this section for setting up geo-rep clusters.
+cluster_config:
+    geo_rep:
+       root:
+         password: 'foobar'
+       user:
+         name: 'geoaccount'
+         group: 'geogroup'
+         password: 'non-root foobar'

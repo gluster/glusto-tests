@@ -28,12 +28,12 @@ from glustolibs.gluster.exceptions import ExecutionError
 class QuotaNonExistentDir(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         g.log.info("Starting %s ", cls.__name__)
 
     def setUp(self):
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setting up the volume
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
@@ -78,4 +78,4 @@ class QuotaNonExistentDir(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

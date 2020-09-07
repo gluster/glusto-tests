@@ -43,8 +43,8 @@ class TestGlusterFindDeletes(GlusterBaseClass):
         Initiate necessary variables
         """
 
-        # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUp.im_func(self)
+        # calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup %s", self.volname)
@@ -99,8 +99,8 @@ class TestGlusterFindDeletes(GlusterBaseClass):
             raise ExecutionError("Failed to Cleanup Volume")
         g.log.info("Successful in Cleanup Volume")
 
-        # calling GlusterBaseClass tearDownClass
-        GlusterBaseClass.tearDown.im_func(self)
+        # calling GlusterBaseClass tearDown
+        self.get_super_method(self, 'tearDown')()
 
     def test_gfind_deletes(self):
         """

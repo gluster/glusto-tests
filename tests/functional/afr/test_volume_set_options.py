@@ -42,7 +42,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -84,7 +84,7 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_volume_set_option_data_self_heal(self):
         """
@@ -358,10 +358,10 @@ class VolumeSetDataSelfHealTests(GlusterBaseClass):
         # Compare dicts with file size
         g.log.info('Compare arequal size on brick before bringing offline and'
                    ' after bringing online')
-        self.assertFalse(cmp(arequal_before_brick_offline,
-                             arequal_after_brick_offline),
-                         'arequal size on brick before bringing offline and '
-                         'after bringing online are not equal')
+        self.assertEqual(
+            arequal_before_brick_offline, arequal_after_brick_offline,
+            'arequal size on brick before bringing offline and '
+            'after bringing online are not equal')
         g.log.info('arequal size on brick  before bringing offline and '
                    'after bringing online are equal')
 

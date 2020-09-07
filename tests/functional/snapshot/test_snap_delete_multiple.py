@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@ Creation of clone from snapshot of volume.
 
 """
 import os
+
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import volume_start
@@ -47,7 +49,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap1 = "snap1"
         cls.snap2 = "snap21"
         cls.clone1 = "clone1"
@@ -58,11 +60,9 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, script_local_path)
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts "
                                  "to clients ")
@@ -71,7 +71,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
     def setUp(self):
 
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp Volume and mount volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -99,7 +99,7 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
         """
         # Perform I/O
-        def io_operation():
+        def io_operation(name):
             g.log.info("Starting to Perform I/O")
             all_mounts_procs = []
             for mount_obj in self.mounts:
@@ -107,9 +107,11 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
                            mount_obj.client_system, mount_obj.mountpoint)
                 # Create files
                 g.log.info('Creating files...')
-                command = ("python %s create_files -f 100 --fixed-file-size"
-                           " 1k %s" % (self.script_upload_path,
-                                       mount_obj.mountpoint))
+                fname = "{}-{}".format(mount_obj.client_system, name)
+                command = ("/usr/bin/env python {} create_files -f 100 "
+                           "--fixed-file-size 1k --base-file-name {}"
+                           " {}".format(self.script_upload_path,
+                                        fname, mount_obj.mountpoint))
                 proc = g.run_async(mount_obj.client_system, command,
                                    user=mount_obj.user)
                 all_mounts_procs.append(proc)
@@ -208,36 +210,36 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
             g.log.info("Volume %s mounted on %s", clone, mpoint)
             return 0
 
-        value1 = range(0, 20)
-        value2 = range(20, 30)
-        value3 = range(30, 40)
+        value1 = list(range(0, 20))
+        value2 = list(range(20, 30))
+        value3 = list(range(30, 40))
         ret1 = create_snap(value1, self.volname, self.snap1,
                            self.clone1, counter=20)
         self.assertEqual(ret1, 30, "Failed")
         ret2 = mount_clone_and_io(self.clone1, self.mpoint1)
         self.assertEqual(ret2, 0, "Failed to mount volume")
-        ret = io_operation()
+        ret = io_operation("first")
         self.assertEqual(ret, 0, "Failed to perform io")
         ret3 = create_snap(value2, self.clone1, self.snap2,
                            self.clone2, ret1)
         self.assertEqual(ret3, 40, "Failed")
         ret4 = mount_clone_and_io(self.clone2, self.mpoint2)
         self.assertEqual(ret4, 0, "Failed to mount volume")
-        ret = io_operation()
+        ret = io_operation("second")
         self.assertEqual(ret, 0, "Failed to perform io")
         ret1 = create_snap(value3, self.clone2, self.snap2,
                            self.clone2, ret3)
         self.assertEqual(ret1, 0, "Failed to create snapshots")
+
+    def tearDown(self):
+        # Calling GlusterBaseClass teardown
+        self.get_super_method(self, 'tearDown')()
 
         # delete created snapshots
         g.log.info("starting to delete all created snapshots")
         ret, _, _ = snap_delete_all(self.mnode)
         self.assertEqual(ret, 0, "Failed to delete all snapshots")
         g.log.info("Successfully deleted all snapshots")
-
-    def tearDown(self):
-        # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
 
         # Disable Activate on create
         option = {'activate-on-create': 'disable'}
@@ -249,13 +251,13 @@ class SnapshotCloneDeleteMultiple(GlusterBaseClass):
 
         # umount clone volume
         g.log.info("Unmounting clone volume")
-        ret, _, _ = umount_volume(self.mounts[0].client_system, self.mpoint1)
+        ret, _, _ = umount_volume(self.clients[0], self.mpoint1)
         if ret != 0:
             raise ExecutionError("Failed to unmount clone "
                                  "volume %s" % self.clone1)
         g.log.info("Successfully unmounted clone volume %s", self.clone1)
 
-        ret, _, _ = umount_volume(self.mounts[0].client_system, self.mpoint2)
+        ret, _, _ = umount_volume(self.clients[0], self.mpoint2)
         if ret != 0:
             raise ExecutionError("Failed to unmount clone "
                                  "volume %s" % self.clone2)

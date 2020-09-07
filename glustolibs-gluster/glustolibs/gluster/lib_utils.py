@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@ import re
 import time
 from collections import OrderedDict
 import tempfile
-import subprocess
-import random
 
 ONE_GB_BYTES = 1073741824.0
 
@@ -53,23 +51,16 @@ def append_string_to_file(mnode, filename, str_to_add_in_file,
     Returns:
         True, on success, False otherwise
     """
-    try:
-        conn = g.rpyc_get_connection(mnode, user=user)
-        if conn is None:
-            g.log.error("Unable to get connection to 'root' of node %s"
-                        " in append_string_to_file()" % mnode)
-            return False
-
-        with conn.builtin.open(filename, 'a') as _filehandle:
-            _filehandle.write(str_to_add_in_file)
-
-        return True
-    except IOError:
-        g.log.error("Exception occurred while adding string to "
-                    "file %s in append_string_to_file()", filename)
+    cmd = "echo '{0}' >> {1}".format(str_to_add_in_file,
+                                     filename)
+    ret, out, err = g.run(mnode, cmd, user)
+    if ret or out or err:
+        g.log.error("Unable to append string '{0}' to file "
+                    "'{1}' on node {2} using user {3}"
+                    .format(str_to_add_in_file, filename,
+                            mnode, user))
         return False
-    finally:
-        g.rpyc_close_connection(host=mnode, user=user)
+    return True
 
 
 def search_pattern_in_file(mnode, search_pattern, filename, start_str_to_parse,
@@ -268,31 +259,19 @@ def list_files(mnode, dir_path, parse_str="", user="root"):
         NoneType: None if command execution fails, parse errors.
         list: files with absolute name
     """
-
-    try:
-        conn = g.rpyc_get_connection(mnode, user=user)
-        if conn is None:
-            g.log.error("Unable to get connection to 'root' of node %s"
-                        % mnode)
-            return None
-
-        filepaths = []
-        for root, directories, files in conn.modules.os.walk(dir_path):
-            for filename in files:
-                if parse_str != "":
-                    if parse_str in filename:
-                        filepath = conn.modules.os.path.join(root, filename)
-                        filepaths.append(filepath)
-                else:
-                    filepath = conn.modules.os.path.join(root, filename)
-                    filepaths.append(filepath)
-        return filepaths
-    except StopIteration:
-        g.log.error("Exception occurred in list_files()")
+    if parse_str == "":
+        cmd = "find {0} -type f".format(dir_path)
+    else:
+        cmd = "find {0} -type f | grep {1}".format(dir_path,
+                                                   parse_str)
+    ret, out, err = g.run(mnode, cmd, user)
+    if ret or err:
+        g.log.error("Unable to get the list of files on path "
+                    "{0} on node {1} using user {2} due to error {3}"
+                    .format(dir_path, mnode, user, err))
         return None
-
-    finally:
-        g.rpyc_close_connection(host=mnode, user=user)
+    file_list = out.split('\n')
+    return file_list[0:len(file_list)-1]
 
 
 def get_servers_bricks_dict(servers, servers_info):
@@ -308,7 +287,7 @@ def get_servers_bricks_dict(servers, servers_info):
         get_servers_bricks_dict(g.config['servers'], g.config['servers_info'])
     """
     servers_bricks_dict = OrderedDict()
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     for server in servers:
         server_info = servers_info[server]
@@ -342,7 +321,7 @@ def get_servers_used_bricks_dict(mnode, servers):
         get_servers_used_bricks_dict(g.config['servers'][0]['host'],
                                      g.config['servers'])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     servers_used_bricks_dict = OrderedDict()
@@ -389,7 +368,7 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
                                        g.config['servers'],
                                        g.config['servers_info'])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     dict1 = get_servers_bricks_dict(servers, servers_info)
     dict2 = get_servers_used_bricks_dict(mnode, servers)
@@ -429,7 +408,7 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
         form_bricks_path(g.config['servers'](0), "testvol", 6,
                          g.config['servers'], g.config['servers_info'])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
     dict_index = 0
     bricks_list = []
@@ -483,7 +462,7 @@ def is_rhel6(servers):
     Returns:
     bool:Returns True, if its RHEL-6 else returns false
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
@@ -509,7 +488,7 @@ def is_rhel7(servers):
     Returns:
     bool:Returns True, if its RHEL-7 else returns false
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     results = g.run_parallel(servers, "cat /etc/redhat-release")
@@ -544,22 +523,13 @@ def get_disk_usage(mnode, path, user="root"):
     Example:
         get_disk_usage("abc.com", "/mnt/glusterfs")
     """
-
-    inst = random.randint(10, 100)
-    conn = g.rpyc_get_connection(mnode, user=user, instance=inst)
-    if conn is None:
-        g.log.error("Failed to get rpyc connection")
+    cmd = 'stat -f {0}'.format(path)
+    ret, out, err = g.run(mnode, cmd, user)
+    if ret:
+        g.log.error("Unable to get stat of path {0} on node {1} "
+                    "using user {2} due to error {3}".format(path, mnode,
+                                                             user, err))
         return None
-    cmd = 'stat -f ' + path
-    p = conn.modules.subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    ret = p.returncode
-    if ret != 0:
-        g.log.error("Failed to execute stat command")
-        return None
-
-    g.rpyc_close_connection(host=mnode, user=user, instance=inst)
     res = ''.join(out)
     match = re.match(r'.*Block size:\s(\d+).*Blocks:\sTotal:\s(\d+)\s+?'
                      r'Free:\s(\d+)\s+?Available:\s(\d+).*Inodes:\s'
@@ -680,7 +650,7 @@ def install_epel(servers):
     Example:
         install_epel(["abc.com", "def.com"])
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     rt = True
@@ -734,7 +704,7 @@ def inject_msg_in_logs(nodes, log_msg, list_of_dirs=None, list_of_files=None):
     Returns:
         bool: True if successfully injected msg on all log files.
     """
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     if list_of_dirs is None:
@@ -858,10 +828,10 @@ def remove_service_from_firewall(nodes, firewall_service, permanent=False):
             bool: True|False(Firewall removed or Failed)
     """
 
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
-    if isinstance(firewall_service, str):
+    if not isinstance(firewall_service, list):
         firewall_service = [firewall_service]
 
     _rc = True
@@ -902,10 +872,10 @@ def add_services_to_firewall(nodes, firewall_service, permanent=False):
         bool: True|False(Firewall Enabled or Failed)
     """
 
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
-    if isinstance(firewall_service, str):
+    if not isinstance(firewall_service, list):
         firewall_service = [firewall_service]
 
     _rc = True
@@ -975,7 +945,7 @@ def add_user(servers, username, group=None):
     else:
         cmd = "useradd -G %s %s" % (group, username)
 
-    if servers != list:
+    if not isinstance(servers, list):
         servers = [servers]
 
     results = g.run_parallel(servers, cmd)
@@ -1019,7 +989,7 @@ def group_add(servers, groupname):
             False otherwise.
 
     """
-    if servers != list:
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "groupadd %s" % groupname
@@ -1093,7 +1063,7 @@ def set_passwd(servers, username, passwd):
             False otherwise.
 
     """
-    if servers != list:
+    if not isinstance(servers, list):
         servers = [servers]
     cmd = "echo %s:%s | chpasswd" % (username, passwd)
     results = g.run_parallel(servers, cmd)
@@ -1105,3 +1075,127 @@ def set_passwd(servers, username, passwd):
                         username, server)
             return False
     return True
+
+
+def is_user_exists(servers, username):
+    """
+    Checks if user is present on the given servers or not.
+
+    Args:
+        servers(str|list): list of nodes on which you need to
+                           check if the user is present or not.
+        username(str): username of user whose presence has to be checked.
+
+    Returns:
+        bool: True if user is present on all nodes else False.
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "id %s" % username
+    results = g.run_parallel(servers, cmd)
+
+    for server, (ret_value, _, _) in results.items():
+        if not ret_value:
+            g.log.error("User %s doesn't exists on server %s.",
+                        (username, server))
+            return False
+    return True
+
+
+def is_group_exists(servers, group):
+    """
+    Checks if group is present on the given servers.
+
+    Args:
+        servers(str|list): list of nodes on which you need to
+                           check if group is present or not.
+        group(str): groupname of group whose presence has
+                    to be checked.
+
+    Returns:
+        bool: True if group is present on all nodes else False.
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "grep -q %s /etc/group" % group
+    results = g.run_parallel(servers, cmd)
+
+    for server, (ret_value, _, _) in results.items():
+        if not ret_value:
+            g.log.error("Group %s doesn't exists on server %s.",
+                        (group, server))
+            return False
+    return True
+
+
+def is_passwordless_ssh_configured(fromnode, tonode, username):
+    """
+    Checks if passwordless ssh is configured between nodes or not.
+
+    Args:
+        fromnode: Server from which passwordless ssh has to be
+                  configured.
+        tonode: Server to which passwordless ssh has to be
+                configured.
+        username: username of user to be used for checking
+                  passwordless ssh.
+    Returns:
+        bool: True if configured else false.
+    """
+    cmd = ("ssh %s@%s hostname" % (username, tonode))
+    ret, out, _ = g.run(fromnode, cmd)
+    _, hostname, _ = g.run(tonode, "hostname")
+    if ret or hostname not in out:
+        g.log.error("Passwordless ssh not configured "
+                    "from server %s to server %s using user %s.",
+                    (fromnode, tonode, username))
+        return False
+    return True
+
+
+def collect_bricks_arequal(bricks_list):
+    """Collects arequal for all bricks in list
+
+    Args:
+        bricks_list (list): List of bricks.
+        Example:
+            bricks_list = 'gluster.blr.cluster.com:/bricks/brick1/vol'
+
+    Returns:
+        tuple(bool, list):
+            On success returns (True, list of arequal-checksums of each brick)
+            On failure returns (False, list of arequal-checksums of each brick)
+            arequal-checksum for a brick would be 'None' when failed to
+            collect arequal for that brick.
+
+    Example:
+        >>> all_bricks = get_all_bricks(self.mnode, self.volname)
+        >>> ret, arequal = collect_bricks_arequal(all_bricks)
+        >>> ret
+        True
+    """
+    # Converting a bricks_list to list if not.
+    if not isinstance(bricks_list, list):
+        bricks_list = [bricks_list]
+
+    return_code, arequal_list = True, []
+    for brick in bricks_list:
+
+        # Running arequal-checksum on the brick.
+        node, brick_path = brick.split(':')
+        cmd = ('arequal-checksum -p {} -i .glusterfs -i .landfill -i .trashcan'
+               .format(brick_path))
+        ret, arequal, _ = g.run(node, cmd)
+
+        # Generating list accordingly
+        if ret:
+            g.log.error('Failed to get arequal on brick %s', brick)
+            return_code = False
+            arequal_list.append(None)
+        else:
+            g.log.info('Successfully calculated arequal for brick %s', brick)
+            arequal_list.append(arequal)
+
+    return (return_code, arequal_list)

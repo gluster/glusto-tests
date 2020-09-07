@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
             if ret != 0:
                 raise ExecutionError("Peer detach failed")
             g.log.info("Peer detach SUCCESSFUL.")
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
 
@@ -53,7 +53,6 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
         ret = umount_volume(self.mounts[0].client_system,
                             self.mounts[0].mountpoint, mtype=self.mount_type)
         self.assertTrue(ret, ("Failed to Unmount Volume %s" % self.volname))
-        g.log.info("Successfully Unmounted Volume %s", self.volname)
 
         # Clean up all volumes and peer probe to form cluster
         vol_list = get_volume_list(self.mnode)
@@ -75,7 +74,7 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_remove_brick(self):
         """
@@ -165,10 +164,12 @@ class TestRemoveBrickAfterRestartGlusterd(GlusterBaseClass):
                            user=self.mounts[0].user)
         self.all_mounts_procs.append(proc)
         self.io_validation_complete = False
+
         # Validate IO
-        ret = validate_io_procs(self.all_mounts_procs, self.mounts)
+        self.assertTrue(
+            validate_io_procs(self.all_mounts_procs, self.mounts),
+            "IO failed on some of the clients")
         self.io_validation_complete = True
-        self.assertTrue(ret, "IO failed on some of the clients")
 
         remove_brick_list = bricks_list[2:4]
         ret, _, _ = remove_brick(self.mnode, self.volname, remove_brick_list,

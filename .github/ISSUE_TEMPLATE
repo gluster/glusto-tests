@@ -1,0 +1,38 @@
+<!-- Please use this template while reporting an issue, providing as much information as possible to make debugging quicker. Thank you! -->
+
+**Description of problem:**
+
+
+**Operating system**:
+
+**Python Version**:
+
+**Terminal dump of the issue observed:**:
+<details>
+
+</details>
+
+**Exact glusto-tests log where the issue was observed:**:
+<details>
+
+
+
+</details>
+
+**Setup info:**
+<details>
+Number of nodes:
+
+Number of clients:
+
+Number of servers:
+
+Testcase or library:
+
+How reproducible:
+
+</details>
+
+**Additional info:**
+
+

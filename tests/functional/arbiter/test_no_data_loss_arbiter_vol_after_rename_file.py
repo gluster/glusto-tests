@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import (set_volume_options,
@@ -30,7 +30,7 @@ from glustolibs.gluster.heal_libs import (monitor_heal_completion,
 from glustolibs.misc.misc_libs import upload_scripts
 
 
-@runs_on([['replicated'],
+@runs_on([['arbiter'],
           ['glusterfs']])
 class ArbiterSelfHealTests(GlusterBaseClass):
     """
@@ -39,16 +39,14 @@ class ArbiterSelfHealTests(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -61,7 +59,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume %s", self.volname)
@@ -86,7 +84,7 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_no_data_loss_arbiter_vol_after_rename_file(self):
         """
@@ -131,10 +129,10 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create dir
         g.log.info('Creating dir...')
-        command = ('python %s create_deep_dir -d 1 -l 0 -n 1 %s/%s'
-                   % (self.script_upload_path,
-                      self.mounts[0].mountpoint,
-                      test_dir))
+        command = ('/usr/bin/env python %s create_deep_dir -d 1 -l 0 -n 1 '
+                   '%s/%s' % (
+                       self.script_upload_path,
+                       self.mounts[0].mountpoint, test_dir))
 
         ret, _, err = g.run(self.mounts[0].client_system, command,
                             user=self.mounts[0].user)
@@ -166,10 +164,9 @@ class ArbiterSelfHealTests(GlusterBaseClass):
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
         # Create file
         g.log.info('Creating file...')
-        command = ("python %s create_files -f 1 %s/%s"
-                   % (self.script_upload_path,
-                      self.mounts[0].mountpoint,
-                      test_dir))
+        command = "/usr/bin/env python %s create_files -f 1 %s/%s" % (
+            self.script_upload_path,
+            self.mounts[0].mountpoint, test_dir)
 
         ret, _, err = g.run(self.mounts[0].client_system, command,
                             user=self.mounts[0].user)
@@ -215,10 +212,9 @@ class ArbiterSelfHealTests(GlusterBaseClass):
         # Rename file under test_dir
         g.log.info("Renaming file for %s:%s",
                    self.mounts[0].client_system, self.mounts[0].mountpoint)
-        command = ("python %s mv %s/%s"
-                   % (self.script_upload_path,
-                      self.mounts[0].mountpoint,
-                      test_dir))
+        command = "/usr/bin/env python %s mv %s/%s" % (
+            self.script_upload_path,
+            self.mounts[0].mountpoint, test_dir)
         ret, _, err = g.run(self.mounts[0].client_system, command)
         self.assertEqual(ret, 0, err)
         g.log.info("Renaming file for %s:%s is successful",

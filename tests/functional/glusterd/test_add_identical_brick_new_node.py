@@ -41,7 +41,7 @@ class TestAddIdenticalBrick(GlusterBaseClass):
             if ret != 0:
                 raise ExecutionError("Peer detach failed")
             g.log.info("Peer detach SUCCESSFUL.")
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
         """
@@ -65,7 +65,7 @@ class TestAddIdenticalBrick(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_add_identical_brick(self):
         """
@@ -115,8 +115,14 @@ class TestAddIdenticalBrick(GlusterBaseClass):
 
         # Replace just host IP to create identical brick
         add_bricks = []
-        add_bricks.append(string.replace(bricks_list[0],
-                                         self.servers[0], self.servers[1]))
+        try:
+            add_bricks.append(string.replace(bricks_list[0],
+                                             self.servers[0],
+                                             self.servers[1]))
+        except AttributeError:
+            add_bricks.append(str.replace(bricks_list[0],
+                                          self.servers[0],
+                                          self.servers[1]))
         ret, _, _ = add_brick(self.mnode, self.volname, add_bricks)
         self.assertEqual(ret, 0, "Failed to add the bricks to the volume")
         g.log.info("Successfully added bricks to volume %s", add_bricks[0])

@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2019  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 """ Description:
         Test Cases in this module tests the client side quorum.
 """
-
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_libs import (
@@ -42,20 +42,20 @@ class ClientSideQuorumTests(GlusterBaseClass):
         """
 
         # calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", cls.clients)
-        script_abs_path = "/usr/share/glustolibs/io/scripts/file_dir_ops.py"
-        cls.script_upload_path = script_abs_path
-        ret = upload_scripts(cls.clients, script_abs_path)
+        cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
+                                  "file_dir_ops.py")
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients")
 
     def setUp(self):
         # calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Setup Volume and Mount Volume
         g.log.info("Starting to Setup Volume %s", self.volname)
@@ -73,7 +73,7 @@ class ClientSideQuorumTests(GlusterBaseClass):
         g.log.info("Successful in Unmount Volume and Cleanup Volume")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_client_side_quorum_with_auto_option(self):
         """
@@ -98,9 +98,10 @@ class ClientSideQuorumTests(GlusterBaseClass):
         # write files on all mounts
         g.log.info("Starting IO on all mounts...")
         g.log.info("mounts: %s", self.mounts)
-        cmd = ("python %s create_files "
-               "-f 10 --base-file-name file %s" % (self.script_upload_path,
-                                                   self.mounts[0].mountpoint))
+        cmd = ("/usr/bin/env python %s create_files "
+               "-f 10 --base-file-name file %s" % (
+                   self.script_upload_path,
+                   self.mounts[0].mountpoint))
         ret, _, err = g.run(self.mounts[0].client_system, cmd)
         self.assertFalse(ret, "IO failed on %s with %s"
                          % (self.mounts[0].client_system, err))

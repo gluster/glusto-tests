@@ -32,7 +32,7 @@ class TestGlusterdSanity(GlusterBaseClass):
         """setUp required for tests
         """
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Defining this variable to check if restart glusterd is required
         # in teardown
@@ -44,7 +44,6 @@ class TestGlusterdSanity(GlusterBaseClass):
         peers are in connected state after glusterd restarts.
         """
         # restart glusterd on all servers
-        g.log.info("Restart glusterd on all servers %s", self.servers)
         ret = restart_glusterd(self.servers)
         self.assertTrue(ret, ("Failed to restart glusterd on all servers %s",
                               self.servers))
@@ -52,15 +51,12 @@ class TestGlusterdSanity(GlusterBaseClass):
                    self.servers)
 
         # Check if glusterd is running on all servers(expected: active)
-        g.log.info("Check if glusterd is running on all servers %s"
-                   "(expected: active)", self.servers)
         ret = is_glusterd_running(self.servers)
         self.assertEqual(ret, 0, ("Glusterd is not running on all servers %s",
                                   self.servers))
         g.log.info("Glusterd is running on all the servers %s", self.servers)
 
         # Stop glusterd on all servers
-        g.log.info("Stop glusterd on all servers %s", self.servers)
         ret = stop_glusterd(self.servers)
         self.assertTrue(ret, ("Failed to stop glusterd on all servers %s",
                               self.servers))
@@ -68,8 +64,6 @@ class TestGlusterdSanity(GlusterBaseClass):
                    self.servers)
 
         # Check if glusterd is running on all servers(expected: not running)
-        g.log.info("Check if glusterd is running on all servers %s"
-                   "(expected: not running)", self.servers)
         ret = is_glusterd_running(self.servers)
         self.assertNotEqual(ret, 0, ("Glusterd is still running on some "
                                      "servers %s", self.servers))
@@ -77,7 +71,6 @@ class TestGlusterdSanity(GlusterBaseClass):
                    self.servers)
 
         # Start glusterd on all servers
-        g.log.info("Start glusterd on all servers %s", self.servers)
         ret = start_glusterd(self.servers)
         self.assertTrue(ret, ("Failed to start glusterd on all servers %s",
                               self.servers))
@@ -85,8 +78,6 @@ class TestGlusterdSanity(GlusterBaseClass):
                    self.servers)
 
         # Check if glusterd is running on all servers(expected: active)
-        g.log.info("Check if glusterd is running on all servers %s"
-                   "(expected: active)", self.servers)
         ret = is_glusterd_running(self.servers)
         self.assertEqual(ret, 0, ("Glusterd is not running on all servers %s",
                                   self.servers))
@@ -96,10 +87,8 @@ class TestGlusterdSanity(GlusterBaseClass):
         time.sleep(30)
 
         # Validate all the peers are in connected state
-        g.log.info("Validating all the peers are in Cluster and Connected")
         ret = self.validate_peers_are_connected()
         self.assertTrue(ret, "Validating Peers to be in Cluster Failed")
-        g.log.info("All peers are in connected state")
 
         self.test_method_complete = True
 
@@ -108,7 +97,6 @@ class TestGlusterdSanity(GlusterBaseClass):
         """
         if not self.test_method_complete:
             # restart glusterd on all servers
-            g.log.info("Restart glusterd on all servers %s", self.servers)
             ret = restart_glusterd(self.servers)
             if not ret:
                 raise ExecutionError("Failed to restart glusterd on all "
@@ -120,12 +108,10 @@ class TestGlusterdSanity(GlusterBaseClass):
             time.sleep(30)
 
             # Validate all the peers are in connected state
-            g.log.info("Validating all the peers are in Cluster and Connected")
             ret = self.validate_peers_are_connected()
             if not ret:
                 raise ExecutionError("Validating Peers to be in Cluster "
                                      "Failed")
-            g.log.info("All peers are in connected state")
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()

@@ -37,7 +37,7 @@ class RebalanceValidation(GlusterBaseClass):
     def setUp(self):
 
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         if self.volume_type == "distributed-replicated":
             self.volume_configs = []

@@ -2,28 +2,39 @@
     module
 """
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import GlusterBaseClass
+
 from glustolibs.gluster.exceptions import ExecutionError
+from glustolibs.gluster.gluster_base_class import (
+    GlusterBaseClass,
+    runs_on,
+)
 from glustolibs.gluster.gluster_init import (
-    is_glusterd_running, restart_glusterd, start_glusterd, stop_glusterd)
+    is_glusterd_running,
+    restart_glusterd,
+    start_glusterd,
+    stop_glusterd,
+)
 
 
+@runs_on([['distributed-replicated', 'replicated'],
+          ['glusterfs', 'nfs']])
 class DemoGlusterInitClass(GlusterBaseClass):
     """Demonstrating all the functions available in gluster_init module
     """
     @classmethod
     def setUpClass(cls):
-        """
+        """Define it when you need to execute something else than super's
+           setUpClass method.
         """
         # Read all the cluster config from the g.config and assign it to
         # class variables
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
     def setUp(self):
         """setUp required for tests
         """
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # Check if glusterd is running on all servers(expected: active)
         g.log.info("Check if glusterd is running on all servers %s"
@@ -103,10 +114,11 @@ class DemoGlusterInitClass(GlusterBaseClass):
                    self.servers)
 
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     @classmethod
     def tearDownClass(cls):
+        """Define it when you need to execute something else than super's
+           tearDownClass method.
         """
-        """
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        cls.get_super_method(cls, 'tearDownClass')()

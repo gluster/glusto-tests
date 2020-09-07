@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,12 +14,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (volume_create, volume_start,
                                            get_volume_list, get_volume_status)
-from glustolibs.gluster.brick_libs import get_all_bricks
+from glustolibs.gluster.brick_libs import (
+    get_all_bricks, wait_for_bricks_to_be_online)
 from glustolibs.gluster.volume_libs import (cleanup_volume)
 from glustolibs.gluster.peer_ops import (peer_probe, peer_detach,
                                          peer_probe_servers,
@@ -32,7 +32,8 @@ from glustolibs.gluster.rebalance_ops import (rebalance_start,
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.gluster.gluster_init import (start_glusterd, stop_glusterd,
-                                             is_glusterd_running)
+                                             is_glusterd_running,
+                                             wait_for_glusterd_to_start)
 
 
 @runs_on([['distributed'], ['glusterfs']])
@@ -46,7 +47,7 @@ class TestRebalanceHang(GlusterBaseClass):
             raise ExecutionError("Failed to detach servers %s"
                                  % self.servers)
         g.log.info("Peer detach SUCCESSFUL.")
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
     def tearDown(self):
 
@@ -61,6 +62,11 @@ class TestRebalanceHang(GlusterBaseClass):
         vol_list = get_volume_list(self.mnode)
         if vol_list is not None:
             for volume in vol_list:
+                # check all bricks are online
+                ret = wait_for_bricks_to_be_online(self.mnode, volume)
+                if not ret:
+                    raise ExecutionError("Failed to bring bricks online"
+                                         "for volume %s" % volume)
                 ret = cleanup_volume(self.mnode, volume)
                 if not ret:
                     raise ExecutionError("Failed to cleanup volume")
@@ -76,7 +82,7 @@ class TestRebalanceHang(GlusterBaseClass):
                                  "servers %s" % self.servers)
         g.log.info("Peer probe success for detached "
                    "servers %s", self.servers)
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_rebalance_hang(self):
         """
@@ -141,16 +147,14 @@ class TestRebalanceHang(GlusterBaseClass):
                    "do mkdir l1_dir.$i/l2_dir.$j ; "
                    "for k in `seq 1 10` ; "
                    "do dd if=/dev/urandom of=l1_dir.$i/l2_dir.$j/test.$k "
-                   "bs=128k count=$k ; "
-                   "done ; "
-                   "done ; "
-                   "done ; "
+                   "bs=128k count=$k ; done ; done ; done ; "
                    % (self.mounts[0].mountpoint))
 
         proc = g.run_async(self.mounts[0].client_system, command,
                            user=self.mounts[0].user)
         self.all_mounts_procs.append(proc)
         self.io_validation_complete = False
+
         # Validate IO
         ret = validate_io_procs(self.all_mounts_procs, self.mounts)
         self.io_validation_complete = True
@@ -186,14 +190,8 @@ class TestRebalanceHang(GlusterBaseClass):
         # Start glusterd on the node where it is stopped
         ret = start_glusterd(self.servers[1])
         self.assertTrue(ret, "glusterd start on the node failed")
-        count = 0
-        while count < 60:
-            ret = is_glusterd_running(self.servers[1])
-            if not ret:
-                break
-            sleep(2)
-            count += 1
-        self.assertEqual(ret, 0, "glusterd is not running on %s"
-                         % self.servers[1])
+        ret = wait_for_glusterd_to_start(self.servers[1])
+        self.assertTrue(ret, "glusterd is not running on %s"
+                        % self.servers[1])
         g.log.info("Glusterd start on the nodes : %s "
                    "succeeded", self.servers[1])

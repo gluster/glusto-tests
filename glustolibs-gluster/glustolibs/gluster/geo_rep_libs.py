@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -32,27 +32,33 @@ from glustolibs.gluster.shared_storage_ops import (enable_shared_storage,
                                                    is_shared_volume_mounted,
                                                    check_gluster_shared_volume)
 from glustolibs.gluster.lib_utils import (group_add, ssh_copy_id,
-                                          ssh_keygen, add_user, set_passwd)
+                                          ssh_keygen, add_user, set_passwd,
+                                          is_group_exists, is_user_exists,
+                                          is_passwordless_ssh_configured)
 from glustolibs.gluster.glusterdir import get_dir_contents
+from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.gluster.volume_libs import setup_volume
 
 
 def georep_prerequisites(mnode, snode, passwd, user="root", group=None,
-                         mntbroker_dir="/var/mountbroker-root"):
+                         mntbroker_dir="/var/mountbroker-root",
+                         nonrootpass=None):
     """
     Sets up all the prerequisites for geo-rep.
 
     Args:
         mnode(str): The primary master node where the commands are executed
         snode(str|list): slave nodes on which setup has to be completed.
-        passwd(str): Password of the specified user.
+        passwd(str): Password of the root user.
 
     Kwargs:
         user(str): User to be used to setup the geo-rep session.
-                    (Default: root)
+                   (Default: root)
         mntbroker_dir(str): Mountbroker mount directory.
                             (Default: /var/mountbroker-root)
         group(str): Group under which geo-rep useraccount is setup.
                     (Default: None)
+        nonrootpass(str): Password of the non-root user.(Default: None)
 
     Returns:
         bool : True if all the steps are successful, false if there are
@@ -60,8 +66,18 @@ def georep_prerequisites(mnode, snode, passwd, user="root", group=None,
 
     """
     # Converting snode to list if string.
-    if snode != list:
+    if not isinstance(snode, list):
         snode = [snode]
+
+    # Checking for blank username.
+    if not user.strip():
+        g.log.error("Blank username isn't possible.")
+        return False
+
+    # Checking if non-root user is given without userpassword.
+    if user != "root" and nonrootpass is None:
+        g.log.error("Non-root user specified without password.")
+        return False
 
     # Checking and enabling shared storage on master cluster.
     ret = is_shared_volume_mounted(mnode)
@@ -89,46 +105,53 @@ def georep_prerequisites(mnode, snode, passwd, user="root", group=None,
                         " user.")
             return False
 
-        # Creating a  group on all slave nodes.
-        ret = group_add(snode, group)
-        if not ret:
-            g.log.error("Creating group: %s on all slave nodes failed.", group)
-            return False
+        # Checking and creating a  group on all slave nodes.
+        if not is_group_exists(snode, group):
+            ret = group_add(snode, group)
+            if not ret:
+                g.log.error("Creating group: %s on all slave nodes failed.",
+                            group)
+                return False
 
-        # Creating a non-root user on all the nodes.
-        ret = add_user(snode, user, group)
-        if not ret:
-            g.log.error("Creating user: %s in group: %s on all slave nodes "
-                        "failed,", user, group)
-            return False
+        # Checking and creating a non-root user on all the nodes.
+        if not is_user_exists(snode, user):
+            ret = add_user(snode, user, group)
+            if not ret:
+                g.log.error("Creating user: %s in group: %s on all slave nodes"
+                            " failed,", user, group)
+                return False
 
-        # Setting password for user on all the nodes.
-        ret = set_passwd(snode, user, passwd)
-        if not ret:
-            g.log.error("Setting password failed on slaves")
-            return False
+            # Setting password for user on all the nodes.
+            ret = set_passwd(snode, user, nonrootpass)
+            if not ret:
+                g.log.error("Setting password failed on slaves")
+                return False
 
-        # Setting up mount broker on first slave node.
-        ret, _, _ = georep_mountbroker_setup(snode[0], group, mntbroker_dir)
-        if ret:
-            g.log.error("Setting up of mount broker directory failed"
-                        " on node: %s", snode[0])
-            return False
+            # Setting up mount broker on first slave node.
+            ret, _, _ = georep_mountbroker_setup(snode[0], group,
+                                                 mntbroker_dir)
+            if ret:
+                g.log.error("Setting up of mount broker directory"
+                            " failed on node: %s", snode[0])
+                return False
 
     # Checking if ssh keys are present.
-    ret = get_dir_contents(mnode, "/root/.ssh/")
-    ssh_keys = ["id_rsa", "id_rsa.pub"]
-    if ssh_keys not in ret:
+    ret = get_dir_contents(mnode, "~/.ssh/")
+    if "id_rsa" not in ret or "id_rsa.pub" not in ret:
         ret = ssh_keygen(mnode)
         if not ret:
             g.log.error("Failed to create a common pem pub file.")
             return False
 
     # Setting up passwordless ssh to primary slave node.
-    ret = ssh_copy_id(mnode, snode[0], passwd, user)
-    if not ret:
-        g.log.error("Failed to setup passwordless ssh.")
-        return False
+    if not is_passwordless_ssh_configured(mnode, snode[0], user):
+        if user != "root":
+            ret = ssh_copy_id(mnode, snode[0], nonrootpass, user)
+        else:
+            ret = ssh_copy_id(mnode, snode[0], passwd, user)
+        if not ret:
+            g.log.error("Failed to setup passwordless ssh.")
+            return False
 
     # Checking if pem files else running gsec_create.
     ret = get_dir_contents(mnode, "/var/lib/glusterd/geo-replication/")
@@ -146,30 +169,38 @@ def georep_prerequisites(mnode, snode, passwd, user="root", group=None,
 
 
 def georep_create_session(mnode, snode, mastervol, slavevol,
-                          user="root", force=False):
+                          user="root", force=False, sync="rsync"):
     """ Create a geo-replication session between the master and
         the slave.
+
     Args:
         mnode(str): The primary master node where the commands are executed
         snode(str|list): slave node where the commande are executed
         mastervol(str): The name of the master volume
         slavevol(str): The name of the slave volume
+
     Kwargs:
         user (str): User to be used to create geo-rep session.(Default: root)
         force (bool) : Set to true if session needs to be created with force
-            else it remains false as the default option
-
+                       else it remains false as the default option.
+                       (Default: False)
+        sync (str): Sync method to be used for geo-rep session.(Default:rsync)
     Returns:
         bool : True if all the steps are successful, false if there are
               any failures in the middle
     """
     # Converting snode to list if string.
-    if snode != list:
+    if not isinstance(snode, list):
         snode = [snode]
 
     # Checking for blank username.
-    if user in ["", " "]:
+    if not user.strip():
         g.log.error("Blank username isn't possible.")
+        return False
+
+    if sync not in ["rsync", "tarssh"]:
+        g.log.error("Invalid sync method used. "
+                    "%s is not a valid sync method.", sync)
         return False
 
     # Setting up root geo-rep session.
@@ -181,12 +212,25 @@ def georep_create_session(mnode, snode, mastervol, slavevol,
             g.log.error("Failed to create geo-rep session")
             return False
 
-        g.log.debug("Setting up meta-volume on %s", mnode)
+        g.log.debug("Enabling meta-volume for master volume.")
         ret, _, _ = georep_config_set(mnode, mastervol, snode[0],
                                       slavevol, "use_meta_volume", "True")
         if ret:
-            g.log.error("Failed to set up meta-volume")
+            g.log.error("Failed to set up meta-volume for root "
+                        "geo-rep session from %s to %s",
+                        (mastervol, slavevol))
             return False
+
+        # Setting up sync method if not rsync.
+        g.log.debug("Enabling tarssh for master volume.")
+        if sync == "tarssh":
+            ret, _, _ = georep_config_set(mnode, mastervol, snode[0],
+                                          slavevol, "sync_method", "tarssh")
+            if ret:
+                g.log.error("Failed to set sync method to tarssh for root "
+                            "geo-rep session from %s to %s",
+                            (mastervol, slavevol))
+                return False
         return True
 
     # Setting up non-root geo-rep session.
@@ -228,7 +272,7 @@ def georep_create_session(mnode, snode, mastervol, slavevol,
         ret, _, _ = georep_create(mnode, mastervol, snode[0], slavevol,
                                   user, force)
         if ret:
-            g.log.error("Failed to create geo-rep session")
+            g.log.error("Failed to create geo-rep session.")
             return False
 
         # Setting up pem keys between master and slave node.
@@ -239,10 +283,79 @@ def georep_create_session(mnode, snode, mastervol, slavevol,
             return False
 
         # Setting use_meta_volume to true.
-        g.log.debug("Enabling meta-volume for master volume.")
+        g.log.debug("Setting use_meta_volume to true.")
         ret, _, _ = georep_config_set(mnode, mastervol, snode[0], slavevol,
-                                      "use_meta_volume", "true")
+                                      "use_meta_volume", "true", user)
         if ret:
-            g.log.error("Failed to set meta-volume")
+            g.log.error("Failed to set up meta-volume for %s "
+                        "geo-rep session from %s to %s.",
+                        (user, mastervol, slavevol))
             return False
+
+        # Setting up sync method if not rsync.
+        g.log.debug("Setting sync method to tarssh.")
+        if sync == "tarssh":
+            ret, _, _ = georep_config_set(mnode, mastervol, snode[0],
+                                          slavevol, "sync_method", "tarssh",
+                                          user)
+            if ret:
+                g.log.error("Failed to set sync method to tarssh for %s "
+                            "geo-rep session from %s to %s",
+                            (user, mastervol, slavevol))
+                return False
         return True
+
+
+def setup_master_and_slave_volumes(mnode, all_servers_info,
+                                   master_volume_config,
+                                   snode, all_slaves_info,
+                                   slave_volume_config,
+                                   force=False):
+    """Create master and slave volumes for geo-replication.
+
+    Args:
+        mnode(str): The primary master node where the commands are executed.
+        all_servers_info(dict): Information about all master servers.
+        master_volume_config(dict): Dict containing volume information
+                                     of master.
+        snode(str): slave node where the commande are executed.
+        all_slaves_info(dict): Information about all slave servers.
+        slave_volume_config(dict): Dict containing volume information
+                                     of slave.
+    kwargs:
+        force(bool): If set to true then will create volumes
+                     with force option.
+
+    Returns:
+        bool : True if volumes created successfully, false if there are
+              any failures in the middle.
+
+    Example:
+        setup_master_and_slave_volumes(
+            cls.mode, cls.all_servers_info, cls.master_volume,
+            cls.snode, cls.all_slaves_info, cls.slave_volume)
+        >>> True
+    """
+    # Setting up the master and the slave volume.
+    ret = setup_volume(mnode, all_servers_info, master_volume_config,
+                       force)
+    if not ret:
+        g.log.error("Failed to Setup master volume %s",
+                    master_volume_config['name'])
+        return False
+
+    ret = setup_volume(snode, all_slaves_info, slave_volume_config,
+                       force)
+    if not ret:
+        g.log.error("Failed to Setup slave volume %s",
+                    slave_volume_config['name'])
+        return False
+
+    # Setting performance.quick-read to off.
+    ret = set_volume_options(snode, slave_volume_config['name'],
+                             {"performance.quick-read": "off"})
+    if not ret:
+        g.log.error("Failed to performance.quick-read to off on "
+                    "slave volume %s", slave_volume_config['name'])
+        return False
+    return True

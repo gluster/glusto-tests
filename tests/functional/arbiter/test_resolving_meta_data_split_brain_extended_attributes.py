@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ from glustolibs.io.utils import (validate_io_procs,
                                  wait_for_io_to_complete)
 
 
-@runs_on([['distributed-replicated'],
+@runs_on([['distributed-arbiter'],
           ['glusterfs', 'nfs', 'cifs']])
 class TestArbiterSelfHeal(GlusterBaseClass):
     """
@@ -41,18 +41,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
-
-        # Setup Volumes
-        if self.volume_type == "distributed-replicated":
-            # Redefine distributed-replicated volume
-            self.volume['voltype'] = {
-                'type': 'distributed-replicated',
-                'replica_count': 3,
-                'dist_count': 2,
-                'arbiter_count': 1,
-                'transport': 'tcp'}
-
+        self.get_super_method(self, 'setUp')()
         self.all_mounts_procs = []
         self.io_validation_complete = False
 
@@ -93,7 +82,7 @@ class TestArbiterSelfHeal(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_resolving_meta_data(self):
         """

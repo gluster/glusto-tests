@@ -35,14 +35,14 @@ class SnapshotInvalidNames(GlusterBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
         cls.snap1 = "snap1"
         cls.snapinvalid = "#64^@*)"
         cls.volname1 = "vola1"
 
     def setUp(self):
         # SettingUp volume and Mounting the volume
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
         g.log.info("Starting to SetUp and Mount Volume")
         ret = self.setup_volume_and_mount_volume(mounts=self.mounts)
         if not ret:
@@ -51,7 +51,7 @@ class SnapshotInvalidNames(GlusterBaseClass):
 
     def tearDown(self):
         # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
         # Unmount and cleanup-volume
         g.log.info("Unmount and cleanup-volume")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -119,18 +119,17 @@ def check_brick_pid_matches_glusterfsd_pid(mnode, volname):
                         "of brick path %s", brick_node, brick_path)
             _rc = False
 
-        cmd = ("ps -eaf | grep glusterfsd | "
-               "grep %s.%s | grep -v 'grep %s.%s'"
-               % (volname, brick_node,
-                  volname, brick_node))
+        cmd = "pgrep -x glusterfsd"
         ret, pid, _ = g.run(brick_node, cmd)
         if ret != 0:
             g.log.error("Failed to run the command %s on "
                         "node %s", cmd, brick_node)
             _rc = False
-        glusterfsd_pid = pid.split()[1]
 
-        if glusterfsd_pid != brick_pid:
+        else:
+            glusterfsd_pid = pid.split('\n')[:-1]
+
+        if brick_pid not in glusterfsd_pid:
             g.log.error("Brick pid %s doesn't match glusterfsd "
                         "pid %s of the node %s", brick_pid,
                         glusterfsd_pid, brick_node)
@@ -150,8 +149,10 @@ def get_brick_processes_count(mnode):
         int: Number of brick processes running on the node.
         None: If the command fails to execute.
     """
-    ret, out, _ = g.run(mnode, "pidof glusterfsd")
+    ret, out, _ = g.run(mnode, "pgrep -x glusterfsd")
     if not ret:
-        return len(out.split(" "))
+        list_of_pids = out.split("\n")
+        list_of_pids.pop()
+        return len(list_of_pids)
     else:
         return None

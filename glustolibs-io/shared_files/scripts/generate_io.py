@@ -15,29 +15,29 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import subprocess
-import re
-import time
-import multiprocessing
-import tempfile
-import os
-import shutil
-import signal
-import argparse
-import sys
-import yaml
-import datetime
-
-ONE_GB_BYTES = 1073741824.0
-
 """
 Script for generating IO on client
 """
 
+from __future__ import print_function
+import argparse
+import datetime
+import multiprocessing
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import yaml
+
+ONE_GB_BYTES = float(1024 ** 3)
+
 
 def get_disk_usage(path):
-    """
-    This module gets disk usage of the given path
+    """Get disk usage of the given path.
 
     Args:
         path (str): path for which disk usage to be calculated
@@ -45,7 +45,6 @@ def get_disk_usage(path):
     Returns:
         dict: disk usage in dict format on success
         None Type, on failure
-
     """
 
     cmd = 'stat -f ' + path
@@ -73,30 +72,27 @@ def get_disk_usage(path):
         print("Regex mismatch in get_disk_usage()")
         return None
 
-    usage_info = dict()
-    keys = ['b_size', 'b_total', 'b_free', 'b_avail', 'i_total', 'i_free']
-    val = list(match.groups())
-    info = dict(zip(keys, val))
-    usage_info['total'] = ((int(info['b_total']) * int(info['b_size'])) /
-                           ONE_GB_BYTES)
-    usage_info['free'] = ((int(info['b_free']) * int(info['b_size'])) /
-                          ONE_GB_BYTES)
-    usage_info['used_percent'] = (100 - (100.0 * usage_info['free'] /
-                                  usage_info['total']))
-    usage_info['total_inode'] = int(info['i_total'])
-    usage_info['free_inode'] = int(info['i_free'])
-    usage_info['used_percent_inode'] = ((100 -
-                                        (100.0 * usage_info['free_inode']) /
-                                        usage_info['total_inode']))
+    keys = ('b_size', 'b_total', 'b_free', 'b_avail', 'i_total', 'i_free')
+    values = list(match.groups())
+    data = dict(zip(keys, values))
+    usage_info = {'total': (
+        int(data['b_total']) * int(data['b_size']) // ONE_GB_BYTES)}
+    usage_info['free'] = (
+        int(data['b_free']) * int(data['b_size']) // ONE_GB_BYTES)
+    usage_info['used_percent'] = (
+        100 - (100.0 * usage_info['free'] // usage_info['total']))
+    usage_info['total_inode'] = int(data['i_total'])
+    usage_info['free_inode'] = int(data['i_free'])
+    usage_info['used_percent_inode'] = (
+        100 - (100.0 * usage_info['free_inode']) // usage_info['total_inode'])
     usage_info['used'] = usage_info['total'] - usage_info['free']
-    usage_info['used_inode'] = (usage_info['total_inode'] -
-                                usage_info['free_inode'])
+    usage_info['used_inode'] = (
+        usage_info['total_inode'] - usage_info['free_inode'])
     return usage_info
 
 
 def get_disk_used_percent(dirname):
-    """
-    Module to get disk used percent
+    """Get disk used percentage.
 
     Args:
        dirname (str): absolute path of directory
@@ -107,21 +103,18 @@ def get_disk_used_percent(dirname):
 
     Example:
         get_disk_used_percent("/mnt/glusterfs")
-
     """
 
     output = get_disk_usage(dirname)
     if output is None:
-        print("Failed to get disk used percent for %s"
-              % dirname)
+        print("Failed to get disk used percent for %s" % dirname)
         return None
     return output['used_percent']
 
 
 def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
                                                timeout):
-    """
-    Module to check if percent to fill or timeout is met.
+    """Check if percent to fill or timeout is met.
 
     Args:
         dirname (str): absolute path of directory
@@ -133,8 +126,7 @@ def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
             is met, False otherwise
 
     Example:
-        check_if_percent_to_fill_or_timeout_is_met("/mnt/glusterfs",
-                                                       10, 60)
+        check_if_percent_to_fill_or_timeout_is_met("/mnt/glusterfs", 10, 60)
     """
     flag = 0
     count = 0
@@ -145,11 +137,11 @@ def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
 
         if int(percent_to_fill) > int(used):
             remaining_to_fill = int(percent_to_fill) - int(used)
-            print("Remaining space left to fill data in directory %s is %s"
-                  % (dirname, str(remaining_to_fill)))
+            print("Remaining space left to fill data in directory %s is %s" % (
+                dirname, str(remaining_to_fill)))
             time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-            print("Directory %s used percent at time %s: %s"
-                  % (dirname, time_str, used))
+            print("Directory %s used percent at time %s: %s" % (
+                dirname, time_str, used))
             if int(percent_to_fill) <= int(used):
                 flag = 1
                 break
@@ -157,8 +149,8 @@ def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
             count = count + 5
         else:
             print("Directory %s is filled with given percent already. "
-                  "Percentage filled: %s"
-                  % (dirname, str(percent_to_fill)))
+                  "Percentage filled: %s" % (
+                      dirname, str(percent_to_fill)))
             flag = 1
             break
 
@@ -175,12 +167,9 @@ def check_if_percent_to_fill_or_timeout_is_met(dirname, percent_to_fill,
 def run_check_if_percent_to_fill_or_timeout_is_met(dirname,
                                                    percent_to_fill,
                                                    timeout, event):
-    """
-    Helper Module to check if percent to fill or timeout is met.
-    """
-    ret = check_if_percent_to_fill_or_timeout_is_met(dirname,
-                                                     percent_to_fill,
-                                                     timeout)
+    """Check if percent to fill or timeout is met."""
+    ret = check_if_percent_to_fill_or_timeout_is_met(
+        dirname, percent_to_fill, timeout)
     if ret:
         event.set()
         return True
@@ -188,10 +177,8 @@ def run_check_if_percent_to_fill_or_timeout_is_met(dirname,
         return False
 
 
-def run_fio(proc_queue, script_path, dirname,
-            job_files_list, log_file):
-    """
-    Module to invoke IOs using fio tool
+def run_fio(proc_queue, script_path, dirname, job_files_list, log_file):
+    """Invoke IOs using fio tool.
 
     Args:
         proc_queue (obj): multiprocessing queue object
@@ -203,7 +190,6 @@ def run_fio(proc_queue, script_path, dirname,
     Returns:
         bool: True, if fio starts to write data and stops when it
             gets "STOP" string in queue, False otherwise
-
     """
     tmpdir = tempfile.mkdtemp()
     job_files_list_to_run = []
@@ -212,23 +198,17 @@ def run_fio(proc_queue, script_path, dirname,
         shutil.copy(job_file, job_file_to_run)
         job_files_list_to_run.append(job_file_to_run)
 
+    python_bin = "/usr/bin/env python%d" % sys.version_info.major
+    cmd = "%s %s --job-files '%s' %s" % (
+        python_bin, script_path, ' '.join(job_files_list_to_run), dirname)
     if log_file is not None:
         with open(log_file, "w") as fd:
             time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-            title = ("=========STARTING FIO-" + time_str +
-                     "=======\n")
+            title = ("=========STARTING FIO-" + time_str + "=======\n")
             fd.write(title)
             fd.close()
-        cmd = ("python " + script_path +
-               " --job-files '" + ' '.join(job_files_list_to_run) + "' " +
-               dirname + " >> " + log_file + " 2>&1")
-
-    else:
-        cmd = ("python " + script_path +
-               " --job-files '" + ' '.join(job_files_list_to_run) +
-               "' " + dirname)
-    p = subprocess.Popen(cmd, shell=True,
-                         preexec_fn=os.setsid)
+        cmd += " >> %s 2>&1" % log_file
+    p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
     time.sleep(10)
     if p is None:
         print("Unable to trigger IO using fio")
@@ -240,8 +220,7 @@ def run_fio(proc_queue, script_path, dirname,
             with open(log_file, "a") as fd:
                 time_str = (datetime.datetime.now().
                             strftime('%Y_%m_%d_%H_%M_%S'))
-                title = ("=========ENDING FIO-" + time_str +
-                         "=======\n")
+                title = ("=========ENDING FIO-" + time_str + "=======\n")
                 fd.write(title)
                 fd.close()
             break
@@ -250,10 +229,8 @@ def run_fio(proc_queue, script_path, dirname,
     return True
 
 
-def start_populate_data(mount_point, io_dict,
-                        percent_to_fill, timeout):
-    """
-    Starts populating data on the directory
+def start_populate_data(mount_point, io_dict, percent_to_fill, timeout):
+    """Start populating data on a directory.
 
     Args:
         mount_point(str): Directory name to fill data
@@ -263,29 +240,23 @@ def start_populate_data(mount_point, io_dict,
 
     Returns:
         bool: returns True, if IO succeeds. False, otherwise
-
     """
 
     dirname = mount_point
     m = multiprocessing.Manager()
     event = m.Event()
 
-    proc_list = []
-    proc_queue = []
-
+    proc_list, proc_queue = [], []
     for each_io in io_dict.keys():
         q = multiprocessing.Queue()
         proc_queue.append(q)
         workload_type = io_dict[each_io]['workload_type']
-        proc = multiprocessing.Process(target=(io_dict[each_io]
-                                               ['function_addr']),
-                                       args=(q,
-                                             (io_dict[each_io]
-                                              ['script_path']),
-                                             dirname,
-                                             (io_dict[each_io]['job_files']
-                                              [workload_type]),
-                                             io_dict[each_io]['log_file']))
+        proc = multiprocessing.Process(
+            target=io_dict[each_io]['function_addr'],
+            args=(q, io_dict[each_io]['script_path'], dirname,
+                  io_dict[each_io]['job_files'][workload_type],
+                  io_dict[each_io]['log_file'])
+        )
         proc_list.append(proc)
         time.sleep(5)
         proc.start()
@@ -303,8 +274,7 @@ def start_populate_data(mount_point, io_dict,
 
 
 def stop_populate_data(proc_list, proc_queue, mevent=None):
-    """
-    Stops populating data on the directory
+    """Stop populating data on a directory.
 
     Args:
         proc_list (list): List of processes to kill
@@ -337,27 +307,22 @@ def stop_populate_data(proc_list, proc_queue, mevent=None):
             proc.terminate()
         return True
     except Exception as e:
-        print("Exception occurred in stop_populate_data(): %s"
-              % e)
+        print("Exception occurred in stop_populate_data(): %s" % e)
         return False
 
 
 def call_get_disk_usage(args):
-    """
-    Main method for getting disk usage
-    """
+    """Main method for getting disk usage."""
 
     disk_usage = get_disk_usage(args.dir)
     if disk_usage is None:
         return 1
-    print disk_usage
+    print(disk_usage)
     return 0
 
 
 def call_start_populate_data(args):
-    """
-    Main method for populating data
-    """
+    """Main method for populating data."""
 
     dirname = args.dir
     config_file_list = args.c.split()
@@ -385,24 +350,18 @@ def call_start_populate_data(args):
     # case4: If -i | -w | -i and -w is not specified , run all the tools
     #        specified in the config file
 
-    if args.i is not None:
-        io_list = args.i.split()
-    else:
-        io_list = []
-
+    io_list = [] if args.i is None else args.i.split()
     workload_type = ""
     if workload is not None:
-        if (('workload' in config_data['io'] and
-             config_data['io']['workload'] and
-             workload in config_data['io']['workload'])):
+        if workload in (config_data['io'].get('workload', []) or []):
             if not io_list:
                 io_list = config_data['io']['workload'][workload]
             else:
                 io_list_from_user = io_list
-                io_list_for_given_workload = (config_data['io']
-                                              ['workload'][workload])
-                io_list = (list(set(io_list_from_user).
-                           intersection(io_list_for_given_workload)))
+                io_list_for_given_workload = (
+                    config_data['io']['workload'][workload])
+                io_list = (list(set(io_list_from_user).intersection(
+                    io_list_for_given_workload)))
             workload_type = workload
     else:
         if not io_list:
@@ -424,41 +383,41 @@ def call_start_populate_data(args):
     time_str = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     log_file = filename + "_" + time_str + file_ext
 
-    print "GENERATE IO Log file: %s" % log_file
+    print("GENERATE IO Log file: %s" % log_file)
 
-    if('io' in config_data and 'tools' in config_data['io']):
+    if 'io' in config_data and 'tools' in config_data['io']:
         config_data_io = dict(config_data['io']['tools'])
     else:
-        print "io tools info is not given in config file"
+        print("io tools info is not given in config file")
         return 1
 
-    if('io' in config_data and 'scripts' in config_data['io']):
+    if 'io' in config_data and 'scripts' in config_data['io']:
         config_data_io.update(config_data['io']['scripts'])
     else:
-        print "io scripts info is not given in config file"
+        print("io scripts info is not given in config file")
         return 1
 
     io_details = {}
     for io in io_list:
         if io in config_data_io.keys():
             config_data_io[io]['function_addr'] = eval("run_" + io)
-            config_data_io[io]['log_file'] = (log_file_dir + "/" +
-                                              io + "_log.log")
+            config_data_io[io]['log_file'] = (
+                log_file_dir + "/" + io + "_log.log")
             config_data_io[io]['workload_type'] = workload_type
             io_details[io] = config_data_io[io]
         else:
-            print ("The IO tool/script - '%s' details not present in config "
-                   "file. Skipping the IO - '%s'" % (io, io))
+            print("The IO tool/script - '%s' details not present in config "
+                  "file. Skipping the IO - '%s'" % (io, io))
 
     if not io_details:
-        print "Config file doesn't have IO details for %s" % ','.join(io_list)
+        print("Config file doesn't have IO details for %s" % ','.join(io_list))
         return 1
 
     # Starts generating IO
     # If -t and -p bot are passed as options, runs all the io's as specified
     # until '-t' or '-p' is reached. i.e which ever reaches first.
     ret = start_populate_data(dirname, io_details, percent, timeout)
-    print "Disk Usage Details of %s: %s" % (dirname, get_disk_usage(dirname))
+    print("Disk Usage Details of %s: %s" % (dirname, get_disk_usage(dirname)))
 
     fd_list = []
     for io in io_details.keys():
@@ -471,8 +430,8 @@ def call_start_populate_data(args):
             for each_fh in fd_list:
                 fd.write(each_fh.read())
                 each_fh.close()
-            fd.write("\nDisk Usage Details of %s: %s" % (dirname,
-                     get_disk_usage(dirname)))
+            fd.write("\nDisk Usage Details of %s: %s" % (
+                dirname, get_disk_usage(dirname)))
             fd.close()
 
     if ret:
@@ -482,39 +441,35 @@ def call_start_populate_data(args):
 
 
 if __name__ == "__main__":
-    print "Starting IO Generation..."
+    print("Starting IO Generation...")
     test_start_time = datetime.datetime.now().replace(microsecond=0)
 
-    write_data_parser = argparse.ArgumentParser(prog="generate_io.py",
-                                                description=("Program for "
-                                                             "generating io"))
+    write_data_parser = argparse.ArgumentParser(
+        prog="generate_io.py", description="Program for generating io")
 
     write_data_required_parser = write_data_parser.add_argument_group(
-                                                    'required named arguments')
-
+        'required named arguments')
     write_data_required_parser.add_argument(
         'dir', metavar='DIR', type=str,
         help="Directory on which operations has to be performed")
-    write_data_required_parser.add_argument('-c', help="space separated list "
-                                                       "of config files",
-                                            required=True)
-    write_data_parser.add_argument('-i', help="space separated list of "
-                                              "io tools")
+    write_data_required_parser.add_argument(
+        '-c', help="space separated list of config files", required=True)
+    write_data_parser.add_argument(
+        '-i', help="space separated list of io tools")
     write_data_parser.add_argument('-w', help="Workload type")
-    write_data_parser.add_argument('-p', help="percentage to fill the"
-                                              "directory",
-                                   type=int, default=100)
-    write_data_parser.add_argument('-t', help="timeout value in seconds.",
-                                   type=int)
+    write_data_parser.add_argument(
+        '-p', help="percentage to fill the directory", type=int, default=100)
+    write_data_parser.add_argument(
+        '-t', help="timeout value in seconds.", type=int)
     default_log_file = "/var/tmp/generate_io/generate_io.log"
-    write_data_parser.add_argument('-l', help="log file name.",
-                                   default=default_log_file)
+    write_data_parser.add_argument(
+        '-l', help="log file name.", default=default_log_file)
 
     write_data_parser.set_defaults(func=call_start_populate_data)
 
     args = write_data_parser.parse_args()
     rc = args.func(args)
     test_end_time = datetime.datetime.now().replace(microsecond=0)
-    print "Execution time: %s" % (test_end_time - test_start_time)
-    print "Ending IO Generation"
+    print("Execution time: %s" % (test_end_time - test_start_time))
+    print("Ending IO Generation")
     sys.exit(rc)

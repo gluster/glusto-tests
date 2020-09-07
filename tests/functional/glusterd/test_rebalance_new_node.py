@@ -1,4 +1,4 @@
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import (setup_volume, cleanup_volume)
@@ -33,8 +34,7 @@ from glustolibs.gluster.mount_ops import is_mounted
 class TestRebalanceStatus(GlusterBaseClass):
 
     def setUp(self):
-
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         # check whether peers are in connected state
         ret = self.validate_peers_are_connected()
@@ -51,11 +51,9 @@ class TestRebalanceStatus(GlusterBaseClass):
         # Uploading file_dir script in all client direcotries
         g.log.info("Upload io scripts to clients %s for running IO on "
                    "mounts", self.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         self.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                    "file_dir_ops.py")
-        ret = upload_scripts(self.clients, script_local_path)
+        ret = upload_scripts(self.clients, self.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  self.clients)
@@ -67,6 +65,7 @@ class TestRebalanceStatus(GlusterBaseClass):
         # unmount the volume
         ret = self.unmount_volume(self.mounts)
         self.assertTrue(ret, "Volume unmount failed for %s" % self.volname)
+        g.log.info("Volume unmounted successfully : %s", self.volname)
 
         # get volumes list and clean up all the volumes
         vol_list = get_volume_list(self.mnode)
@@ -87,13 +86,7 @@ class TestRebalanceStatus(GlusterBaseClass):
             raise ExecutionError("Peer probe failed to all the servers from "
                                  "the node.")
 
-        GlusterBaseClass.tearDown.im_func(self)
-
-    @classmethod
-    def tearDownClass(cls):
-
-        # Calling GlusterBaseClass tearDown
-        GlusterBaseClass.tearDownClass.im_func(cls)
+        self.get_super_method(self, 'tearDown')()
 
     def test_rebalance_status_from_newly_probed_node(self):
 
@@ -131,7 +124,7 @@ class TestRebalanceStatus(GlusterBaseClass):
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
-            cmd = ("python %s create_deep_dirs_with_files "
+            cmd = ("/usr/bin/env python %s create_deep_dirs_with_files "
                    "--dirname-start-num %d "
                    "--dir-depth 10 "
                    "--dir-length 5 "

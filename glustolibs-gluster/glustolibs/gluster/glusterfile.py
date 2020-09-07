@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2018 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ import os
 import re
 
 from glusto.core import Glusto as g
-
 from glustolibs.gluster.layout import Layout
+from glustolibs.misc.misc_libs import upload_scripts
 
 
 def calculate_hash(host, filename):
@@ -39,26 +39,43 @@ def calculate_hash(host, filename):
 
     Returns:
         An integer representation of the hash
+
+    TODO: For testcases specifically testing hashing routine
+          consider using a baseline external Davies-Meyer hash_value.c
+          Creating comparison hash from same library we are testing
+          may not be best practice here. (Holloway)
     """
-    # TODO: For testcases specifically testing hashing routine
-    #        consider using a baseline external Davies-Meyer hash_value.c
-    #        Creating comparison hash from same library we are testing
-    #        may not be best practice here. (Holloway)
     try:
         # Check if libglusterfs.so.0 is available locally
         glusterfs = ctypes.cdll.LoadLibrary("libglusterfs.so.0")
         g.log.debug("Library libglusterfs.so.0 loaded locally")
+        computed_hash = (
+            ctypes.c_uint32(glusterfs.gf_dm_hashfn(filename,
+                                                   len(filename))))
+        hash_value = int(computed_hash.value)
     except OSError:
-        conn = g.rpyc_get_connection(host)
-        glusterfs = \
-            conn.modules.ctypes.cdll.LoadLibrary("libglusterfs.so.0")
-        g.log.debug("Library libglusterfs.so.0 loaded via rpyc")
-
-    computed_hash = \
-        ctypes.c_uint32(glusterfs.gf_dm_hashfn(filename, len(filename)))
-    # conn.close()
-
-    return int(computed_hash.value)
+        script_path = ("/usr/share/glustolibs/scripts/"
+                       "compute_hash.py")
+        if not file_exists(host, script_path):
+            if upload_scripts(host, script_path,
+                              '/usr/share/glustolibs/scripts/'):
+                g.log.info("Successfully uploaded script "
+                           "compute_hash.py!")
+            else:
+                g.log.error('Unable to upload the script to node {0}'
+                            .format(host))
+                return 0
+        else:
+            g.log.info("compute_hash.py already present!")
+        cmd = ("/usr/bin/env python {0} {1}".format(script_path,
+                                                    filename))
+        ret, out, _ = g.run(host, cmd)
+        if ret:
+            g.log.error('Unable to run the script on node {0}'
+                        .format(host))
+            return 0
+        hash_value = int(out.split('\n')[0])
+    return hash_value
 
 
 def get_mountpoint(host, fqpath):
@@ -80,40 +97,50 @@ def get_mountpoint(host, fqpath):
     return None
 
 
-def get_fattr(host, fqpath, fattr):
+def get_fattr(host, fqpath, fattr, encode="hex"):
     """getfattr for filepath on remote system
 
     Args:
         host (str): The hostname/ip of the remote system.
         fqpath (str): The fully-qualified path to the file.
         fattr (str): name of the fattr to retrieve
-
+    Kwargs:
+        encode(str): The supported types of encoding are
+                     [hex|text|base64]
+                     Defaults to hex type of encoding
     Returns:
         getfattr result on success. None on fail.
     """
-    command = ("getfattr --absolute-names --only-values -n '%s' %s" %
-               (fattr, fqpath))
+    command = ("getfattr --absolute-names -e '%s' "
+               "-n '%s' %s" %
+               (encode, fattr, fqpath))
     rcode, rout, rerr = g.run(host, command)
-
-    if rcode == 0:
-        return rout.strip()
+    if not rcode:
+        return rout.strip().split('=')[1].replace('"', '')
 
     g.log.error('getfattr failed: %s' % rerr)
     return None
 
 
-def get_fattr_list(host, fqpath):
+def get_fattr_list(host, fqpath, encode_hex=False):
     """List of xattr for filepath on remote system.
 
     Args:
         host (str): The hostname/ip of the remote system.
         fqpath (str): The fully-qualified path to the file.
 
+    Kwargs:
+       encode_hex(bool): Fetch xattr in hex if True
+                         (Default:False)
+
     Returns:
         Dictionary of xattrs on success. None on fail.
     """
-    command = "getfattr --absolute-names -d -m - %s" % fqpath
-    rcode, rout, rerr = g.run(host, command)
+    cmd = "getfattr --absolute-names -d -m - {}".format(fqpath)
+    if encode_hex:
+        cmd = ("getfattr --absolute-names -d -m - -e hex {}"
+               .format(fqpath))
+    rcode, rout, rerr = g.run(host, cmd)
 
     if rcode == 0:
         xattr_list = {}
@@ -220,7 +247,7 @@ def get_file_stat(host, fqpath):
     Returns:
         A dictionary of file stat data. None on fail.
     """
-    statformat = '%F:%n:%i:%a:%s:%h:%u:%g:%U:%G'
+    statformat = '%F$%n$%i$%a$%s$%h$%u$%g$%U$%G$%x$%y$%z$%X$%Y$%Z'
     command = "stat -c '%s' %s" % (statformat, fqpath)
     rcode, rout, rerr = g.run(host, command)
     if rcode == 0:
@@ -228,7 +255,9 @@ def get_file_stat(host, fqpath):
         stat_string = rout.strip()
         (filetype, filename, inode,
          access, size, links,
-         uid, gid, username, groupname) = stat_string.split(":")
+         uid, gid, username, groupname,
+         atime, mtime, ctime, epoch_atime,
+         epoch_mtime, epoch_ctime) = stat_string.split("$")
 
         stat_data['filetype'] = filetype
         stat_data['filename'] = filename
@@ -240,6 +269,12 @@ def get_file_stat(host, fqpath):
         stat_data["groupname"] = groupname
         stat_data["uid"] = uid
         stat_data["gid"] = gid
+        stat_data["atime"] = atime
+        stat_data["mtime"] = mtime
+        stat_data["ctime"] = ctime
+        stat_data["epoch_atime"] = epoch_atime
+        stat_data["epoch_mtime"] = epoch_mtime
+        stat_data["epoch_ctime"] = epoch_ctime
 
         return stat_data
 
@@ -365,7 +400,8 @@ def get_pathinfo(host, fqpath):
         A dictionary of pathinfo data for a remote file. None on fail.
     """
     pathinfo = {}
-    pathinfo['raw'] = get_fattr(host, fqpath, 'trusted.glusterfs.pathinfo')
+    pathinfo['raw'] = get_fattr(host, fqpath, 'trusted.glusterfs.pathinfo',
+                                encode="text")
     pathinfo['brickdir_paths'] = re.findall(r".*?POSIX.*?:(\S+)\>",
                                             pathinfo['raw'])
 
@@ -388,17 +424,14 @@ def is_linkto_file(host, fqpath):
     """
     command = 'file %s' % fqpath
     rcode, rout, _ = g.run(host, command)
-
     if rcode == 0:
-        if 'sticky empty' in rout.strip():
+        # An additional ',' is there for newer platforms
+        if 'sticky empty' or 'sticky, empty' in rout.strip():
             stat = get_file_stat(host, fqpath)
             if int(stat['size']) == 0:
-                # xattr = get_fattr(host, fqpath,
-                #                  'trusted.glusterfs.dht.linkto')
                 xattr = get_dht_linkto_xattr(host, fqpath)
                 if xattr is not None:
                     return True
-
     return False
 
 
@@ -412,7 +445,8 @@ def get_dht_linkto_xattr(host, fqpath):
     Returns:
         Return value of get_fattr trusted.glusterfs.dht.linkto call.
     """
-    linkto_xattr = get_fattr(host, fqpath, 'trusted.glusterfs.dht.linkto')
+    linkto_xattr = get_fattr(host, fqpath, 'trusted.glusterfs.dht.linkto',
+                             encode="text")
 
     return linkto_xattr
 
@@ -461,6 +495,78 @@ def check_if_pattern_in_file(host, pattern, fqpath):
     if not out:
         return 1
     return 0
+
+
+def occurences_of_pattern_in_file(node, search_pattern, filename):
+    """
+    Get the number of occurences of pattern in the file
+
+    Args:
+        node (str): Host on which the command is executed.
+        search_pattern (str): Pattern to be found in the file.
+        filename (str): File in which the pattern is to be validated
+
+    Returns:
+         (int): (-1), When the file doesn't exists.
+                (0), When pattern doesn't exists in the file.
+                (number), When pattern is found and the number of
+                          occurences of pattern in the file.
+
+    Example:
+    occurences_of_pattern_in_file(node, search_pattern, filename)
+    """
+
+    ret = file_exists(node, filename)
+    if not ret:
+        g.log.error("File %s is not present on the node " % filename)
+        return -1
+
+    cmd = ("grep -c '%s' %s" % (search_pattern, filename))
+    ret, out, _ = g.run(node, cmd)
+    if ret:
+        g.log.error("No occurence of the pattern found in the file %s" %
+                    filename)
+        return 0
+    return int(out.strip('\n'))
+
+
+def create_link_file(node, file, link, soft=False):
+    """
+    Create hard or soft link for an exisiting file
+
+    Args:
+        node(str): Host on which the command is executed.
+        file(str): Path to the source file.
+        link(str): Path to the link file.
+
+    Kawrgs:
+        soft(bool): Create soft link if True else create
+        hard link.
+
+    Returns:
+        (bool): True if command successful else False.
+
+    Example:
+        >>> create_link_file('10.20.30.40', '/mnt/mp/file.txt',
+                             '/mnt/mp/link')
+        True
+    """
+    cmd = "ln {} {}".format(file, link)
+    if soft:
+        cmd = "ln -s {} {}".format(file, link)
+
+    ret, _, err = g.run(node, cmd)
+    if ret:
+        if soft:
+            g.log.error('Failed to create soft link on {} '
+                        'for file {} with error {}'
+                        .format(node, file, err))
+        else:
+            g.log.error('Failed to create hard link on {} '
+                        'for file {} with error {}'
+                        .format(node, file, err))
+        return False
+    return True
 
 
 class GlusterFile(object):

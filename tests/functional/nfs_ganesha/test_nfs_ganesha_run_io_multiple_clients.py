@@ -20,9 +20,8 @@
 """
 
 from glusto.core import Glusto as g
-from glustolibs.gluster.gluster_base_class import runs_on
+from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.nfs_ganesha_libs import NfsGaneshaClusterSetupClass
 from glustolibs.gluster.lib_utils import install_epel
 from glustolibs.io.utils import run_bonnie, run_fio, run_mixed_io
 
@@ -30,7 +29,7 @@ from glustolibs.io.utils import run_bonnie, run_fio, run_mixed_io
 @runs_on([['replicated', 'distributed', 'distributed-replicated',
            'dispersed', 'distributed-dispersed'],
           ['nfs']])
-class TestNfsGaneshaWithDifferentIOPatterns(NfsGaneshaClusterSetupClass):
+class TestNfsGaneshaWithDifferentIOPatterns(GlusterBaseClass):
     """
         Tests Nfs Ganesha stability by running different IO Patterns
     """
@@ -40,13 +39,7 @@ class TestNfsGaneshaWithDifferentIOPatterns(NfsGaneshaClusterSetupClass):
         """
         Setup nfs-ganesha if not exists.
         """
-        NfsGaneshaClusterSetupClass.setUpClass.im_func(cls)
-
-        # Setup nfs-ganesha if not exists.
-        ret = cls.setup_nfs_ganesha()
-        if not ret:
-            raise ExecutionError("Failed to setup nfs-ganesha cluster")
-        g.log.info("nfs-ganesha cluster is healthy")
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Install epel
         if not install_epel(cls.clients):
@@ -128,9 +121,3 @@ class TestNfsGaneshaWithDifferentIOPatterns(NfsGaneshaClusterSetupClass):
         if not ret:
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Cleanup volume %s completed successfully", self.volname)
-
-    @classmethod
-    def tearDownClass(cls):
-        (NfsGaneshaClusterSetupClass.
-         tearDownClass.
-         im_func(cls, delete_nfs_ganesha_cluster=False))

@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from glusto.core import Glusto as g
+
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_ops import set_volume_options
@@ -45,16 +46,14 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
         # Calling GlusterBaseClass setUpClass
-        GlusterBaseClass.setUpClass.im_func(cls)
+        cls.get_super_method(cls, 'setUpClass')()
 
         # Upload io scripts for running IO on mounts
         g.log.info("Upload io scripts to clients %s for running IO on mounts",
                    cls.clients)
-        script_local_path = ("/usr/share/glustolibs/io/scripts/"
-                             "file_dir_ops.py")
         cls.script_upload_path = ("/usr/share/glustolibs/io/scripts/"
                                   "file_dir_ops.py")
-        ret = upload_scripts(cls.clients, [script_local_path])
+        ret = upload_scripts(cls.clients, cls.script_upload_path)
         if not ret:
             raise ExecutionError("Failed to upload IO scripts to clients %s"
                                  % cls.clients)
@@ -71,7 +70,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
-        GlusterBaseClass.setUp.im_func(self)
+        self.get_super_method(self, 'setUp')()
 
         self.all_mounts_procs = []
         self.io_validation_complete = False
@@ -106,7 +105,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         g.log.info("Successful in umounting the volume and Cleanup")
 
         # Calling GlusterBaseClass teardown
-        GlusterBaseClass.tearDown.im_func(self)
+        self.get_super_method(self, 'tearDown')()
 
     def test_conservative_merge_of_files_heal_command(self):
         """
@@ -160,9 +159,10 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_deep_dirs_with_files "
-                       "-d 0 -l 5 -f 10 --dirname-start-num 1 %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python %s create_deep_dirs_with_files "
+                       "-d 0 -l 5 -f 10 --dirname-start-num 1 %s" % (
+                           self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
@@ -204,9 +204,10 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                        mount_obj.client_system, mount_obj.mountpoint)
             # Create files
             g.log.info('Creating files...')
-            command = ("python %s create_deep_dirs_with_files "
-                       "-d 0 -l 5 -f 10 --dirname-start-num 6 %s"
-                       % (self.script_upload_path, mount_obj.mountpoint))
+            command = ("/usr/bin/env python %s create_deep_dirs_with_files "
+                       "-d 0 -l 5 -f 10 --dirname-start-num 6 %s" % (
+                           self.script_upload_path,
+                           mount_obj.mountpoint))
 
             proc = g.run_async(mount_obj.client_system, command,
                                user=mount_obj.user)
@@ -320,6 +321,7 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
             g.log.info('Arequals for mountpoint and %s are equal', brick)
         g.log.info('All arequals are equal for replicated')
 
-        self.assertNotEqual(cmp(arequals_before_heal, arequals_after_heal), 0,
-                            'Arequals are equal for bricks '
-                            'before and after healing')
+        self.assertNotEqual(
+            arequals_before_heal, arequals_after_heal,
+            'Arequals are equal for bricks before (%s) and after (%s) '
+            'healing' % (arequals_before_heal, arequals_after_heal))

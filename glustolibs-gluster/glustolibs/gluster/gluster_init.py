@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2016  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
     Description: This file contains the methods for starting/stopping glusterd
         and other initial gluster environment setup helpers.
 """
+from time import sleep
 from glusto.core import Glusto as g
 
 
@@ -33,14 +34,14 @@ def start_glusterd(servers):
         bool : True if starting glusterd is successful on all servers.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "pgrep glusterd || service glusterd start"
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to start glusterd on server %s", server)
@@ -62,14 +63,14 @@ def stop_glusterd(servers):
         bool : True if stopping glusterd is successful on all servers.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "service glusterd stop"
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to stop glusterd on server %s", server)
@@ -80,32 +81,62 @@ def stop_glusterd(servers):
     return True
 
 
-def restart_glusterd(servers):
+def restart_glusterd(servers, enable_retry=True):
     """Restart the glusterd on specified servers.
 
     Args:
         servers (str|list): A server|List of server hosts on which glusterd
             has to be restarted.
 
+    Kwargs:
+        enable_retry(Bool): If set to True than runs reset-failed else
+                            do nothing.
+
     Returns:
         bool : True if restarting glusterd is successful on all servers.
             False otherwise.
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd = "service glusterd restart"
     results = g.run_parallel(servers, cmd)
 
     _rc = True
-    for server, ret_values in results.iteritems():
+    for server, ret_values in results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("Unable to restart glusterd on server %s", server)
             _rc = False
-    if not _rc:
-        return False
+    if not _rc and enable_retry:
+        ret = reset_failed_glusterd(servers)
+        if ret:
+            ret = restart_glusterd(servers)
+        return ret
+    return _rc
 
+
+def reset_failed_glusterd(servers):
+    """Reset-failed glusterd on specified servers.
+
+    Args:
+        servers (str|list): A server|List of server hosts on which glusterd
+            has to be reset-failed.
+
+    Returns:
+        bool : True if reset-failed glusterd is successful on all servers.
+            False otherwise.
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "systemctl reset-failed glusterd"
+    results = g.run_parallel(servers, cmd)
+
+    for server, (retcode, _, _) in results.items():
+        if retcode:
+            g.log.error("Unable to reset glusterd on server %s", server)
+            return False
     return True
 
 
@@ -122,7 +153,7 @@ def is_glusterd_running(servers):
            -1  : if glusterd not running and PID is alive
 
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     cmd1 = "service glusterd status"
@@ -131,7 +162,7 @@ def is_glusterd_running(servers):
     cmd2_results = g.run_parallel(servers, cmd2)
 
     _rc = 0
-    for server, ret_values in cmd1_results.iteritems():
+    for server, ret_values in cmd1_results.items():
         retcode, _, _ = ret_values
         if retcode != 0:
             g.log.error("glusterd is not running on the server %s", server)
@@ -157,7 +188,7 @@ def env_setup_servers(servers):
             False otherwise.
 
     """
-    if isinstance(servers, str):
+    if not isinstance(servers, list):
         servers = [servers]
 
     g.log.info("The function isn't implemented fully")
@@ -175,7 +206,7 @@ def get_glusterd_pids(nodes):
     return the process id's in dictionary format
 
     Args:
-        nodes ( str|list ) : Node/Nodes of the cluster
+        nodes (str|list) : Node(s) of the cluster
 
     Returns:
         tuple : Tuple containing two elements (ret, gluster_pids).
@@ -190,7 +221,7 @@ def get_glusterd_pids(nodes):
     """
     glusterd_pids = {}
     _rc = True
-    if isinstance(nodes, str):
+    if not isinstance(nodes, list):
         nodes = [nodes]
 
     cmd = "pidof glusterd"
@@ -222,3 +253,47 @@ def get_glusterd_pids(nodes):
             glusterd_pids[node] = ['-1']
 
     return _rc, glusterd_pids
+
+
+def wait_for_glusterd_to_start(servers, glusterd_start_wait_timeout=80):
+    """Checks glusterd is running on nodes with timeout.
+
+    Args:
+        servers (str|list): A server|List of server hosts on which glusterd
+            status has to be checked.
+        glusterd_start_wait_timeout: timeout to retry glusterd running
+            check in node.
+
+    Returns:
+    bool : True if glusterd is running on servers.
+        False otherwise.
+
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+    count = 0
+    while count <= glusterd_start_wait_timeout:
+        ret = is_glusterd_running(servers)
+        if not ret:
+            g.log.info("glusterd is running on %s", servers)
+            return True
+        sleep(1)
+        count += 1
+    g.log.error("glusterd is not running on %s", servers)
+    return False
+
+
+def get_gluster_version(host):
+    """Checks the gluster version on the nodes
+
+    Args:
+        host(str): IP of the host whose gluster version has to be checked.
+
+    Returns:
+        str: The gluster version value.
+    """
+    command = 'gluster --version'
+    _, out, _ = g.run(host, command)
+    g.log.info("The Gluster verion of the cluster under test is %s",
+               out)
+    return out.split(' ')[1]
