@@ -20,7 +20,13 @@ import sys
 
 filename = sys.argv[1]
 glusterfs = ctypes.cdll.LoadLibrary("libglusterfs.so.0")
-computed_hash = ctypes.c_uint32(glusterfs.gf_dm_hashfn(filename,
-                                                       len(filename)))
+
+# In case of python3 encode string to ascii
+if sys.version_info.major == 3:
+    computed_hash = ctypes.c_uint32(glusterfs.gf_dm_hashfn(
+        filename.encode('ascii'), len(filename)))
+else:
+    computed_hash = ctypes.c_uint32(glusterfs.gf_dm_hashfn(
+        filename, len(filename)))
 
 print(computed_hash.value)
