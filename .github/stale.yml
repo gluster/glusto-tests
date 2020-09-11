@@ -1,0 +1,25 @@
+# Number of days of inactivity before an issue becomes stale
+daysUntilStale: 90
+# Number of days of inactivity before a stale issue is closed
+daysUntilClose: 14
+# Issues with these labels will never be considered stale
+exemptLabels:
+  - ToBeTriaged
+  - ToBeFixed
+# Label to use when marking an issue as stale
+staleLabel: wontfix
+
+# Comment to post when marking an issue as stale. Set to `false` to disable
+markComment: >
+  Thank you for your contributions.
+
+  Noticed that this issue is not having any activity in last 3 months! We
+  are marking this issue as stale because it has not had any recent activity
+  and we have decided not to fix it while triaging.
+
+  It will be closed in 14 days if no one responds with a comment here.
+
+# Comment to post when closing a stale issue. Set to `false` to disable
+closeComment: >
+  Closing this issue as there was no update since my last update on issue.
+  If this is an issue which is still valid, feel free to reopen it.
