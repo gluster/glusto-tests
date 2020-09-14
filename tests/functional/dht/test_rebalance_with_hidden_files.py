@@ -91,16 +91,19 @@ class RebalanceValidation(GlusterBaseClass):
         # Start IO on mounts
         g.log.info("Starting IO on all mounts...")
         self.all_mounts_procs = []
+        counter = 1
         for mount_obj in self.mounts:
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
             cmd = ("/usr/bin/env python %s create_files "
-                   "--base-file-name . -f 99 %s" % (
+                   "--base-file-name .file%d -f 99 %s" % (
                        self.script_upload_path,
+                       counter,
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             self.all_mounts_procs.append(proc)
+            counter += 100
 
         # validate IO
         self.assertTrue(
@@ -173,7 +176,8 @@ class RebalanceValidation(GlusterBaseClass):
 
         # Wait for rebalance to complete
         g.log.info("Waiting for rebalance to complete")
-        ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
+        ret = wait_for_rebalance_to_complete(self.mnode, self.volname,
+                                             timeout=1800)
         self.assertTrue(ret, ("Rebalance is not yet complete on the volume "
                               "%s", self.volname))
         g.log.info("Rebalance is successfully complete on the volume %s",

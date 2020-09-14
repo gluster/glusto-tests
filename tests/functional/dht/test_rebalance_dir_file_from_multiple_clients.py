@@ -201,7 +201,7 @@ class RebalanceValidation(GlusterBaseClass):
         # Wait for rebalance to complete
         g.log.info("Waiting for rebalance to complete")
         ret = wait_for_rebalance_to_complete(self.mnode, self.volname,
-                                             timeout=600)
+                                             timeout=1800)
         self.assertTrue(ret, ("Rebalance is not yet complete on the volume "
                               "%s", self.volname))
         g.log.info("Rebalance status on volume %s: Complete",

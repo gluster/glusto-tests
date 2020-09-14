@@ -110,7 +110,7 @@ class TestStackOverflow(GlusterBaseClass):
 
         # Wait for fix-layout to complete
         ret = wait_for_fix_layout_to_complete(self.mnode, self.volname,
-                                              timeout=300)
+                                              timeout=3000)
         self.assertTrue(ret, ("Fix-layout failed on volume %s",
                               self.volname))
         g.log.info("Fix-layout is successful on "
