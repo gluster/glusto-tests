@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+from time import sleep
 
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -158,6 +159,8 @@ class TestBrickPortAfterModifyVolume(GlusterBaseClass):
         self.assertTrue(ret, "glusterd is not connected %s with peer %s"
                         % (self.servers[0], self.servers[1]))
 
+        # Waiting for 5 sec so that the brick will get port
+        sleep(5)
         vol_status = get_volume_status(self.mnode, self.volname)
         self.assertIsNotNone(vol_status, "Failed to get volume "
                              "status for %s" % self.volname)
