@@ -14,7 +14,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from unittest import skip
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import (GlusterBaseClass, runs_on)
 from glustolibs.gluster.exceptions import ExecutionError
@@ -69,10 +68,8 @@ class ConsistentValuesAcrossTimeStamps(GlusterBaseClass):
                         .format(objectname))
         g.log.info("a|m|c timestamps on %s are same", objectname)
 
-    @skip('Skipping due to Bug 1761932')
     def test_time_stamps_on_create(self):
         '''
-        This case validates BZ#1761932
         1. Create a volume , enable features.ctime, mount volume
         2. Create a directory "dir1" and check the a|m|c times
         3. Create a file "file1"  and check the a|m|c times
