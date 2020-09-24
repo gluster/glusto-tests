@@ -165,7 +165,7 @@ class TestEcUssSnapshot(GlusterBaseClass):
         # Rename all files inside dir1 at mountpoint on dir1
         cmd = ('cd %s/dir1/dir1/; '
                'for FILENAME in *;'
-               'do mv $FILENAME Unix_$FILENAME; cd ~;'
+               'do mv $FILENAME Unix_$FILENAME;'
                'done;'
                % self.mounts[0].mountpoint)
         ret, _, _ = g.run(self.mounts[0].client_system, cmd)
@@ -180,7 +180,7 @@ class TestEcUssSnapshot(GlusterBaseClass):
         for mount_obj in self.mounts:
             cmd = ('cd %s/dir1/dir%s/; '
                    'for FILENAME in *;'
-                   'do echo > $FILENAME; cd ~;'
+                   'do echo > $FILENAME;'
                    'done;'
                    % (mount_obj.mountpoint, str(start)))
             ret, _, _ = g.run(mount_obj.client_system, cmd)
@@ -193,7 +193,7 @@ class TestEcUssSnapshot(GlusterBaseClass):
         for mount_obj in self.mounts:
             cmd = ('cd %s/dir1/dir%s; '
                    'for FILENAME in *; '
-                   'do ln -s $FILENAME softlink_$FILENAME; cd ~;'
+                   'do ln -s $FILENAME softlink_$FILENAME;'
                    'done;'
                    % (mount_obj.mountpoint, str(start)))
             ret, _, _ = g.run(mount_obj.client_system, cmd)
@@ -202,7 +202,7 @@ class TestEcUssSnapshot(GlusterBaseClass):
 
             cmd = ('cd %s/dir1/dir%s; '
                    'for FILENAME in *; '
-                   'do ln $FILENAME hardlink_$FILENAME; cd ~;'
+                   'do ln $FILENAME hardlink_$FILENAME;'
                    'done;'
                    % (mount_obj.mountpoint, str(start + 1)))
             ret, _, _ = g.run(mount_obj.client_system, cmd)
