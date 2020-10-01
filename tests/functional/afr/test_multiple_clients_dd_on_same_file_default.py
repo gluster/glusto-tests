@@ -29,9 +29,10 @@ from glustolibs.gluster.heal_ops import trigger_heal
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs,
                                  wait_for_io_to_complete)
+from glustolibs.gluster.volume_ops import (get_volume_info)
 
 
-@runs_on([['replicated'],
+@runs_on([['replicated', 'arbiter'],
           ['glusterfs', 'cifs', 'nfs']])
 class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
     """
@@ -54,14 +55,6 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
                                  % cls.clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    cls.clients)
-
-        # Override Volumes
-        if cls.volume_type == "replicated":
-            # Define x2 replicated volume
-            cls.volume['voltype'] = {
-                'type': 'replicated',
-                'replica_count': 2,
-                'transport': 'tcp'}
 
     def setUp(self):
         # Calling GlusterBaseClass setUp
@@ -244,6 +237,18 @@ class VerifySelfHealTriggersHealCommand(GlusterBaseClass):
         # It should be the same
         g.log.info('Getting arequal on bricks...')
         arequals_after_heal = {}
+
+        if self.volume_type == "arbiter":
+            vol_info = get_volume_info(self.mnode, self.volname)
+            self.assertIsNotNone(vol_info, 'Unable to get volume info')
+            data_brick_list = []
+            for brick in bricks_list:
+                for brick_info in vol_info[self.volname]["bricks"]["brick"]:
+                    if brick_info["name"] == brick:
+                        if brick_info["isArbiter"] == "0":
+                            data_brick_list.append(brick)
+            bricks_list = data_brick_list
+
         for brick in bricks_list:
             g.log.info('Getting arequal on bricks %s...', brick)
             node, brick_path = brick.split(':')
