@@ -65,3 +65,32 @@ class TestGlusterdInfo(GlusterBaseClass):
                     self.assertTrue(
                         get_uuid.replace("\n", "") in uuid_list,
                         "uuid not matched in {}".format(node))
+
+    def test_glusterd_config_file_check(self):
+        """
+        Steps:
+            1. Check the location of glusterd socket file ( glusterd.socket )
+                ls  /var/run/ | grep -i glusterd.socket
+            2. systemctl is-enabled glusterd -> enabled
+
+        """
+
+        cmd = "ls  /var/run/ | grep -i glusterd.socket"
+        ret, out, _ = g.run(self.mnode, cmd)
+
+        # Checking glusterd.socket file
+        self.assertFalse(
+            ret, "Failed to get glusterd.socket file on '{}'".format(
+                self.mnode))
+        self.assertEqual(
+            out.replace("\n", ""), "glusterd.socket",
+            "Failed to get expected output")
+
+        # Checking for glusterd.service is enabled by default
+        ret, out, _ = g.run(
+            self.mnode, "systemctl is-enabled glusterd.service")
+        self.assertFalse(
+            ret, "Failed to execute the cmd on {}".format(self.mnode))
+        self.assertEqual(
+            out.replace("\n", ""), "enabled",
+            "Output of systemctl is-enabled glusterd.service is not enabled")
