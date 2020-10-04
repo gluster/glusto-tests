@@ -61,6 +61,22 @@ class TestVolumeStatusxml(GlusterBaseClass):
                                  "servers %s" % self.servers)
         self.get_super_method(self, 'tearDown')()
 
+    def _get_test_specific_glusterd_log(self, node):
+        """Gets the test specific glusterd log"""
+        # Extract the test specific cmds from cmd_hostory
+        start_msg = "Starting Test : %s : %s" % (self.id(),
+                                                 self.glustotest_run_id)
+        end_msg = "Ending Test: %s : %s" % (self.id(),
+                                            self.glustotest_run_id)
+        glusterd_log = "/var/log/glusterfs/glusterd.log"
+        cmd = ("awk '/{}/ {{p=1}}; p; /{}/ {{p=0}}' {}"
+               .format(start_msg, end_msg, glusterd_log))
+        ret, test_specific_glusterd_log, err = g.run(node, cmd)
+        self.assertEqual(ret, 0, "Failed to extract glusterd log specific"
+                                 " to the current test case. "
+                                 "Error : %s" % err)
+        return test_specific_glusterd_log
+
     def test_volume_status_xml(self):
 
         # create a two node cluster
@@ -109,3 +125,14 @@ class TestVolumeStatusxml(GlusterBaseClass):
         self.assertIsNotNone(vol_status, ("Failed to get volume "
                                           "status --xml for %s"
                                           % self.volname))
+
+        # Verify there are no crashes while executing gluster volume status
+        status = True
+        glusterd_log = (self._get_test_specific_glusterd_log(self.mnode)
+                        .split("\n"))
+        for line in glusterd_log:
+            if ' E ' in glusterd_log:
+                status = False
+                g.log.info("Unexpected! Error found %s", line)
+
+        self.assertTrue(status, "Error found in glusterd logs")
