@@ -77,7 +77,11 @@ class TestGlusterDSetResetReserveLimit(GlusterBaseClass):
         self.assertEqual(ret, 0, "Failed to reset the storage.reserve limit")
 
         # Validate that the storage.reserve option is reset
-        self.validate_vol_option('storage.reserve', '1 (DEFAULT)')
+        ret = get_volume_options(self.mnode, self.volname, 'storage.reserve')
+        if ret['storage.reserve'] == '1':
+            self.validate_vol_option('storage.reserve', '1')
+        else:
+            self.validate_vol_option('storage.reserve', '1 (DEFAULT)')
 
     def tearDown(self):
         """tear Down Callback"""
