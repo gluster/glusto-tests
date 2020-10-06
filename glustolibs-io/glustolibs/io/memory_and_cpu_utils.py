@@ -363,7 +363,7 @@ def compute_data_usage_stats_on_servers(nodes, test_name):
 
             # Generate a dataframe from the csv file
             dataframe = create_dataframe_from_csv(node, process, test_name)
-            if not dataframe:
+            if dataframe.empty:
                 return {}
 
             data_dict[node][process] = {}
@@ -424,7 +424,7 @@ def compute_data_usage_stats_on_clients(nodes, test_name):
     for node in nodes:
         data_dict[node] = {}
         dataframe = create_dataframe_from_csv(node, 'glusterfs', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return {}
 
         data_dict[node]['glusterfs'] = {}
@@ -436,7 +436,8 @@ def compute_data_usage_stats_on_clients(nodes, test_name):
 
 def _perform_three_point_check_for_memory_leak(dataframe, node, process, gain,
                                                volume_status=None,
-                                               volume=None):
+                                               volume=None,
+                                               vol_name=None):
     """Perform three point check
 
     Args:
@@ -448,14 +449,16 @@ def _perform_three_point_check_for_memory_leak(dataframe, node, process, gain,
     kwargs:
      volume_status(dict): Volume status output on the give name
      volumne(str):Name of volume for which 3 point check has to be done
+     vol_name(str): Name of volume process according to volume status
 
     Returns:
      bool: True if memory leak instances are observed else False
     """
     # Filter dataframe to be process wise if it's volume specific process
     if process in ('glusterfs', 'glusterfsd'):
-        pid = int(volume_status[volume][node][process]['pid'])
-        dataframe = dataframe[dataframe['Process ID'] == pid]
+        if process == 'glusterfs' and vol_name:
+            pid = int(volume_status[volume][node][vol_name]['pid'])
+            dataframe = dataframe[dataframe['Process ID'] == pid]
 
     # Compute usage gain throught the data frame
     memory_increments = list(dataframe['Memory Usage'].diff().dropna())
@@ -476,12 +479,12 @@ def _perform_three_point_check_for_memory_leak(dataframe, node, process, gain,
             try:
                 # Check if memory gain had decrease in the consecutive
                 # entries, after 2 entry and betwen current and last entry
-                if all(memory_increments[instance+1] >
+                if all([memory_increments[instance+1] >
                        memory_increments[instance],
                        memory_increments[instance+2] >
                        memory_increments[instance],
                        (memory_increments[len(memory_increments)-1] >
-                        memory_increments[instance])):
+                        memory_increments[instance])]):
                     return True
 
             except IndexError:
@@ -490,7 +493,7 @@ def _perform_three_point_check_for_memory_leak(dataframe, node, process, gain,
                 g.log.info('Instance at last log entry.')
                 if process in ('glusterfs', 'glusterfsd'):
                     cmd = ("ps u -p %s | awk 'NR>1 && $11~/%s$/{print "
-                           "$6/1024}'" % (pid, process))
+                           " $6/1024}'" % (pid, process))
                 else:
                     cmd = ("ps u -p `pgrep glusterd` | awk 'NR>1 && $11~/"
                            "glusterd$/{print $6/1024}'")
@@ -526,7 +529,7 @@ def check_for_memory_leaks_in_glusterd(nodes, test_name, gain=30.0):
     is_there_a_leak = []
     for node in nodes:
         dataframe = create_dataframe_from_csv(node, 'glusterd', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         # Call 3 point check function
@@ -562,7 +565,7 @@ def check_for_memory_leaks_in_glusterfs(nodes, test_name, gain=30.0):
         # Get the volume status on the node
         volume_status = get_volume_status(node)
         dataframe = create_dataframe_from_csv(node, 'glusterfs', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         for volume in volume_status.keys():
@@ -573,7 +576,8 @@ def check_for_memory_leaks_in_glusterfs(nodes, test_name, gain=30.0):
 
                 # Call 3 point check function
                 three_point_check = _perform_three_point_check_for_memory_leak(
-                    dataframe, node, 'glusterfs', gain, volume_status, volume)
+                    dataframe, node, 'glusterfs', gain, volume_status, volume,
+                    'Self-heal Daemon')
                 if three_point_check:
                     g.log.error("Memory leak observed on node %s in shd "
                                 "on volume %s", node, volume)
@@ -604,7 +608,7 @@ def check_for_memory_leaks_in_glusterfsd(nodes, test_name, gain=30.0):
         # Get the volume status on the node
         volume_status = get_volume_status(node)
         dataframe = create_dataframe_from_csv(node, 'glusterfsd', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         for volume in volume_status.keys():
@@ -615,7 +619,8 @@ def check_for_memory_leaks_in_glusterfsd(nodes, test_name, gain=30.0):
 
                 # Call 3 point check function
                 three_point_check = _perform_three_point_check_for_memory_leak(
-                    dataframe, node, 'glusterfsd', gain, volume_status, volume)
+                    dataframe, node, 'glusterfsd', gain, volume_status, volume,
+                    process)
                 if three_point_check:
                     g.log.error("Memory leak observed on node %s in brick "
                                 " process for brick %s on volume %s", node,
@@ -637,7 +642,7 @@ def check_for_memory_leaks_in_glusterfs_fuse(nodes, test_name, gain=30.0):
                   (Default:30)
 
     Returns:
-      bool: True if memory leak was obsevred else False
+      bool: True if memory leak was observed else False
 
     NOTE:
      This function should be executed when the volume is still mounted.
@@ -646,7 +651,7 @@ def check_for_memory_leaks_in_glusterfs_fuse(nodes, test_name, gain=30.0):
     for node in nodes:
         # Get the volume status on the node
         dataframe = create_dataframe_from_csv(node, 'glusterfs', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         # Call 3 point check function
@@ -655,7 +660,25 @@ def check_for_memory_leaks_in_glusterfs_fuse(nodes, test_name, gain=30.0):
         if three_point_check:
             g.log.error("Memory leak observed on node %s for client",
                         node)
-        is_there_a_leak.append(three_point_check)
+
+            # If I/O is constantly running on Clients the memory
+            # usage spikes up and stays at a point for long.
+            last_entry = dataframe['Memory Usage'].iloc[-1]
+            cmd = ("ps u -p `pidof glusterfs` | "
+                   "awk 'NR>1 && $11~/glusterfs$/{print"
+                   " $6/1024}'")
+            ret, out, _ = g.run(node, cmd)
+            if ret:
+                g.log.error('Unable to run the command to fetch current '
+                            'memory utilization.')
+                continue
+
+            if float(out) != last_entry:
+                if float(out) > last_entry:
+                    is_there_a_leak.append(True)
+                    continue
+
+        is_there_a_leak.append(False)
 
     return any(is_there_a_leak)
 
@@ -671,9 +694,9 @@ def _check_for_oom_killers(nodes, process, oom_killer_list):
     """
     cmd = ("grep -i 'killed process' /var/log/messages* "
            "| grep -w '{}'".format(process))
-    ret = g.run_parallel(nodes, cmd)
-    for key in ret.keys():
-        ret, out, _ = ret[key]
+    ret_codes = g.run_parallel(nodes, cmd)
+    for key in ret_codes.keys():
+        ret, out, _ = ret_codes[key]
         if not ret:
             g.log.error('OOM killer observed on %s for %s', key, process)
             g.log.error(out)
@@ -712,7 +735,8 @@ def check_for_oom_killers_on_clients(nodes):
 
 
 def _check_for_cpu_usage_spikes(dataframe, node, process, threshold,
-                                volume_status=None, volume=None):
+                                volume_status=None, volume=None,
+                                vol_name=None):
     """Check for cpu spikes for a given process
 
     Args:
@@ -724,13 +748,14 @@ def _check_for_cpu_usage_spikes(dataframe, node, process, threshold,
     kwargs:
      volume_status(dict): Volume status output on the give name
      volume(str):Name of volume for which check has to be done
+     vol_name(str): Name of volume process according to volume status
 
     Returns:
      bool: True if number of instances more than threshold else False
     """
     # Filter dataframe to be process wise if it's volume specific process
     if process in ('glusterfs', 'glusterfsd'):
-        pid = int(volume_status[volume][node][process]['pid'])
+        pid = int(volume_status[volume][node][vol_name]['pid'])
         dataframe = dataframe[dataframe['Process ID'] == pid]
 
     # Check if usage is more than accepted amount of leak
@@ -758,7 +783,7 @@ def check_for_cpu_usage_spikes_on_glusterd(nodes, test_name, threshold=3):
     is_there_a_spike = []
     for node in nodes:
         dataframe = create_dataframe_from_csv(node, 'glusterd', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         # Call function to check for cpu spikes
@@ -795,7 +820,7 @@ def check_for_cpu_usage_spikes_on_glusterfs(nodes, test_name, threshold=3):
         # Get the volume status on the node
         volume_status = get_volume_status(node)
         dataframe = create_dataframe_from_csv(node, 'glusterfs', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         for volume in volume_status.keys():
@@ -807,7 +832,7 @@ def check_for_cpu_usage_spikes_on_glusterfs(nodes, test_name, threshold=3):
                 # Call function to check for cpu spikes
                 cpu_spikes = _check_for_cpu_usage_spikes(
                     dataframe, node, 'glusterfs', threshold, volume_status,
-                    volume)
+                    volume, 'Self-heal Daemon')
                 if cpu_spikes:
                     g.log.error("CPU usage spikes observed more than "
                                 "threshold %d on node %s on volume %s for shd",
@@ -839,7 +864,7 @@ def check_for_cpu_usage_spikes_on_glusterfsd(nodes, test_name, threshold=3):
         # Get the volume status on the node
         volume_status = get_volume_status(node)
         dataframe = create_dataframe_from_csv(node, 'glusterfsd', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         for volume in volume_status.keys():
@@ -851,7 +876,7 @@ def check_for_cpu_usage_spikes_on_glusterfsd(nodes, test_name, threshold=3):
                 # Call function to check for cpu spikes
                 cpu_spikes = _check_for_cpu_usage_spikes(
                     dataframe, node, 'glusterfsd', threshold, volume_status,
-                    volume)
+                    volume, process)
                 if cpu_spikes:
                     g.log.error("CPU usage spikes observed more than "
                                 "threshold %d on node %s on volume %s for "
@@ -884,7 +909,7 @@ def check_for_cpu_usage_spikes_on_glusterfs_fuse(nodes, test_name,
     for node in nodes:
         # Get the volume status on the node
         dataframe = create_dataframe_from_csv(node, 'glusterfs', test_name)
-        if not dataframe:
+        if dataframe.empty:
             return False
 
         # Call function to check for cpu spikes

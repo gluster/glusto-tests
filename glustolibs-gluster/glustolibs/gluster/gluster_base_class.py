@@ -1107,8 +1107,12 @@ class GlusterBaseClass(TestCase):
         g.log.info("Teardown nfs ganesha cluster succeeded")
 
     @classmethod
-    def start_memory_and_cpu_usage_logging(cls, interval=60, count=100):
+    def start_memory_and_cpu_usage_logging(cls, test_id, interval=60,
+                                           count=100):
         """Upload logger script and start logging usage on cluster
+
+        Args:
+         test_id(str): ID of the test running fetched from self.id()
 
         Kawrgs:
          interval(int): Time interval after which logs are to be collected
@@ -1137,16 +1141,18 @@ class GlusterBaseClass(TestCase):
 
         # Start logging on servers and clients
         proc_dict = log_memory_and_cpu_usage_on_cluster(
-            cls.servers, cls.clients, cls.id(), interval, count)
+            cls.servers, cls.clients, test_id, interval, count)
 
         return proc_dict
 
     @classmethod
-    def compute_and_print_usage_stats(cls, proc_dict, kill_proc=False):
+    def compute_and_print_usage_stats(cls, test_id, proc_dict,
+                                      kill_proc=False):
         """Compute and print CPU and memory usage statistics
 
         Args:
          proc_dict(dict):Dictionary of logging processes
+         test_id(str): ID of the test running fetched from self.id()
 
         Kwargs:
          kill_proc(bool): Kill logging process if true else wait
@@ -1172,20 +1178,24 @@ class GlusterBaseClass(TestCase):
                 g.log.error("Processes didn't complete still running.")
 
         # Compute and print stats for servers
-        ret = compute_data_usage_stats_on_servers(cls.servers, cls.id())
+        ret = compute_data_usage_stats_on_servers(cls.servers, test_id)
         g.log.info('*' * 50)
         g.log.info(ret)  # TODO: Make logged message more structured
         g.log.info('*' * 50)
 
         # Compute and print stats for clients
-        ret = compute_data_usage_stats_on_clients(cls.clients, cls.id())
+        ret = compute_data_usage_stats_on_clients(cls.clients, test_id)
         g.log.info('*' * 50)
         g.log.info(ret)  # TODO: Make logged message more structured
         g.log.info('*' * 50)
 
     @classmethod
-    def check_for_memory_leaks_and_oom_kills_on_servers(cls, gain=30.0):
+    def check_for_memory_leaks_and_oom_kills_on_servers(cls, test_id,
+                                                        gain=30.0):
         """Check for memory leaks and OOM kills on servers
+
+        Args:
+         test_id(str): ID of the test running fetched from self.id()
 
         Kwargs:
          gain(float): Accepted amount of leak for a given testcase in MB
@@ -1204,30 +1214,34 @@ class GlusterBaseClass(TestCase):
             check_for_oom_killers_on_servers)
 
         # Check for memory leaks on glusterd
-        if check_for_memory_leaks_in_glusterd(cls.servers, cls.id(), gain):
+        if check_for_memory_leaks_in_glusterd(cls.servers, test_id, gain):
             g.log.error("Memory leak on glusterd.")
             return True
 
-        # Check for memory leaks on shd
-        if check_for_memory_leaks_in_glusterfs(cls.servers, cls.id(), gain):
-            g.log.error("Memory leak on shd.")
-            return True
+        if cls.volume_type != "distributed":
+            # Check for memory leaks on shd
+            if check_for_memory_leaks_in_glusterfs(cls.servers, test_id,
+                                                   gain):
+                g.log.error("Memory leak on shd.")
+                return True
 
         # Check for memory leaks on brick processes
-        if check_for_memory_leaks_in_glusterfsd(cls.servers, cls.id(), gain):
+        if check_for_memory_leaks_in_glusterfsd(cls.servers, test_id, gain):
             g.log.error("Memory leak on brick process.")
             return True
 
         # Check OOM kills on servers for all gluster server processes
-        ret = check_for_oom_killers_on_servers(cls.servers)
-        if not ret:
+        if check_for_oom_killers_on_servers(cls.servers):
             g.log.error('OOM kills present on servers.')
             return True
         return False
 
     @classmethod
-    def check_for_memory_leaks_and_oom_kills_on_clients(cls, gain=30):
+    def check_for_memory_leaks_and_oom_kills_on_clients(cls, test_id, gain=30):
         """Check for memory leaks and OOM kills on clients
+
+        Args:
+         test_id(str): ID of the test running fetched from self.id()
 
         Kwargs:
          gain(float): Accepted amount of leak for a given testcase in MB
@@ -1244,7 +1258,7 @@ class GlusterBaseClass(TestCase):
             check_for_oom_killers_on_clients)
 
         # Check for memory leak on glusterfs fuse process
-        if check_for_memory_leaks_in_glusterfs_fuse(cls.clients, cls.id(),
+        if check_for_memory_leaks_in_glusterfs_fuse(cls.clients, test_id,
                                                     gain):
             g.log.error("Memory leaks observed on FUSE clients.")
             return True
@@ -1256,8 +1270,11 @@ class GlusterBaseClass(TestCase):
         return False
 
     @classmethod
-    def check_for_cpu_usage_spikes_on_servers(cls, threshold=3):
+    def check_for_cpu_usage_spikes_on_servers(cls, test_id, threshold=3):
         """Check for CPU usage spikes on servers
+
+        Args:
+         test_id(str): ID of the test running fetched from self.id()
 
         Kwargs:
          threshold(int): Accepted amount of instances of 100% CPU usage
@@ -1274,21 +1291,22 @@ class GlusterBaseClass(TestCase):
             check_for_cpu_usage_spikes_on_glusterfsd)
 
         # Check for CPU usage spikes on glusterd
-        if check_for_cpu_usage_spikes_on_glusterd(cls.servers, cls.id(),
+        if check_for_cpu_usage_spikes_on_glusterd(cls.servers, test_id,
                                                   threshold):
             g.log.error("CPU usage spikes observed more than threshold "
                         "on glusterd.")
             return True
 
-        # Check for CPU usage spikes on shd
-        if check_for_cpu_usage_spikes_on_glusterfs(cls.servers, cls.id(),
-                                                   threshold):
-            g.log.error("CPU usage spikes observed more than threshold "
-                        "on shd.")
-            return True
+        if cls.volume_type != "distributed":
+            # Check for CPU usage spikes on shd
+            if check_for_cpu_usage_spikes_on_glusterfs(cls.servers, test_id,
+                                                       threshold):
+                g.log.error("CPU usage spikes observed more than threshold "
+                            "on shd.")
+                return True
 
         # Check for CPU usage spikes on brick processes
-        if check_for_cpu_usage_spikes_on_glusterfsd(cls.servers, cls.id(),
+        if check_for_cpu_usage_spikes_on_glusterfsd(cls.servers, test_id,
                                                     threshold):
             g.log.error("CPU usage spikes observed more than threshold "
                         "on shd.")
@@ -1296,8 +1314,11 @@ class GlusterBaseClass(TestCase):
         return False
 
     @classmethod
-    def check_for_cpu_spikes_on_clients(cls, threshold=3):
+    def check_for_cpu_spikes_on_clients(cls, test_id, threshold=3):
         """Check for CPU usage spikes on clients
+
+        Args:
+         test_id(str): ID of the test running fetched from self.id()
 
         Kwargs:
          threshold(int): Accepted amount of instances of 100% CPU usage
@@ -1312,6 +1333,6 @@ class GlusterBaseClass(TestCase):
             check_for_cpu_usage_spikes_on_glusterfs_fuse)
 
         ret = check_for_cpu_usage_spikes_on_glusterfs_fuse(cls.clients,
-                                                           cls.id(),
+                                                           test_id,
                                                            threshold)
         return ret
