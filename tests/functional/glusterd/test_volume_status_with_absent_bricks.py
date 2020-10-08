@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,64 +22,49 @@ import random
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.volume_ops import (volume_create, volume_start,
-                                           volume_status)
+from glustolibs.gluster.volume_ops import (volume_start, volume_status)
+from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.volume_libs import cleanup_volume
-from glustolibs.gluster.lib_utils import form_bricks_list
 
 
-@runs_on([['distributed', 'replicated', 'distributed-replicated'],
-          ['glusterfs']])
+@runs_on([['distributed', 'replicated', 'distributed-replicated',
+           'dispersed', 'distributed-dispersed', 'arbiter',
+           'distributed-arbiter'], ['glusterfs']])
 class TestVolumeStatusWithAbsentBricks(GlusterBaseClass):
+    def setUp(self):
+        # Calling GlusterBaseClass setUp
+        self.get_super_method(self, 'setUp')()
+
+        # Creating Volume
+        g.log.info("Started creating volume")
+        ret = self.setup_volume(False, True)
+        if ret:
+            g.log.info("Volme created successfully : %s", self.volname)
+        else:
+            raise ExecutionError("Volume creation failed: %s" % self.volname)
 
     def tearDown(self):
-        """
-        tearDown for every test
-        """
-        # stopping the volume and Cleaning up the volume
+        # Stopping the volume and Cleaning up the volume
         ret = cleanup_volume(self.mnode, self.volname)
         if not ret:
             raise ExecutionError("Failed to cleanup volume")
         g.log.info("Volume deleted successfully : %s", self.volname)
+
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
 
     def test_volume_absent_bricks(self):
-        '''
-        -> Create Volume
-        -> Remove any one Brick directory
-        -> Start Volume
-        -> Check the gluster volume status
-        '''
-        num_of_bricks = 0
-        replica = True
-
-        if self.volume_type == 'distributed':
-            num_of_bricks = 3
-            replica = False
-
-        elif self.volume_type == 'replicated':
-            num_of_bricks = 3
-
-        elif self.volume_type == 'distributed-replicated':
-            num_of_bricks = 6
-
-        # Forming brick list
-        brick_list = form_bricks_list(self.mnode, self.volname, num_of_bricks,
-                                      self.servers, self.all_servers_info)
-        if replica:
-            # Creating Volume
-            ret, _, _ = volume_create(self.mnode, self.volname, brick_list,
-                                      replica_count=3)
-            self.assertEqual(ret, 0, "Volume creation failed for %s"
-                             % self.volname)
-            g.log.info("volume created successfully %s", self.volname)
-        else:
-            # Creating Volume
-            ret, _, _ = volume_create(self.mnode, self.volname, brick_list)
-            self.assertEqual(ret, 0, "Volume creation failed for %s"
-                             % self.volname)
-            g.log.info("volume created successfully %s", self.volname)
+        """
+        Test Case:
+        1) Create Volume
+        2) Remove any one Brick directory
+        3) Start Volume and compare the failure message
+        4) Check the gluster volume status nad compare the status message
+        """
+        # Fetching the brick list
+        brick_list = get_all_bricks(self.mnode, self.volname)
+        self.assertIsNotNone(brick_list, "Failed to get the bricks in"
+                             " the volume")
 
         # Command for removing brick directory
         random_brick = random.choice(brick_list)
