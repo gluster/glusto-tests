@@ -17,7 +17,7 @@
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.lib_utils import get_size_of_mountpoint
+from glustolibs.gluster.lib_utils import get_usable_size_per_disk
 from glustolibs.gluster.brick_libs import get_all_bricks
 
 
@@ -61,10 +61,7 @@ class TestRenameWithBricksMinFreeLimitCrossed(GlusterBaseClass):
 
         # Calculate the usable size and fill till it reachs
         # min free limit
-        node, brick_path = bricks[0].split(':')
-        size = int(get_size_of_mountpoint(node, brick_path))
-        min_free_size = size * 10 // 100
-        usable_size = ((size - min_free_size) // 1048576) + 1
+        usable_size = get_usable_size_per_disk(bricks[0])
         ret, _, _ = g.run(self.first_client, "fallocate -l {}G {}/file"
                           .format(usable_size, self.mount_point))
         self.assertFalse(ret, "Failed to fill disk to min free limit")

@@ -1199,3 +1199,25 @@ def collect_bricks_arequal(bricks_list):
             arequal_list.append(arequal)
 
     return (return_code, arequal_list)
+
+
+def get_usable_size_per_disk(brickpath, min_free_limit=10):
+    """Get the usable size per disk
+
+    Args:
+     brickpath(str): Brick path to be used to calculate usable size
+
+    Kwargs:
+     min_free_limit(int): Min free disk limit to be used
+
+    Returns:
+      (int): Usable size in GB. None in case of errors.
+    """
+    node, brick_path = brickpath.split(':')
+    size = get_size_of_mountpoint(node, brick_path)
+    if not size:
+        return None
+    size = int(size)
+    min_free_size = size * min_free_limit // 100
+    usable_size = ((size - min_free_size) // 1048576) + 1
+    return usable_size
