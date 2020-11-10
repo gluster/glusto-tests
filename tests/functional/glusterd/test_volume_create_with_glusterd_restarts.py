@@ -72,7 +72,7 @@ class TestVolumeCreateWithGlusterdRestarts(GlusterBaseClass):
         # Restarting glusterd in a loop
         restart_cmd = ("for i in `seq 1 5`; do "
                        "service glusterd restart; "
-                       "systemctl reset-failed glusted; "
+                       "systemctl reset-failed glusterd; "
                        "sleep 3; "
                        "done")
         proc1 = g.run_async(self.servers[3], restart_cmd)
