@@ -22,7 +22,9 @@ Description:
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.volume_ops import get_volume_options
+from glustolibs.gluster.volume_ops import (
+    get_volume_options,
+    volume_reset)
 from glustolibs.gluster.gluster_init import (
     stop_glusterd,
     start_glusterd,
@@ -30,6 +32,7 @@ from glustolibs.gluster.gluster_init import (
     wait_for_glusterd_to_start)
 from glustolibs.gluster.brick_libs import get_all_bricks
 from glustolibs.gluster.brickmux_ops import get_brick_processes_count
+from glustolibs.gluster.peer_ops import wait_for_peers_to_connect
 
 
 @runs_on([['replicated', 'arbiter', 'dispersed', 'distributed',
@@ -119,11 +122,22 @@ class TestGlusterDDefaultVolumeBehaviorQuorumOptions(GlusterBaseClass):
 
     def tearDown(self):
         """tear Down Callback"""
+        # Wait for peers to connect.
+        ret = wait_for_peers_to_connect(self.mnode, self.servers, 50)
+        if not ret:
+            raise ExecutionError("Peers are not in connected state.")
+
         # Unmount volume and cleanup.
         ret = self.cleanup_volume()
         if not ret:
             raise ExecutionError("Failed to Unmount and Cleanup volume")
         g.log.info("Successful in unmount and cleanup operations")
+
+        # Reset the cluster options.
+        ret = volume_reset(self.mnode, "all")
+        if not ret:
+            raise ExecutionError("Failed to Reset the cluster options.")
+        g.log.info("Successfully reset cluster options.")
 
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
