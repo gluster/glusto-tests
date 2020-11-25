@@ -57,16 +57,16 @@ class TestPingTimerAndEpollThreadCountDefaultValue(GlusterBaseClass):
 
         # Shell Script to be run for epoll thread count
         script = """
-                #!/bin/bash
-                function nepoll ()
-                {
-                    local pid=$1;
-                    for i in $(ls /proc/$pid/task);
-                    do
-                        cat /proc/$pid/task/$i/stack | grep epoll_wait;
-                    done
-                }
-                """
+            #!/bin/bash
+            function nepoll ()
+            {
+                local pid=$1;
+                for i in $(ls /proc/$pid/task);
+                do
+                    cat /proc/$pid/task/$i/stack | grep -i 'sys_epoll_wait';
+                done
+            }
+        """
 
         # Execute the shell script
         cmd = "echo '{}' > test.sh;".format(script)
