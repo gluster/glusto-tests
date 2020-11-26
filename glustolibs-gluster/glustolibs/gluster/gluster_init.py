@@ -23,12 +23,16 @@ from time import sleep
 from glusto.core import Glusto as g
 
 
-def start_glusterd(servers):
+def start_glusterd(servers, enable_retry=True):
     """Starts glusterd on specified servers if they are not running.
 
     Args:
         servers (str|list): A server|List of server hosts on which glusterd
             has to be started.
+
+    Kwargs:
+        enable_retry(Bool): If set to True then runs reset-failed else
+                            do nothing.
 
     Returns:
         bool : True if starting glusterd is successful on all servers.
@@ -46,10 +50,13 @@ def start_glusterd(servers):
         if retcode != 0:
             g.log.error("Unable to start glusterd on server %s", server)
             _rc = False
-    if not _rc:
-        return False
+    if not _rc and enable_retry:
+        ret = reset_failed_glusterd(servers)
+        if ret:
+            ret = start_glusterd(servers)
+        return ret
 
-    return True
+    return _rc
 
 
 def stop_glusterd(servers):
