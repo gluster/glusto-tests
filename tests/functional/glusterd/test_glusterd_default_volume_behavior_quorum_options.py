@@ -58,7 +58,8 @@ class TestGlusterDDefaultVolumeBehaviorQuorumOptions(GlusterBaseClass):
         else:
             ret = get_volume_options(self.mnode, 'all', option_name)
         self.assertIsNotNone(ret, "The %s option is not present" % option_name)
-        self.assertEqual(ret[option_name], option_value,
+        value = (ret[option_name]).split()
+        self.assertEqual(value[0], option_value,
                          ("Volume option for %s is not equal to %s"
                           % (option_name, option_value)))
         g.log.info("Volume option %s is equal to the expected value %s",
@@ -84,10 +85,10 @@ class TestGlusterDDefaultVolumeBehaviorQuorumOptions(GlusterBaseClass):
         4. There shouldn't be any effect to the running glusterfsd
         processes.
         """
-        # Check that quorum options are not set by default.
+        # Check the default quorum options are correct.
         self._validate_vol_options('cluster.server-quorum-type', 'off')
         self._validate_vol_options('cluster.server-quorum-ratio',
-                                   '51 (DEFAULT)', True)
+                                   '51', True)
 
         # Get the count of number of glusterfsd processes running.
         count_before_glusterd_kill = self._get_total_brick_processes_count()
