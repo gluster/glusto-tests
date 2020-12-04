@@ -24,6 +24,7 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.volume_ops import (
     set_volume_options,
+    volume_reset,
     get_volume_options)
 
 
@@ -92,6 +93,12 @@ class TestGlusterDQuorumCLICommands(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to unmount and cleanup volume")
         g.log.info("Successful in unmount and cleanup of volume")
+
+        # Reset the cluster options.
+        ret = volume_reset(self.mnode, "all")
+        if not ret:
+            raise ExecutionError("Failed to Reset the cluster options.")
+        g.log.info("Successfully reset cluster options.")
 
         # Calling GlusterBaseClass tearDown
         self.get_super_method(self, 'tearDown')()
