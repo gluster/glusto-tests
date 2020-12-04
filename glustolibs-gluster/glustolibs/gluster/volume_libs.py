@@ -124,8 +124,8 @@ def setup_volume(mnode, all_servers_info, volume_config, multi_vol=False,
         return False
 
     # Check if the volume already exists
-    volinfo = get_volume_info(mnode=mnode)
-    if volinfo is not None and volname in volinfo.keys():
+    vollist = get_volume_list(mnode=mnode)
+    if vollist is not None and volname in vollist:
         g.log.info("volume %s already exists. Returning...", volname)
         return True
 
