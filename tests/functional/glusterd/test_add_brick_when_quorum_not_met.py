@@ -20,6 +20,7 @@ from glustolibs.gluster.gluster_base_class import runs_on, GlusterBaseClass
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.volume_libs import setup_volume
 from glustolibs.gluster.volume_ops import (set_volume_options,
+                                           volume_reset,
                                            get_volume_status)
 from glustolibs.gluster.gluster_init import (stop_glusterd, start_glusterd,
                                              is_glusterd_running)
@@ -62,13 +63,12 @@ class TestAddBrickWhenQuorumNotMet(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Volume deleted successfully : %s", self.volname)
 
-        # Setting quorum ratio to 51%
-        ret = set_volume_options(self.mnode, 'all',
-                                 {'cluster.server-quorum-ratio': '51%'})
+        # Reset Cluster options
+        ret = volume_reset(self.mnode, 'all')
         if not ret:
-            raise ExecutionError("Failed to set server quorum ratio on %s"
+            raise ExecutionError("Failed to reset cluster options on %s"
                                  % self.volname)
-        g.log.info("Able to set server quorum ratio successfully on %s",
+        g.log.info("Cluster options reset successfully on %s",
                    self.servers)
 
         self.get_super_method(self, 'tearDown')()
