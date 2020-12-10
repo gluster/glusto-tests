@@ -82,7 +82,7 @@ class TestAddBrickReplaceBrickFixLayout(GlusterBaseClass):
         1. Create a volume, start it and mount it.
         2. Create files and dirs on the mount point.
         3. Add bricks to the volume.
-        4. Replace 2 old brick to the volume.
+        4. Replace 2 old bricks to the volume.
         5. Trigger rebalance fix layout and wait for it to complete.
         6. Check layout on all the bricks through trusted.glusterfs.dht.
         """

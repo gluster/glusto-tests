@@ -109,7 +109,7 @@ class TestAddBrickRebalanceRevised(GlusterBaseClass):
                ("ln file_$i hardfile_$i",
                 "Failed to create hard links for files"))
 
-        # Create 50 files on the mount point and create 40 hard links
+        # Create 50 files on the mount point and create 50 hard links
         # for the files.
         for operation, msg in ops:
             self._run_command_50_times(operation, msg)
