@@ -569,6 +569,82 @@ def create_link_file(node, file, link, soft=False):
     return True
 
 
+def set_acl(client, rule, fqpath):
+    """Set acl rule on a specific file
+
+    Args:
+     client(str): Host on which the command is executed.
+     rule(str): The acl rule to be set on the file.
+     fqpath (str): The fully-qualified path to the file.
+
+    Returns:
+     (bool): True if command successful else False.
+    """
+    cmd = "setfacl -m {} {}".format(rule, fqpath)
+    ret, _, _ = g.run(client, cmd)
+    if ret:
+        g.log.error('Failed to set rule {} on file {}'.format(rule, fqpath))
+        return False
+    return True
+
+
+def get_acl(client, path, filename):
+    """Get all acl rules set to a file
+
+    Args:
+     client(str): Host on which the command is executed.
+     path (str): The fully-qualified path to the dir where file is present.
+     filename(str): Name of the file for which rules have to be fetched.
+
+    Returns:
+     (dict): A dictionary with the formatted output of the command.
+     (None): In case of failures
+
+    Example:
+    >>> get_acl('dhcp35-4.lab.eng.blr.redhat.com', '/root/', 'file')
+    {'owner': 'root', 'rules': ['user::rw-', 'user:root:rwx', 'group::r--',
+    'mask::rwx', 'other::r--'], 'group': 'root', 'file': 'file'}
+    """
+    cmd = "cd {};getfacl {}".format(path, filename)
+    ret, out, _ = g.run(client, cmd)
+    if ret:
+        return None
+
+    # Generate a dict out of the output
+    output_dict = {}
+    data = out.strip().split('\n')
+    for key, index in (('file', 0), ('owner', 1), ('group', 2)):
+        output_dict[key] = data[index].split(' ')[2]
+    output_dict['rules'] = data[3:]
+
+    return output_dict
+
+
+def delete_acl(client, fqpath, rule=None):
+    """Delete a specific or all acl rules set on a file
+
+    Args:
+     client(str): Host on which the command is executed.
+     fqpath (str): The fully-qualified path to the file.
+
+    Kwargs:
+     rule(str): The acl rule to be removed from the file.
+
+    Returns:
+     (bool): True if command successful else False.
+    """
+    # Remove all acls set on a file
+    cmd = "setfacl -b {}".format(fqpath)
+    # Remove a specific acl of the file
+    if rule:
+        cmd = "setfacl -x {} {}".format(rule, fqpath)
+
+    ret, _, _ = g.run(client, cmd)
+    if ret:
+        return False
+    return True
+
+
 class GlusterFile(object):
     """Class to handle files specific to Gluster (client and backend)"""
     def __init__(self, host, fqpath):
