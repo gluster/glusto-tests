@@ -1,0 +1,20 @@
+# 'clients' is list of Hostnames/IP's of clients in the cluster.
+clients: [client_hostname1, client_hostname2]
+
+# 'servers' is list of Hostnames/IP's of servers in the cluster.
+# Each item in list is a dict with 'Hostname/IP' of the server as key.
+# The info should contain the devices to use
+# for creating bricks, brick_root i.e dirname of brick mount point.
+
+servers:
+    - server_hostname1:
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde", "/dev/vdf"]
+        brick_root: "/bricks"
+    - server_hostname2:
+        devices: ["/dev/vdb", "/dev/vdc", "/dev/vdd", "/dev/vde", "/dev/vdf"]
+        brick_root: "/bricks"
+
+logfile: "/var/log/glusto_tests.log"
+
+# Mount protocol to use in the current run
+mount_type: ["glusterfs"]

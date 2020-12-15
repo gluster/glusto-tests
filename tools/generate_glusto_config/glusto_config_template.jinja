@@ -1,0 +1,39 @@
+log_file: {{logfile}}
+log_level: DEBUG
+remote_user: root
+
+# 'servers' is list of Hostnames/IP's of servers in the cluster.
+servers: &servers_list{% for server_item in servers %}{% for server, value in server_item.items() %}
+    - {{server}}{% endfor %}{% endfor %}
+
+# 'clients' is list of Hostnames/IP's of clients in the cluster.
+clients:{% for client in clients %}
+    - {{client}}{% endfor %}
+
+# 'servers_info' is info about each server in the cluster.
+# each server_info is a dict with 'Hostname/IP' of the server as key.
+# The info should contain the host(Hostname/IP) of server, devices to use
+# for creating bricks, brick_root i.e dirname of brick mount point.
+# Note: Use the same Hostname/IP used in the above 'servers' section.
+
+servers_info:{% for server_item in servers %}
+     {% for server, value in server_item.items() %}
+     {{server}}: &server{{ loop.index }}
+         host: {{server}}
+         devices: {{ value["devices"] }}
+         brick_root: {{ value["brick_root"] }}{% endfor %}{% endfor %}
+
+# 'clients_info' is info about each client in  the cluster.
+# each client_info is a dict with 'Hostname/IP' of the client as key.
+# The info should contain the host(Hostname/IP) of client.
+
+clients_info: {% for client in clients %}
+     {{client}}: &client{{ loop.index }}
+         host: {{client}}{% endfor %}
+
+# This is to define what volume types and mount protocols will be run
+# in this current test run.
+
+gluster:
+    running_on_volumes: []
+    running_on_mounts: {{mount_type}}
