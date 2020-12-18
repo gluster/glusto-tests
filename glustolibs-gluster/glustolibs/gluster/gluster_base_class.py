@@ -196,6 +196,11 @@ class GlusterBaseClass(TestCase):
         Returns (bool): True if all peers are in connected with other peers.
             False otherwise.
         """
+
+        # If the setup has single node server, by pass this validation.
+        if len(cls.servers) == 1:
+            return True
+
         # Validate if peer is connected from all the servers
         g.log.info("Validating if servers %s are connected from other servers "
                    "in the cluster", cls.servers)
