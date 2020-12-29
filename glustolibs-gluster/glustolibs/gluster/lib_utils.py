@@ -387,7 +387,8 @@ def get_servers_unused_bricks_dict(mnode, servers, servers_info):
     return servers_unused_bricks_dict
 
 
-def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
+def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info,
+                     dirname=None):
     """Forms bricks list for create-volume/add-brick given the num_of_bricks
         servers and servers_info.
 
@@ -399,6 +400,9 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
         servers (str|list): A server|List of servers from which the bricks
             needs to be selected for creating the brick list.
         servers_info (dict): dict of server info of each servers.
+
+    kwargs:
+        dirname (str): Name of the directory for glusterfs brick
 
     Returns:
         list - List of bricks to use with volume-create/add-brick
@@ -437,10 +441,18 @@ def form_bricks_list(mnode, volname, number_of_bricks, servers, servers_info):
             list(servers_unused_bricks_dict.values())[dict_index])
         brick_path = ''
         if current_server_unused_bricks_list:
-            brick_path = ("%s:%s/%s_brick%s" %
-                          (current_server,
-                           current_server_unused_bricks_list[0], volname, num))
-            bricks_list.append(brick_path)
+            if dirname and (" " not in dirname):
+                brick_path = ("%s:%s/%s_brick%s" %
+                              (current_server,
+                               current_server_unused_bricks_list[0], dirname,
+                               num))
+                bricks_list.append(brick_path)
+            else:
+                brick_path = ("%s:%s/%s_brick%s" %
+                              (current_server,
+                               current_server_unused_bricks_list[0], volname,
+                               num))
+                bricks_list.append(brick_path)
 
             # Remove the added brick from the current_server_unused_bricks_list
             list(servers_unused_bricks_dict.values())[dict_index].pop(0)
