@@ -456,3 +456,5 @@ def is_layout_complete(mnode, volname, dirpath):
             return False
         elif hash_difference < 1:
             g.log.error("Layout has overlaps")
+
+    return True
