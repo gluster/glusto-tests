@@ -25,7 +25,6 @@ from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
 from glustolibs.gluster.rebalance_ops import (
     rebalance_start,
-    get_rebalance_status,
     wait_for_rebalance_to_complete)
 from glustolibs.gluster.volume_libs import (
     expand_volume,
@@ -40,9 +39,7 @@ from glustolibs.gluster.glusterfile import (
 @runs_on([['distributed', 'distributed-replicated'],
           ['glusterfs']])
 class TestRebalancePreserveUserPermissions(GlusterBaseClass):
-
     def setUp(self):
-
         self.get_super_method(self, 'setUp')()
 
         # Creating Volume and mounting the volume
@@ -60,7 +57,6 @@ class TestRebalancePreserveUserPermissions(GlusterBaseClass):
             raise ExecutionError("Failed to add user")
 
     def tearDown(self):
-
         ret = del_user(self.client, self.user)
         if not ret:
             raise ExecutionError("Failed to delete user")
@@ -73,12 +69,45 @@ class TestRebalancePreserveUserPermissions(GlusterBaseClass):
 
         self.get_super_method(self, 'tearDown')()
 
+    def _start_rebalance_and_wait(self):
+        """Start rebalance and wait"""
+        # Start Rebalance
+        ret, _, _ = rebalance_start(self.mnode, self.volname)
+        self.assertEqual(ret, 0, ("Failed to start rebalance on the volume "
+                                  "%s", self.volname))
+        g.log.info("Successfully started rebalance on the volume %s",
+                   self.volname)
+
+        # Wait for rebalance to complete
+        ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
+        self.assertTrue(ret, ("Rebalance is not yet complete on the volume "
+                              "%s", self.volname))
+        g.log.info("Rebalance is successfully complete on the volume %s",
+                   self.volname)
+
+    def _get_arequal_and_check_if_equal_to_before(self):
+        """Check if arequal checksum is equal or not"""
+        self.arequal_checksum_after = collect_mounts_arequal(self.mounts[0])
+        self.assertEqual(
+            self.arequal_checksum_before, self.arequal_checksum_after,
+            "arequal checksum is NOT MATCHNG")
+        g.log.info("arequal checksum is SAME")
+
+    def _logged_vol_info(self):
+        """Log volume info and status"""
+        ret = log_volume_info_and_status(self.mnode, self.volname)
+        self.assertTrue(ret, ("Logging volume info and status failed on "
+                              "volume %s", self.volname))
+
     def _check_user_permission(self):
         """
         Verify permissions on MP and file
         """
         stat_mp_dict = get_file_stat(self.client, self.mountpoint)
-        self.assertEqual(stat_mp_dict['access'], '777', "Expected 777 "
+        self.assertIsNotNone(stat_mp_dict, "stat on %s failed"
+                             % self.mountpoint)
+        self.assertEqual(stat_mp_dict['access'], '777',
+                         "Expected 777 "
                          "but found %s" % stat_mp_dict['access'])
         g.log.info("File permissions for mountpoint is 777 as expected")
 
@@ -92,9 +121,9 @@ class TestRebalancePreserveUserPermissions(GlusterBaseClass):
         self.assertEqual(stat_dict['groupname'], self.user,
                          "Expected %s but found %s"
                          % (self.user, stat_dict['groupname']))
-        g.log.info("User and Group are 'glusto_user' as expected")
+        g.log.info("User and Group are %s as expected", self.user)
 
-    def test_rebalance_preserve_user_permissions(self):
+    def _testcase(self, number_of_expands=1):
         """
         Test case:
         1. Create a volume start it and mount on the client.
@@ -102,7 +131,7 @@ class TestRebalancePreserveUserPermissions(GlusterBaseClass):
         3. Add new user to the client.
         4. As the new user create dirs/files.
         5. Compute arequal checksum and check permission on / and subdir.
-        6. Add brick into the volume and start rebalance.
+        6. expand cluster according to number_of_expands and start rebalance.
         7. After rebalance is completed:
         7.1 check arequal checksum
         7.2 verfiy no change in / and sub dir permissions.
@@ -126,57 +155,24 @@ class TestRebalancePreserveUserPermissions(GlusterBaseClass):
         # check permission on / and subdir
         self._check_user_permission()
 
-        # Log the volume info and status before rebalance
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
+        # get arequal checksum before expand
+        self.arequal_checksum_before = collect_mounts_arequal(self.mounts[0])
 
-        # Get arequal checksum before starting fix-layout
-        g.log.info("Getting arequal checksum before rebalance")
-        arequal_cksum_pre_rebalance = collect_mounts_arequal(self.mounts[0])
+        self._logged_vol_info()
 
-        # Expand the volume
-        ret = expand_volume(self.mnode, self.volname, self.servers,
-                            self.all_servers_info)
-        self.assertTrue(ret, ("Failed to expand the volume %s", self.volname))
-        g.log.info("Expanding volume is successful on "
-                   "volume %s", self.volname)
+        # expand the volume
+        for i in range(number_of_expands):
+            ret = expand_volume(self.mnode, self.volname, self.servers,
+                                self.all_servers_info)
+            self.assertTrue(ret, ("Failed to expand iter %d volume %s",
+                                  i, self.volname))
 
-        # Log the volume info after expanding volume.
-        ret = log_volume_info_and_status(self.mnode, self.volname)
-        self.assertTrue(ret, ("Logging volume info and status failed on "
-                              "volume %s", self.volname))
+        self._logged_vol_info()
+        # Start Rebalance and wait for completion
+        self._start_rebalance_and_wait()
 
-        # Start Rebalance
-        ret, _, _ = rebalance_start(self.mnode, self.volname)
-        self.assertEqual(ret, 0, ("Failed to start rebalance on the volume "
-                                  "%s", self.volname))
-        g.log.info("Successfully started rebalance on the volume %s",
-                   self.volname)
-
-        # Check rebalance is in progress
-        rebalance_status = get_rebalance_status(self.mnode, self.volname)
-        ret = rebalance_status['aggregate']['statusStr']
-        self.assertEqual(ret, "in progress", ("Rebalance is not in "
-                                              "'in progress' state, either "
-                                              "rebalance is in completed state"
-                                              " or failed to get rebalance "
-                                              "status"))
-        g.log.info("Rebalance is in 'in progress' state")
-
-        # Wait for rebalance to complete
-        ret = wait_for_rebalance_to_complete(self.mnode, self.volname)
-        self.assertTrue(ret, ("Rebalance is not yet complete on the volume "
-                              "%s", self.volname))
-        g.log.info("Rebalance is successfully complete on the volume %s",
-                   self.volname)
-
-        # Compare arequals checksum pre/post rebalance
-        arequal_cksum_post_rebalance = collect_mounts_arequal(self.mounts[0])
-        self.assertEqual(arequal_cksum_pre_rebalance,
-                         arequal_cksum_post_rebalance,
-                         "arequal checksum is NOT MATCHNG")
-        g.log.info("arequal checksum is SAME")
+        # compare arequals checksum before and after rebalance
+        self._get_arequal_and_check_if_equal_to_before()
 
         # permissions check on / and sub dir
         self._check_user_permission()
@@ -190,3 +186,9 @@ class TestRebalancePreserveUserPermissions(GlusterBaseClass):
 
         self.assertEqual(ret, 0, ("User %s failed to create files", self.user))
         g.log.info("IO as %s is successful", self.user)
+
+    def test_rebalance_preserve_user_permissions(self):
+        self._testcase()
+
+    def test_rebalance_preserve_user_permissions_multi_expands(self):
+        self._testcase(2)
