@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2016-2020 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -551,3 +551,41 @@ def is_shd_daemon_running(mnode, node, volname):
         return True
     except KeyError:
         return False
+
+
+def enable_granular_heal(mnode, volname):
+    """Enable granular heal on a given volume
+
+    Args:
+     mnode(str): Node on which command has to be exectued
+     volname(str): Name of the volume on which granular heal is to be enabled
+
+    Returns:
+     bool: True if granular heal is enabled successfully else False
+    """
+    cmd = "gluster volume heal {} granular-entry-heal enable".format(volname)
+    ret, _, _ = g.run(mnode, cmd)
+    if ret:
+        g.log.error('Unable to enable granular-entry-heal on volume %s',
+                    volname)
+        return False
+    return True
+
+
+def disable_granular_heal(mnode, volname):
+    """Diable granular heal on a given volume
+
+    Args:
+     mnode(str): Node on which command will be exectued
+     volname(str): Name of the volume on which granular heal is to be disabled
+
+    Returns:
+     bool: True if granular heal is disabled successfully else False
+    """
+    cmd = "gluster volume heal {} granular-entry-heal disable".format(volname)
+    ret, _, _ = g.run(mnode, cmd)
+    if ret:
+        g.log.error('Unable to disable granular-entry-heal on volume %s',
+                    volname)
+        return False
+    return True

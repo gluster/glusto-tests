@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2021  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -1013,6 +1013,30 @@ def group_add(servers, groupname):
             g.log.error("Unable to add group %s on server %s",
                         groupname, server)
             return False
+    return True
+
+
+def group_del(servers, groupname):
+    """
+    Deletes a group in all the servers.
+
+    Args:
+        servers(list|str): Nodes on which cmd is to be executed.
+        groupname(str): Name of the group to be removed.
+
+    Return always True
+    """
+    if not isinstance(servers, list):
+        servers = [servers]
+
+    cmd = "groupdel %s" % groupname
+    results = g.run_parallel(servers, cmd)
+
+    for server, ret_value in list(results.items()):
+        retcode, _, err = ret_value
+        if retcode != 0 and "does not exist" in err:
+            g.log.error("Group %s on server %s already removed",
+                        groupname, server)
     return True
 
 
