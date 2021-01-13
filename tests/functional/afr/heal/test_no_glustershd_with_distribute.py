@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ class SelfHealDaemonProcessTestsWithMultipleVolumes(GlusterBaseClass):
         for volume_config in cls.volume_configs:
             ret = setup_volume(mnode=cls.mnode,
                                all_servers_info=cls.all_servers_info,
-                               volume_config=volume_config)
+                               volume_config=volume_config, multi_vol=True)
             volname = volume_config['name']
             if not ret:
                 raise ExecutionError("Failed to setup Volume"
