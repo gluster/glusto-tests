@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2021  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -112,17 +112,16 @@ class TestSelfHeal(GlusterBaseClass):
 
         g.log.info("creating 5 files from mount point")
         all_mounts_procs = []
-        for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python %s create_files -f 5 "
-                   "--base-file-name test_file --fixed-file-size 1k %s" % (
-                       self.script_upload_path,
-                       mount_obj.mountpoint))
-            proc = g.run_async(mount_obj.client_system, cmd,
-                               user=mount_obj.user)
-            all_mounts_procs.append(proc)
+        cmd = ("/usr/bin/env python %s create_files -f 5 "
+               "--base-file-name test_file --fixed-file-size 1k %s" % (
+                   self.script_upload_path, self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, cmd,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
+
         # Validate I/O
         g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        ret = validate_io_procs(all_mounts_procs, [self.mounts[0]])
         self.assertTrue(ret, "IO failed on some of the clients")
         g.log.info("IO is successful on all mounts")
         g.log.info("Successfully created a file from mount point")
@@ -149,17 +148,16 @@ class TestSelfHeal(GlusterBaseClass):
 
         g.log.info("creating 5 new files of same name from mount point")
         all_mounts_procs = []
-        for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python %s create_files -f 5 "
-                   "--base-file-name test_file --fixed-file-size 10k %s" % (
-                       self.script_upload_path,
-                       mount_obj.mountpoint))
-            proc = g.run_async(mount_obj.client_system, cmd,
-                               user=mount_obj.user)
-            all_mounts_procs.append(proc)
+        cmd = ("/usr/bin/env python %s create_files -f 5 "
+               "--base-file-name test_file --fixed-file-size 10k %s" % (
+                   self.script_upload_path, self.mounts[0].mountpoint))
+        proc = g.run_async(self.mounts[0].client_system, cmd,
+                           user=self.mounts[0].user)
+        all_mounts_procs.append(proc)
+
         # Validate I/O
         g.log.info("Wait for IO to complete and validate IO.....")
-        ret = validate_io_procs(all_mounts_procs, self.mounts)
+        ret = validate_io_procs(all_mounts_procs, [self.mounts[0]])
         self.assertTrue(ret, "IO failed on some of the clients")
         g.log.info("IO is successful on all mounts")
         g.log.info("Successfully created a new file of same name "
@@ -225,10 +223,11 @@ class TestSelfHeal(GlusterBaseClass):
             fpath = (self.mounts[0].mountpoint + '/test_file' +
                      str(fcount) + '.txt')
             status = get_fattr(self.mounts[0].client_system,
-                               fpath, 'replica.split-brain-status')
+                               fpath, 'replica.split-brain-status',
+                               encode="text")
             compare_string = ("The file is not under data or metadata "
                               "split-brain")
-            self.assertEqual(status.rstrip('\x00'), compare_string,
+            self.assertEqual(status, compare_string,
                              "file test_file%s is under"
                              " split-brain" % str(fcount))
         g.log.info("none of the files are under split-brain")
