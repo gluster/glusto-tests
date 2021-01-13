@@ -1,4 +1,4 @@
-#  Copyright (C) 2018-2020 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -474,6 +474,9 @@ class GlusterBaseClass(TestCase):
         """
         g.log.info("Starting to mount volume %s", cls.volname)
         for mount_obj in mounts:
+            # For nfs-ganesha, mount is done via vip
+            if cls.enable_nfs_ganesha:
+                mount_obj.server_system = cls.vips[0]
             g.log.info("Mounting volume '%s:%s' on '%s:%s'",
                        mount_obj.server_system, mount_obj.volname,
                        mount_obj.client_system, mount_obj.mountpoint)
@@ -1057,6 +1060,7 @@ class GlusterBaseClass(TestCase):
             ret = setup_nfs_ganesha(cls)
             if not ret:
                 raise ExecutionError("Failed to setup nfs ganesha")
+            g.log.info("Successful in setting up NFS Ganesha Cluster")
 
         msg = "Setupclass: %s : %s" % (cls.__name__, cls.glustotest_run_id)
         g.log.info(msg)

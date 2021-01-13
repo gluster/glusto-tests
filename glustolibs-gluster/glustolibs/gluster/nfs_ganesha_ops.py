@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#  Copyright (C) 2016-2017  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2016-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -50,17 +50,33 @@ def teardown_nfs_ganesha_cluster(servers, force=False):
     Example:
         teardown_nfs_ganesha_cluster(servers)
     """
+    # Copy ganesha.conf before proceeding to clean up
+    for server in servers:
+        cmd = "cp /etc/ganesha/ganesha.conf ganesha.conf"
+        ret, _, _ = g.run(server, cmd)
+        if ret:
+            g.log.error("Failed to copy ganesha.conf")
+
     if force:
         g.log.info("Executing force cleanup...")
+        cleanup_ops = ['--teardown', '--cleanup']
         for server in servers:
-            cmd = ("/usr/libexec/ganesha/ganesha-ha.sh --teardown "
-                   "/var/run/gluster/shared_storage/nfs-ganesha")
-            _, _, _ = g.run(server, cmd)
-            cmd = ("/usr/libexec/ganesha/ganesha-ha.sh --cleanup /var/run/"
-                   "gluster/shared_storage/nfs-ganesha")
-            _, _, _ = g.run(server, cmd)
+            # Perform teardown and cleanup
+            for op in cleanup_ops:
+                cmd = ("/usr/libexec/ganesha/ganesha-ha.sh {} /var/run/"
+                       "gluster/shared_storage/nfs-ganesha".format(op))
+                _, _, _ = g.run(server, cmd)
+
+            # Stop nfs ganesha service
             _, _, _ = stop_nfs_ganesha_service(server)
+
+            # Clean shared storage, ganesha.conf, and replace with backup
+            for cmd in ("rm -rf /var/run/gluster/shared_storage/*",
+                        "rm -rf /etc/ganesha/ganesha.conf",
+                        "cp ganesha.conf /etc/ganesha/ganesha.conf"):
+                _, _, _ = g.run(server, cmd)
         return True
+
     ret, _, _ = disable_nfs_ganesha(servers[0])
     if ret != 0:
         g.log.error("Nfs-ganesha disable failed")
@@ -755,6 +771,22 @@ def create_nfs_ganesha_cluster(servers, vips):
     # Create backup of ganesha-ha.conf file in ganesha_mnode
     g.upload(ganesha_mnode, tmp_ha_conf, '/etc/ganesha/')
 
+    # setsebool ganesha_use_fusefs on
+    cmd = "setsebool ganesha_use_fusefs on"
+    for server in servers:
+        ret, _, _ = g.run(server, cmd)
+        if ret:
+            g.log.error("Failed to 'setsebool ganesha_use_fusefs on' on %",
+                        server)
+            return False
+
+        # Verify ganesha_use_fusefs is on
+        _, out, _ = g.run(server, "getsebool ganesha_use_fusefs")
+        if "ganesha_use_fusefs --> on" not in out:
+            g.log.error("Failed to 'setsebool ganesha_use_fusefs on' on %",
+                        server)
+            return False
+
     # Enabling ganesha
     g.log.info("Enable nfs-ganesha")
     ret, _, _ = enable_nfs_ganesha(ganesha_mnode)
@@ -768,6 +800,31 @@ def create_nfs_ganesha_cluster(servers, vips):
     # pcs status output
     _, _, _ = g.run(ganesha_mnode, "pcs status")
 
+    # pacemaker status output
+    _, _, _ = g.run(ganesha_mnode, "systemctl status pacemaker")
+
+    return True
+
+
+def enable_firewall(servers):
+    """Enables Firewall if not enabled already
+    Args:
+        servers(list): Hostname of ganesha nodes
+    Returns:
+        Status (bool) : True/False based on the status of firewall enable
+    """
+
+    cmd = "systemctl status firewalld | grep Active"
+    for server in servers:
+        ret, out, _ = g.run(server, cmd)
+        if 'inactive' in out:
+            g.log.info("Firewalld is not running. Enabling Firewalld")
+            for command in ("enable", "start"):
+                ret, out, _ = g.run(server,
+                                    "systemctl {} firewalld".format(command))
+                if ret:
+                    g.log.error("Failed to enable Firewalld on %s", server)
+                    return False
     return True
 
 
@@ -781,9 +838,11 @@ def ganesha_server_firewall_settings(servers):
         True(bool): If successfully set the firewall settings
         False(bool): If failed to do firewall settings
     """
+    if not enable_firewall(servers):
+        return False
+
     services = ['nfs', 'rpc-bind', 'high-availability', 'nlm', 'mountd',
                 'rquota']
-
     ret = add_services_to_firewall(servers, services, True)
     if not ret:
         g.log.error("Failed to set firewall zone permanently on ganesha nodes")
