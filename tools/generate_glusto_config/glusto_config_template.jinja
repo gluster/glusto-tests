@@ -17,8 +17,9 @@ clients:{% for client in clients %}
 # Note: Use the same Hostname/IP used in the above 'servers' section.
 
 servers_info:{% for server_item in servers %}
+     {% set outer_loop = loop %}
      {% for server, value in server_item.items() %}
-     {{server}}: &server{{ loop.index }}
+     {{server}}: &server{{ outer_loop.index }}
          host: {{server}}
          devices: {{ value["devices"] }}
          brick_root: {{ value["brick_root"] }}{% endfor %}{% endfor %}
