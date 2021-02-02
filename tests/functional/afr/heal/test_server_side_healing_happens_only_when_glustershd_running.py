@@ -1,4 +1,4 @@
-#  Copyright (C) 2020 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,12 +26,14 @@ from glustolibs.gluster.brick_libs import (
     select_volume_bricks_to_bring_offline, get_online_bricks_list)
 from glustolibs.gluster.heal_libs import (
     get_self_heal_daemon_pid, is_shd_daemonized,
-    monitor_heal_completion, bring_self_heal_daemon_process_offline)
+    monitor_heal_completion, bring_self_heal_daemon_process_offline,
+    disable_granular_heal)
 from glustolibs.gluster.heal_ops import (get_heal_info_summary,
                                          trigger_heal_full)
 from glustolibs.io.utils import validate_io_procs
 from glustolibs.misc.misc_libs import upload_scripts
-from glustolibs.gluster.volume_ops import set_volume_options
+from glustolibs.gluster.volume_ops import (set_volume_options,
+                                           get_volume_options)
 from glustolibs.gluster.mount_ops import mount_volume, umount_volume
 
 
@@ -99,6 +101,15 @@ class SelfHealDaemonProcessTestsWithSingleVolume(GlusterBaseClass):
          * heal should complete successfully
         """
         # pylint: disable=too-many-locals,too-many-statements,too-many-lines
+
+        # Disable granular heal if not disabled already
+        granular = get_volume_options(self.mnode, self.volname,
+                                      'granular-entry-heal')
+        if granular['cluster.granular-entry-heal'] == 'on':
+            ret = disable_granular_heal(self.mnode, self.volname)
+            self.assertTrue(ret,
+                            "Unable to set granular-entry-heal to on")
+
         # Setting Volume options
         options = {"metadata-self-heal": "on",
                    "entry-self-heal": "on",
@@ -131,7 +142,7 @@ class SelfHealDaemonProcessTestsWithSingleVolume(GlusterBaseClass):
         all_mounts_procs, num_files_to_write = [], 100
         for mount_obj in self.mounts:
             cmd = ("/usr/bin/env python %s create_files "
-                   "-f %s --base-file-name file %s" % (self.script_upload_path,
+                   "-f %d --base-file-name file %s" % (self.script_upload_path,
                                                        num_files_to_write,
                                                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
@@ -221,8 +232,8 @@ class SelfHealDaemonProcessTestsWithSingleVolume(GlusterBaseClass):
 
         all_mounts_procs = []
         for mount_obj in self.mounts:
-            cmd = ("/usr/bin/env python %s read %s"
-                   % (self.script_upload_path, mount_obj.mountpoint))
+            cmd = ("cd %s;for i in `seq 1 5`; do ls -l;cat *; stat *; sleep 5;"
+                   " done " % (mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
             all_mounts_procs.append(proc)
