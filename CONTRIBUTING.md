@@ -23,6 +23,9 @@ $ ssh-keygen
 and follow the instructions.
 
 ### 1.2 Get the glusto-tests project
+
+Fork [this](https://github.com/gluster/glusto-tests) repository on github
+
 Git clone the glusto-tests project using
 
 ```
