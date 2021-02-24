@@ -4,7 +4,7 @@ This provides the guidelines for contributing to the glusto-tests project.
 For detailed guidelines on development of tests, visit the [developer-guide](https://github.com/gluster/glusto-tests/blob/master/docs/userguide/developer-guide.rst).
 
 ## 1. Initial Preparation
-The glusto-tests development workflow revolves around [Git](https://git-scm.com/), [Gerrit](https://review.gluster.org/) and [Jenkins](https://build.gluster.org/).
+The glusto-tests development workflow revolves around [Git](https://git-scm.com/), [GitHub]() and [Jenkins](https://build.gluster.org/).
 
 Using these tools requires some initial preparation.
 
@@ -22,22 +22,20 @@ $ ssh-keygen
 ```
 and follow the instructions.
 
-### 1.2 Gerrit Setup
-To contribute to glusto-tests, you should first register on [gerrit](https://review.gluster.org).
+### 1.2 Get the glusto-tests project
 
-After registration, you will need to select a username, set a preferred email and upload the ssh public key in gerrit. You can do this from the gerrit settings page. Make sure that you set the preferred email to the email you configured for git.
+Fork [this](https://github.com/gluster/glusto-tests) repository on github
 
-### 1.3 Get the glusto-tests project
 Git clone the glusto-tests project using
 
 ```
-<ssh://><username>@review.gluster.org/glusto-tests
+$ git clone https://github.com/gluster/glusto-tests.git
 ```
 
-(replace with your gerrit username).
+OR
 
 ```
-$ git clone ssh://<username>@review.gluster.org/glusto-tests
+$ git clone git@github.com:gluster/glusto-tests.git
 ```
 
 This will clone the glusto-tests project into a subdirectory named glusto-tests with the master branch checked out.
@@ -103,7 +101,7 @@ $ git add <list of modified files>
 Now, commit these changes using
 
 ```
-$ git commit -s
+$ git commit -s -a
 ```
 
 It is essential that you commit with the '-s' option, which will sign-off the commit with your configured email, as gerrit is configured to reject patches which are not signed-off.
@@ -133,25 +131,17 @@ Further paragraphs come after blank lines.
 ```
 
 ### 2.5 Submit for Review
-To make sure that you don't stumble upon any irregularity while submitting your changes for review, the origin must be renamed to 'gerrit'.
+To make sure that you don't stumble upon any irregularity while submitting your changes for review, the remote fork must be added.
 Perform the following command from the root of glusto-tests:
 
 ```
-$ git remote rename origin gerrit
+$ git remote add fork https://github.com/<your-github-username>/glusto-tests
 ```
 
-The gerrit review process used for glusto-tests is by 'git-review'. You must have git-review installed in order to submit a patch for review.
-
-Install git-review using pip:
+You simply need to provide the review command:
 
 ```
-$ pip install git-review
-```
-
-Once installed, you simply need to provide the review command:
-
-```
-$ git-review
+$ git push fork hellopatch
 ```
 
 After a successful git-review, you will get a url in CLI which is the gerrit link to your patch. This patch can now be reviewed.
@@ -182,7 +172,7 @@ $ git commit --amend
 Now you can resubmit the updated commit for review using:
 
 ```
-$ git-review
+$ git push fork hellopatch -f
 ```
 
 The formal review process could take a long time. To increase chances for a speedy review, you can add the component owners as reviewers on the gerrit review page. This will ensure they notice the change.
