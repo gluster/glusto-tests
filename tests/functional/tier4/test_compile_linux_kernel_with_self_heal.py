@@ -24,11 +24,9 @@ from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            are_bricks_offline,
                                            are_bricks_online, get_all_bricks)
 from glustolibs.gluster.glusterdir import mkdir
-from glustolibs.gluster.heal_libs import (monitor_heal_completion,
-                                          is_heal_complete)
+from glustolibs.gluster.heal_libs import monitor_heal_completion
 from glustolibs.gluster.lib_utils import collect_bricks_arequal
 from glustolibs.gluster.volume_libs import get_subvols
-from glustolibs.gluster.volume_ops import get_volume_options
 from glustolibs.io.utils import collect_mounts_arequal, run_linux_untar
 
 
