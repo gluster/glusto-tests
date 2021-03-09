@@ -35,7 +35,8 @@ from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import (collect_mounts_arequal, validate_io_procs)
 
 
-@runs_on([['arbiter', 'distributed-arbiter'],
+@runs_on([['replicated', 'distributed-replicated',
+           'arbiter', 'distributed-arbiter'],
           ['glusterfs', 'cifs', 'nfs']])
 class TestSelfHeal(GlusterBaseClass):
     """
