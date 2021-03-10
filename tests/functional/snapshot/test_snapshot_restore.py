@@ -93,7 +93,7 @@ class SnapRestore(GlusterBaseClass):
         tearDown
         """
         ret, _, _ = snap_delete_all(self.mnode)
-        if not ret:
+        if ret:
             raise ExecutionError("Snapshot delete failed.")
 
         # Unmount and cleanup-volume

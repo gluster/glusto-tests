@@ -129,8 +129,9 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
                                  clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
                    self.clients)
+
         # Start IO on mounts
-        g.log.info("Starting IO on all mounts...")
+        io_process = []
         for index, mount_obj in enumerate(self.mounts, start=1):
             g.log.info("Starting IO on %s:%s", mount_obj.client_system,
                        mount_obj.mountpoint)
@@ -144,21 +145,20 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
                        mount_obj.mountpoint))
             proc = g.run_async(mount_obj.client_system, cmd,
                                user=mount_obj.user)
-            # Expand volume
-            g.log.debug("Expanding volume %s", self.volname)
-            ret = expand_volume(mnode=self.mnode,
-                                volname=self.volname,
-                                servers=self.servers,
-                                all_servers_info=self.all_servers_info)
-            self.assertTrue(ret, "Expand volume %s: Fail" % self.volname)
-            g.log.info("Volume %s expanded: Success", self.volname)
+            io_process.append(proc)
 
-            # Validate IO on current mount point
-            g.log.debug('Validating IO on mount point %s:%s',
-                        mount_obj.client_system, mount_obj.mountpoint)
-            self.assertTrue(validate_io_procs([proc], [mount_obj]),
-                            'IO Failed on client %s:%s' %
-                            (mount_obj.client_system, mount_obj.mountpoint))
+        # Expand volume
+        ret = expand_volume(mnode=self.mnode,
+                            volname=self.volname,
+                            servers=self.servers,
+                            all_servers_info=self.all_servers_info)
+        self.assertTrue(ret, "Expand volume %s: Fail" % self.volname)
+        g.log.info("Volume %s expanded: Success", self.volname)
+
+        # Validate IO on current mount point
+        self.assertTrue(validate_io_procs(io_process, self.mounts),
+                        'IO Failed on clients')
+        g.log.info('I/O successful on all the clients')
 
         g.log.debug("Unmounting mount points")
         self.assertTrue(self.unmount_volume(self.mounts),

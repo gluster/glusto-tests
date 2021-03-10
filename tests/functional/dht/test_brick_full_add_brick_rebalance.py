@@ -79,10 +79,13 @@ class TestBrickFullAddBrickRebalance(GlusterBaseClass):
             while (subvols[find_hashed_subvol(subvols, "/", filename)[1]] ==
                    subvol):
                 filename = self._get_random_string()
-            ret, _, _ = g.run(self.mounts[0].client_system,
-                              "fallocate -l {}G {}/{}".format(
-                                  usable_size, self.mounts[0].mountpoint,
-                                  filename))
+            ret, _, err = g.run(self.mounts[0].client_system,
+                                "fallocate -l {}G {}/{}".format(
+                                    usable_size, self.mounts[0].mountpoint,
+                                    filename))
+            err_msg = 'fallocate: fallocate failed: No space left on device'
+            if ret and err == err_msg:
+                ret = 0
             self.assertFalse(ret, "Failed to fill disk to min free limit")
         g.log.info("Disk filled up to min free limit")
 

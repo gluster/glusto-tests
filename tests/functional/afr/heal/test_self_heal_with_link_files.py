@@ -184,6 +184,15 @@ class TestHealWithLinkFiles(GlusterBaseClass):
             brick_total = brick_arequal.splitlines()[-1].split(':')[-1]
             self.assertEqual(init_val, brick_total, 'Arequals not matching')
 
+    @staticmethod
+    def _add_dir_path_to_brick_list(brick_list):
+        """Add test_self_heal at the end of brick path"""
+        dir_brick_list = []
+        for brick in brick_list:
+            dir_brick_list.append('{}/{}'.format(brick,
+                                                 'test_link_self_heal'))
+        return dir_brick_list
+
     def _check_arequal_checksum_for_the_volume(self):
         """
         Check if arequals of mount point and bricks are
@@ -192,16 +201,19 @@ class TestHealWithLinkFiles(GlusterBaseClass):
         if self.volume_type == "replicated":
             # Check arequals for "replicated"
             brick_list = get_all_bricks(self.mnode, self.volname)
+            dir_brick_list = self._add_dir_path_to_brick_list(brick_list)
 
             # Get arequal before getting bricks offline
-            ret, arequals = collect_mounts_arequal([self.mounts[0]])
+            work_dir = '{}/test_link_self_heal/'.format(self.mountpoint)
+            ret, arequals = collect_mounts_arequal([self.mounts[0]],
+                                                   path=work_dir)
             self.assertTrue(ret, 'Failed to get arequal')
             g.log.info('Getting arequal before getting bricks offline '
                        'is successful')
 
             # Get arequal on bricks and compare with mount_point_total
             self._check_arequal_on_bricks_with_a_specific_arequal(
-                arequals, brick_list)
+                arequals, dir_brick_list)
 
         # Check arequals for "distributed-replicated"
         if self.volume_type == "distributed-replicated":
@@ -213,12 +225,13 @@ class TestHealWithLinkFiles(GlusterBaseClass):
             for i in range(0, num_subvols):
                 # Get arequal for first brick
                 brick_list = subvols_dict['volume_subvols'][i]
-                ret, arequals = collect_bricks_arequal([brick_list[0]])
+                dir_brick_list = self._add_dir_path_to_brick_list(brick_list)
+                ret, arequals = collect_bricks_arequal([dir_brick_list[0]])
                 self.assertTrue(ret, 'Failed to get arequal on first brick')
 
                 # Get arequal for every brick and compare with first brick
                 self._check_arequal_on_bricks_with_a_specific_arequal(
-                    arequals, brick_list)
+                    arequals, dir_brick_list)
 
     def _check_heal_is_completed_and_not_in_split_brain(self):
         """Check if heal is completed and volume not in split brain"""
