@@ -40,6 +40,7 @@ from glustolibs.gluster.glusterfind_ops import (
 from glustolibs.gluster.gluster_init import (
     stop_glusterd,
     start_glusterd,
+    is_glusterd_running,
     wait_for_glusterd_to_start)
 from glustolibs.misc.misc_libs import (
     reboot_nodes,
@@ -181,6 +182,10 @@ class TestGlusterFindNodeDown(GlusterBaseClass):
         ret = stop_glusterd(self.random_server)
         self.assertTrue(ret, "Failed to stop glusterd on one node.")
         g.log.info("Succesfully stopped glusterd on one node.")
+
+        # Wait till glusterd is completely down.
+        while is_glusterd_running(self.random_server) != 1:
+            sleep(2)
 
         self._perform_glusterfind_pre_and_validate_outfile()
 
