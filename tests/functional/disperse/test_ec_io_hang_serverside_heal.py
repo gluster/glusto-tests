@@ -1,4 +1,4 @@
-#  Copyright (C) 2018  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2018-2021  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,8 @@ def ec_check_heal_comp(self):
     g.log.info("Heal Entries %s : %s", self.volname, heal_info)
 
     # Monitor heal completion
-    ret = monitor_heal_completion(self.mnode, self.volname)
+    ret = monitor_heal_completion(self.mnode, self.volname,
+                                  timeout_period=1600)
     self.assertTrue(ret, 'Heal has not yet completed')
 
 

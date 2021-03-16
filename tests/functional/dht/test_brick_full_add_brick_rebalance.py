@@ -1,4 +1,4 @@
-#  Copyright (C) 2020 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2020-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -83,8 +83,8 @@ class TestBrickFullAddBrickRebalance(GlusterBaseClass):
                                 "fallocate -l {}G {}/{}".format(
                                     usable_size, self.mounts[0].mountpoint,
                                     filename))
-            err_msg = 'fallocate: fallocate failed: No space left on device'
-            if ret and err == err_msg:
+            err_msg = 'No space left on device'
+            if ret and err_msg in err:
                 ret = 0
             self.assertFalse(ret, "Failed to fill disk to min free limit")
         g.log.info("Disk filled up to min free limit")
