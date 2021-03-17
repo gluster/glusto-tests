@@ -30,10 +30,6 @@ from glustolibs.gluster.gluster_init import (restart_glusterd,
            'distributed-replicated', 'distributed-arbiter',
            'distributed-dispersed'], ['glusterfs']])
 class TestGlusterdStartStopOutput(GlusterBaseClass):
-    def setUp(self):
-        # calling GlusterBaseClass setUp
-        self.get_super_method(self, 'setUp')()
-
     def tearDown(self):
         # Restart glusterd on nodes for which it was stopped
         ret = restart_glusterd(self.servers)
