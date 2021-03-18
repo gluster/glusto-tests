@@ -1,4 +1,4 @@
-#  Copyright (C) 2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2020-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -51,16 +51,15 @@ class TestSplitBrain(GlusterBaseClass):
         if not ret:
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         """
         Cleanup Volume
         """
-        ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
+        ret = self.unmount_volume_and_cleanup_volume(self.mounts)
         if not ret:
-            raise ExecutionError("Failed to create volume")
+            raise ExecutionError("Failed to remove volume")
 
-        cls.get_super_method(cls, 'tearDownClass')()
+        self.get_super_method(self, 'tearDown')()
 
     def _bring_bricks_online(self):
         """
