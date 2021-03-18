@@ -1,4 +1,4 @@
-#  Copyright (C) 2015-2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2015-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,6 @@ from glustolibs.gluster.heal_libs import (monitor_heal_completion,
                                           is_heal_complete,
                                           is_volume_in_split_brain,
                                           is_shd_daemonized)
-from glustolibs.gluster.heal_ops import trigger_heal
 from glustolibs.misc.misc_libs import upload_scripts
 from glustolibs.io.utils import (collect_mounts_arequal,
                                  wait_for_io_to_complete)
@@ -300,11 +299,6 @@ class TestMetadataSelfHeal(GlusterBaseClass):
         ret = is_shd_daemonized(self.all_servers)
         self.assertTrue(ret, "Either No self heal daemon process found")
         g.log.info("All self-heal-daemons are online")
-
-        # Start healing
-        ret = trigger_heal(self.mnode, self.volname)
-        self.assertTrue(ret, 'Heal is not started')
-        g.log.info('Healing is started')
 
         # Monitor heal completion
         ret = monitor_heal_completion(self.mnode, self.volname)
