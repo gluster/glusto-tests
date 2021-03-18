@@ -21,30 +21,13 @@
 from time import sleep
 from glusto.core import Glusto as g
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
-from glustolibs.gluster.exceptions import ExecutionError
-from glustolibs.gluster.gluster_init import (restart_glusterd,
-                                             wait_for_glusterd_to_start)
+from glustolibs.gluster.gluster_init import wait_for_glusterd_to_start
 
 
 @runs_on([['replicated', 'distributed', 'arbiter', 'dispersed',
            'distributed-replicated', 'distributed-arbiter',
            'distributed-dispersed'], ['glusterfs']])
 class TestGlusterdStartStopOutput(GlusterBaseClass):
-    def tearDown(self):
-        # Restart glusterd on nodes for which it was stopped
-        ret = restart_glusterd(self.servers)
-        if not ret:
-            raise ExecutionError("Failed to restart glusterd on nodes: %s"
-                                 % self.servers[3:5])
-
-        # Wait for glusterd to be online and validate it's running.
-        ret = wait_for_glusterd_to_start(self.servers[3:5])
-        if not ret:
-            raise ExecutionError("Glusterd not up on the servers: %s" %
-                                 self.servers[3:5])
-
-        self.get_super_method(self, 'tearDown')()
-
     def _run_command_in_servers(self, cmd):
         """
         Function to run a given command in the servers and validate if they
