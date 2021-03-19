@@ -847,7 +847,7 @@ def remove_service_from_firewall(nodes, firewall_service, permanent=False):
         firewall_service = [firewall_service]
 
     _rc = True
-    if is_rhel7(nodes):
+    if not is_rhel6(nodes):
         for service in firewall_service:
             cmd = ("firewall-cmd --zone=public " + "--remove-service=" +
                    service)
@@ -891,7 +891,7 @@ def add_services_to_firewall(nodes, firewall_service, permanent=False):
         firewall_service = [firewall_service]
 
     _rc = True
-    if is_rhel7(nodes):
+    if not is_rhel6(nodes):
         for service in firewall_service:
             cmd = ("firewall-cmd --zone=public " + "--add-service=" + service)
             results = g.run_parallel(nodes, cmd)
