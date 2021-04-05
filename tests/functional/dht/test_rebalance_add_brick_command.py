@@ -178,7 +178,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         vol_list = get_volume_list(self.mnode)
         if vol_list is None:
             raise ExecutionError("Failed to get the volume list")
-        
+
         for volume in vol_list:
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
