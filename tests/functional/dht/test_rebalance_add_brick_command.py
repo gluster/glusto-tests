@@ -1,4 +1,4 @@
-#  Copyright (C) 2017-2020 Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2017-2021 Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -43,7 +43,6 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         g.log.info("Starting to Setup Volume")
         ret = self.setup_volume()
         if not ret:
-            g.log.error("Failed to Setup")
             raise ExecutionError("Failed to Setup Volume")
 
     def test_add_brick_running_volume(self):
@@ -111,6 +110,15 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         g.log.info('Success in add bricks to stopped volume')
 
     def test_add_bricks_io_mount_point(self):
+        """
+        Test Case Steps:
+        1. Create, start and mount volume.
+        2. Start I/O on volume.
+        3. Add brick and start rebalance on the volume.
+        4. Wait for rebalance to complete.
+        5. Check for I/O failures if any.
+        """
+
         # Mount volume
         ret = self.mount_volume(self.mounts)
         self.assertTrue(ret, 'Mount volume: FAIL')
@@ -123,8 +131,6 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         ret = upload_scripts(self.clients, script_location)
         if not ret:
             clients = ", ".join(self.clients)
-            g.log.error("Failed to upload IO scripts to clients %s",
-                        clients)
             raise ExecutionError("Failed to upload IO scripts to clients %s" %
                                  clients)
         g.log.info("Successfully uploaded IO scripts to clients %s",
@@ -160,7 +166,6 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
                         'IO Failed on clients')
         g.log.info('I/O successful on all the clients')
 
-        g.log.debug("Unmounting mount points")
         self.assertTrue(self.unmount_volume(self.mounts),
                         'Unmount end points: Fail')
         g.log.info("Unmount mount points: Success")
@@ -173,6 +178,7 @@ class ExerciseAddbrickCommand(GlusterBaseClass):
         vol_list = get_volume_list(self.mnode)
         if vol_list is None:
             raise ExecutionError("Failed to get the volume list")
+        
         for volume in vol_list:
             ret = cleanup_volume(self.mnode, volume)
             if not ret:
