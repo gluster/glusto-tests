@@ -97,8 +97,6 @@ class TestShardFunctionalities(GlusterBaseClass):
             brick_node, brick_path = brick.split(":")                                                  
             shard_dir = brick_path + '/.shard'
             cmd = ("ls -l %s | grep %s | wc -l" %(brick_path + '/.shard', gfid[2:])) 
-            g.log.info("vinayak: cmd = %s", cmd)
             ret, out, _ = g.run(brick_node, cmd)                                   
-            g.log.info("vinayak: ret = %s out = %s", ret, out)
 
 
