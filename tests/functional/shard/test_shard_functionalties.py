@@ -41,7 +41,7 @@ class TestShardFunctionalities(GlusterBaseClass):
         g.log.info("Successful in Setup Volume and Mount Volume")
 
         # Enable sharding ON and set shard-block-size to 4MB                                  
-        options = {'features.shard': 'ON', 'features.shard-block-size' : '4MB'}                             
+        options = {'features.shard': 'on'}                             
         ret = set_volume_options(cls.mnode, cls.volname, options)
 
     @classmethod
@@ -68,19 +68,37 @@ class TestShardFunctionalities(GlusterBaseClass):
         mountpoint = mount_obj.mountpoint
 
         # verify sharding xlator is enabled                                  
-        option = {'features.shard': 'on'}                                         
-
-        vol_option = get_volume_options(self.mnode, self.volname, option)                                                                                     
+        option = 'features.shard' 
+        vol_option = get_volume_options(self.mnode, self.volname, option)
         self.assertEqual(vol_option['features.shard'], 'on', "Failed"         
                          " to validate "                                        
                          "volume options")                                      
+
+        # verify default shard block size set to 64MB
+        option = 'features.shard-block-size'
+        vol_option = get_volume_options(self.mnode, self.volname, option)
+        g.log.info("vinayk: vol_option = %s", vol_option['features.shard-block-size'])
+        self.assertEqual(vol_option['features.shard-block-size'], '64MB', "Failed"           
+                         " to validate "                                           
+                         "volume options")                                         
+
+        # set shard-block-size to 4MB                                  
+        options = {'features.shard-block-size' : '4MB'}                             
+        ret = set_volume_options(self.mnode, self.volname, options)
+
+        # verify shard block size set to 4MB                           
+        option = 'features.shard-block-size'                                                  
+        vol_option = get_volume_options(self.mnode, self.volname, option)
+        self.assertEqual(vol_option['features.shard-block-size'], '4MB', "Failed"           
+                         " to validate "                                           
+                         "volume options")                                         
         g.log.info("Successfully validated volume options"                      
-                   "for volume %s", self.volname) 
+                   "for volume %s", self.volname)
 
         # Creating a file on the mount-point                                    
         cmd = 'dd if=/dev/urandom of={}/file1 count=1M bs=10'.format(mountpoint)                                                               
         ret, _, _ = g.run(self.clients[0], cmd)                                    
-        self.assertEqual(ret, 0, "File to create file")
+        self.assertEqual(ret, 0, "Failed to create file")
 
         bricks_list = get_all_bricks(self.mnode, self.volname)                     
 
@@ -92,11 +110,19 @@ class TestShardFunctionalities(GlusterBaseClass):
             if gfid is not None:
                 break
 
+        count = 0
         # search for the shards of the file1
         for brick in bricks_list:
             brick_node, brick_path = brick.split(":")                                                  
             shard_dir = brick_path + '/.shard'
-            cmd = ("ls -l %s | grep %s | wc -l" %(brick_path + '/.shard', gfid[2:])) 
-            ret, out, _ = g.run(brick_node, cmd)                                   
+            cmd = ("ls -l %s | grep %s | wc -l" %(brick_path + '/.shard', gfid[2:] + '*')) 
+            g.log.info("vinayak: command %s", cmd)
+            ret, out, _ = g.run(brick_node, cmd)
+            g.log.info("vinayak: ret = %s and out = %s", ret, out)
+            count += int(out.strip())
+
+        self.assertEqual(2, count, "Expected 2 shards but got {} ".format(count))
+
+        g.log.info("Successfully validated file/shards creation")
 
 
