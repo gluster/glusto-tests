@@ -24,7 +24,7 @@ from glustolibs.gluster.brickdir import BrickDir
 from glustolibs.gluster.volume_libs import (get_subvols, set_volume_options, get_volume_options)
 
 
-@runs_on([['distributed'],
+@runs_on([['distributed', 'distributed-replicated', 'distributed-arbiter'],
           ['glusterfs']])
 class TestShardFunctionalities(GlusterBaseClass):
 
@@ -40,7 +40,7 @@ class TestShardFunctionalities(GlusterBaseClass):
             raise ExecutionError("Failed to Setup_Volume and Mount_Volume")
         g.log.info("Successful in Setup Volume and Mount Volume")
 
-        # Enable sharding ON and set shard-block-size to 4MB                                  
+        # Enable sharding 
         options = {'features.shard': 'on'}                             
         ret = set_volume_options(cls.mnode, cls.volname, options)
 
@@ -56,71 +56,81 @@ class TestShardFunctionalities(GlusterBaseClass):
         # Calling GlusterBaseClass tearDown
         cls.get_super_method(cls, 'tearDownClass')()
 
-    '''                                                                         
-    test case: (shard file creation)                                            
-        - Verify that the file is sharded and stored under $BRICK_PATH/.shard   
-    '''
-    def test_shard_create_file(self):
+    def test_shard_volume_options(self):
         '''
-        Test file creation.
+        test case: (verify shard volume options)                                            
+        - Verify shard default shard volume options                                
+        - Set shard volume options to other values and verify                      
+        - Reset the shard volume options to default values and verify 
         '''
         mount_obj = self.mounts[0]
         mountpoint = mount_obj.mountpoint
 
-        # verify sharding xlator is enabled                                  
-        option = 'features.shard' 
-        vol_option = get_volume_options(self.mnode, self.volname, option)
-        self.assertEqual(vol_option['features.shard'], 'on', "Failed"         
+        vol_option_dict = get_volume_options(self.mnode, self.volname)
+
+        # verify sharding xlator is enabled
+        self.assertEqual(vol_option_dict['features.shard'], 'on', "Failed"         
                          " to validate "                                        
-                         "volume options")                                      
+                         "volume option - features.shard: on")                                      
 
         # verify default shard block size set to 64MB
-        option = 'features.shard-block-size'
-        vol_option = get_volume_options(self.mnode, self.volname, option)
-        g.log.info("vinayk: vol_option = %s", vol_option['features.shard-block-size'])
-        self.assertEqual(vol_option['features.shard-block-size'], '64MB', "Failed"           
+        self.assertEqual(vol_option_dict['features.shard-block-size'], '64MB', "Failed"           
                          " to validate "                                           
-                         "volume options")                                         
+                         "volume option - features.shard-block-size: 64Mb")
+
+        # verify default shard lru limit set to 16384                          
+        self.assertEqual(vol_option_dict['features.shard-lru-limit'], '16384', "Failed"               
+                         " to validate "                                           
+                         "volume option - features.shard-lru-limit: 16384")
+
+        # verify default shard deletion rate set to 100                         
+        self.assertEqual(vol_option_dict['features.shard-deletion-rate'], '100', "Failed"               
+                         " to validate "                                           
+                         "volume option - features.shard-deletion-rate: 100") 
 
         # set shard-block-size to 4MB                                  
-        options = {'features.shard-block-size' : '4MB'}                             
+        options = {'features.shard-block-size' : '4MB',
+                   'features.shard-lru-limit' : '25',
+                   'features.shard-deletion-rate' : '200'}                             
         ret = set_volume_options(self.mnode, self.volname, options)
 
-        # verify shard block size set to 4MB                           
-        option = 'features.shard-block-size'                                                  
-        vol_option = get_volume_options(self.mnode, self.volname, option)
-        self.assertEqual(vol_option['features.shard-block-size'], '4MB', "Failed"           
+        vol_option_dict = get_volume_options(self.mnode, self.volname)
+
+        # verify shard block size set to 4MB
+        self.assertEqual(vol_option_dict['features.shard-block-size'], '4MB', "Failed"           
                          " to validate "                                           
-                         "volume options")                                         
+                         "volume option - features.shard-block-size: 4MB")                                         
+        # verify shard lru limit set to 25                                       
+        self.assertEqual(vol_option_dict['features.shard-lru-limit'], '25', "Failed"               
+                         " to validate "                                           
+                         "volume option - features.shard-lru-limit: 25")
+
+        # verify shard deletion rate set to 200                         
+        self.assertEqual(vol_option_dict['features.shard-deletion-rate'], '200', "Failed"               
+                         " to validate "                                           
+                         "volume option - features.shard-deletion-rate: 200")
+
+        # Reset the shard volume options to default                                              
+        options = {'features.shard-block-size' : '64MB',                            
+                   'features.shard-lru-limit' : '16384',                              
+                   'features.shard-deletion-rate' : '100'}                                 
+        ret = set_volume_options(self.mnode, self.volname, options)
+
+        vol_option_dict = get_volume_options(self.mnode, self.volname)          
+                                                                                
+        # verify shard block size set to 4MB                                    
+        self.assertEqual(vol_option_dict['features.shard-block-size'], '64MB', "Failed"    
+                         " to validate "                                        
+                         "volume option - features.shard-block-size: 64MB")          
+        # verify shard lru limit set to 25                                       
+        self.assertEqual(vol_option_dict['features.shard-lru-limit'], '16384', "Failed"    
+                         " to validate "                                        
+                         "volume option - features.shard-lru-limit: 16384")        
+                                                                                
+        # verify shard deletion rate set to 200                                 
+        self.assertEqual(vol_option_dict['features.shard-deletion-rate'], '100', "Failed"                   
+                         " to validate "                                           
+                         "volume option - features.shard-deletion-rate: 100")
+
         g.log.info("Successfully validated volume options"                      
                    "for volume %s", self.volname)
-
-        # Creating a file on the mount-point                                    
-        cmd = 'dd if=/dev/urandom of={}/file1 count=1M bs=10'.format(mountpoint)                                                               
-        ret, _, _ = g.run(self.clients[0], cmd)                                    
-        self.assertEqual(ret, 0, "Failed to create file")
-
-        bricks_list = get_all_bricks(self.mnode, self.volname)                     
-
-        # get the gfid of the file1
-        gfid = ""
-        for brick in bricks_list:                                                  
-            brick_node, brick_path = brick.split(":")                           
-            gfid = get_fattr(brick_node, brick_path + '/file1', "trusted.gfid")
-            if gfid is not None:
-                break
-
-        count = 0
-        # search for the shards of the file1
-        for brick in bricks_list:
-            brick_node, brick_path = brick.split(":")                                                  
-            shard_dir = brick_path + '/.shard'
-            cmd = ("ls -l %s | grep %s | wc -l" %(brick_path + '/.shard', gfid[2:] + '*')) 
-            ret, out, _ = g.run(brick_node, cmd)
-            count += int(out.strip())
-
-        self.assertEqual(2, count, "Expected 2 shards but got {} ".format(count))
-
-        g.log.info("Successfully validated file/shards creation")
-
-
