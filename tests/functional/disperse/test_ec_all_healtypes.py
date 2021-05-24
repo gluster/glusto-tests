@@ -34,7 +34,8 @@ from glustolibs.gluster.glusterdir import mkdir
 from glustolibs.gluster.heal_libs import monitor_heal_completion
 
 
-@runs_on([['dispersed', 'distributed-dispersed'],
+@runs_on([['dispersed', 'distributed-dispersed',
+           'replicated', 'distributed-replicated'],
           ['glusterfs']])
 class TestEcAllHealTypes(GlusterBaseClass):
 
