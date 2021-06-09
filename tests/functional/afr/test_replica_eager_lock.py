@@ -32,7 +32,7 @@ from glustolibs.gluster.profile_ops import (profile_start, profile_stop,
 from glustolibs.gluster.volume_ops import get_volume_options
 
 
-@runs_on([['replicated'], ['glusterfs']])
+@runs_on([['replicated', 'distributed-replicated'], ['glusterfs']])
 class VolumeStatusWhenIOInProgress(GlusterBaseClass):
     @classmethod
     def setUpClass(cls):
