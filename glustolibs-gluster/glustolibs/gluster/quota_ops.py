@@ -220,7 +220,7 @@ def quota_fetch_list(mnode, volname, path=None):
 
     quotalist = {}
     for path in root.findall("volQuota/limit"):
-        for elem in path.getchildren():
+        for elem in path:
             if elem.tag == "path":
                 path = elem.text
                 quotalist[path] = {}
@@ -315,7 +315,7 @@ def quota_fetch_list_objects(mnode, volname, path=None):
 
     quotalist = {}
     for path in root.findall("volQuota/limit"):
-        for elem in path.getchildren():
+        for elem in path:
             if elem.tag == "path":
                 path = elem.text
                 quotalist[path] = {}

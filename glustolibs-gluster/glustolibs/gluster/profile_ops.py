@@ -166,7 +166,7 @@ def get_profile_info(mnode, volname, options=''):
     volprofileinfo = {}
     volume = root.find("volProfile")
     brick_counter = 0
-    for elem in volume.getchildren():
+    for elem in volume:
         if elem.tag == "volname":
             volname = elem.text
             volprofileinfo[volname] = {}
@@ -174,10 +174,10 @@ def get_profile_info(mnode, volname, options=''):
             brick_counter += 1
             volprofileinfo[volname][elem.tag+str(brick_counter)] = {}
             brick_dict = volprofileinfo[volname][elem.tag+str(brick_counter)]
-            for brick_tag in elem.getchildren():
+            for brick_tag in elem:
                 if 'cumulativeStats' == brick_tag.tag:
                     brick_dict["cumulativeStats"] = {}
-                    for el in brick_tag.getchildren():
+                    for el in brick_tag:
                         if el.tag == 'duration':
                             brick_dict["cumulativeStats"][el.tag] = el.text
                         elif el.tag == 'totalWrite' or el.tag == 'totalRead':
@@ -186,25 +186,25 @@ def get_profile_info(mnode, volname, options=''):
                             brick_dict["cumulativeStats"][el.tag] = {}
                             block_dict = brick_dict["cumulativeStats"][el.tag]
                             counter = 0
-                            for block in el.getchildren():
+                            for block in el:
                                 counter += 1
                                 block_dict[block.tag+str(counter)] = {}
                                 elm_dict = block_dict[block.tag+str(counter)]
-                                for block_elm in block.getchildren():
+                                for block_elm in block:
                                     elm_dict[block_elm.tag] = block_elm.text
                         elif el.tag == 'fopStats':
                             brick_dict["cumulativeStats"][el.tag] = {}
                             fop_dict = brick_dict["cumulativeStats"][el.tag]
                             fop_count = 0
-                            for fops in el.getchildren():
+                            for fops in el:
                                 fop_dict['fop'+str(fop_count)] = {}
                                 fop_param = fop_dict['fop'+str(fop_count)]
-                                for fop in fops.getchildren():
+                                for fop in fops:
                                     fop_param[fop.tag] = fop.text
                                 fop_count += 1
                 elif 'intervalStats' == brick_tag.tag:
                     brick_dict["intervalStats"] = {}
-                    for el in brick_tag.getchildren():
+                    for el in brick_tag:
                         if el.tag == 'duration':
                             brick_dict["intervalStats"][el.tag] = el.text
                         elif el.tag == 'totalWrite' or el.tag == 'totalRead':
@@ -213,20 +213,20 @@ def get_profile_info(mnode, volname, options=''):
                             brick_dict["intervalStats"][el.tag] = {}
                             block_dict = brick_dict["intervalStats"][el.tag]
                             counter = 0
-                            for block in el.getchildren():
+                            for block in el:
                                 counter += 1
                                 block_dict[block.tag+str(counter)] = {}
                                 elm_dict = block_dict[block.tag+str(counter)]
-                                for block_elm in block.getchildren():
+                                for block_elm in block:
                                     elm_dict[block_elm.tag] = block_elm.text
                         elif el.tag == 'fopStats':
                             brick_dict["intervalStats"][el.tag] = {}
                             fop_dict = brick_dict["intervalStats"][el.tag]
                             fop_count = 0
-                            for fops in el.getchildren():
+                            for fops in el:
                                 fop_dict['fop'+str(fop_count)] = {}
                                 fop_param = fop_dict['fop'+str(fop_count)]
-                                for fop in fops.getchildren():
+                                for fop in fops:
                                     fop_param[fop.tag] = fop.text
                                 fop_count += 1
                 else:

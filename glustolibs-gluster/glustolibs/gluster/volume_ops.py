@@ -450,7 +450,7 @@ def get_volume_status(mnode, volname='all', service='', options=''):
                     tmp_dict2[node_name] = [tmp_dict3]
         else:
             elem_tag = []
-            for elem in volume.getchildren():
+            for elem in volume:
                 elem_tag.append(elem.tag)
             nodes = volume.findall("node")
 
@@ -704,19 +704,19 @@ def get_volume_info(mnode, volname='all', xfail=False):
     root = etree.XML(out)
     volinfo = {}
     for volume in root.findall("volInfo/volumes/volume"):
-        for elem in volume.getchildren():
+        for elem in volume:
             if elem.tag == "name":
                 volname = elem.text
                 volinfo[volname] = {}
             elif elem.tag == "bricks":
                 volinfo[volname]["bricks"] = {}
-                tag_list = [x.tag for x in elem.getchildren() if x]
+                tag_list = [x.tag for x in elem if x]
                 if 'brick' in tag_list:
                     volinfo[volname]["bricks"]["brick"] = []
-                for el in elem.getchildren():
+                for el in elem:
                     if el.tag == 'brick':
                         brick_info_dict = {}
-                        for elmt in el.getchildren():
+                        for elmt in el:
                             brick_info_dict[elmt.tag] = elmt.text
                         (volinfo[volname]["bricks"]["brick"].
                          append(brick_info_dict))
@@ -724,7 +724,7 @@ def get_volume_info(mnode, volname='all', xfail=False):
             elif elem.tag == "options":
                 volinfo[volname]["options"] = {}
                 for option in elem.findall("option"):
-                    for el in option.getchildren():
+                    for el in option:
                         if el.tag == "name":
                             opt = el.text
                         if el.tag == "value":

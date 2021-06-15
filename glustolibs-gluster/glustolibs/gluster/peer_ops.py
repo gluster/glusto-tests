@@ -290,10 +290,10 @@ def get_peer_status(mnode):
     peer_status_list = []
     for peer in root.findall("peerStatus/peer"):
         peer_dict = {}
-        for element in peer.getchildren():
+        for element in peer:
             if element.tag == "hostnames":
                 hostnames_list = []
-                for hostname in element.getchildren():
+                for hostname in element:
                     hostnames_list.append(hostname.text)
                 element.text = hostnames_list
             peer_dict[element.tag] = element.text
@@ -342,12 +342,12 @@ def get_pool_list(mnode):
     pool_list_list = []
     for peer in root.findall("peerStatus/peer"):
         peer_dict = {}
-        for element in peer.getchildren():
+        for element in peer:
             if element.tag == "hostname" and element.text == 'localhost':
                 element.text = mnode
             if element.tag == "hostnames":
                 hostnames_list = []
-                for hostname in element.getchildren():
+                for hostname in element:
                     hostnames_list.append(hostname.text)
                 element.text = hostnames_list
             peer_dict[element.tag] = element.text
