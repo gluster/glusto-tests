@@ -817,7 +817,7 @@ def get_volume_list(mnode):
     root = etree.XML(out)
     vol_list = []
     for volume in root.findall("volList"):
-        for elem in volume.getchildren():
+        for elem in volume:
             if elem.tag == "volume":
                 vol_list.append(elem.text)
 
