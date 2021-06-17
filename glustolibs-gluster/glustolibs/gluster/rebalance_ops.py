@@ -181,15 +181,15 @@ def get_rebalance_status(mnode, volname):
     rebal_status = {}
     rebal_status["node"] = []
     for info in root.findall("volRebalance"):
-        for element in info.getchildren():
+        for element in info:
             if element.tag == "node":
                 status_info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     status_info[elmt.tag] = elmt.text
                 rebal_status[element.tag].append(status_info)
             elif element.tag == "aggregate":
                 status_info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     status_info[elmt.tag] = elmt.text
                 rebal_status[element.tag] = status_info
             else:
@@ -247,15 +247,15 @@ def rebalance_stop_and_get_status(mnode, volname):
     rebal_status = {}
     rebal_status["node"] = []
     for info in root.findall("volRebalance"):
-        for element in info.getchildren():
+        for element in info:
             if element.tag == "node":
                 status_info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     status_info[elmt.tag] = elmt.text
                 rebal_status[element.tag].append(status_info)
             elif element.tag == "aggregate":
                 status_info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     status_info[elmt.tag] = elmt.text
                 rebal_status[element.tag] = status_info
             else:
@@ -387,15 +387,15 @@ def get_remove_brick_status(mnode, volname, bricks_list):
     remove_brick_status = {}
     remove_brick_status["node"] = []
     for info in root.findall("volRemoveBrick"):
-        for element in info.getchildren():
+        for element in info:
             if element.tag == "node":
                 status_info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     status_info[elmt.tag] = elmt.text
                 remove_brick_status[element.tag].append(status_info)
             elif element.tag == "aggregate":
                 status_info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     status_info[elmt.tag] = elmt.text
                 remove_brick_status[element.tag] = status_info
             else:

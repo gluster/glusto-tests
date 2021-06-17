@@ -1258,9 +1258,9 @@ def shrink_volume(mnode, volname, subvol_num=None, replica_num=None,
             return False
         remove_brick_aggregate_status = {}
         for info in root.findall("volRemoveBrick"):
-            for element in info.getchildren():
+            for element in info:
                 if element.tag == "aggregate":
-                    for elmt in element.getchildren():
+                    for elmt in element:
                         remove_brick_aggregate_status[elmt.tag] = elmt.text
         if "completed" in remove_brick_aggregate_status['statusStr']:
             _rc = True

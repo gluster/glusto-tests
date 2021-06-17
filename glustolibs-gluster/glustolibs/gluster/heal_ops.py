@@ -288,7 +288,7 @@ def get_heal_info(mnode, volname):
         brick_heal_info = {}
         brick_files_to_heal = []
         file_to_heal_exist = False
-        for element in brick.getchildren():
+        for element in brick:
             if element.tag == "file":
                 file_to_heal_exist = True
                 file_info = {}
@@ -374,7 +374,7 @@ def get_heal_info_split_brain(mnode, volname):
         brick_heal_info_split_brain = {}
         brick_files_in_split_brain = []
         is_file_in_split_brain = False
-        for element in brick.getchildren():
+        for element in brick:
             if element.tag == "file":
                 is_file_in_split_brain = True
                 file_info = {}

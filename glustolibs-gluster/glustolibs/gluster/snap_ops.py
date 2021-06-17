@@ -247,14 +247,14 @@ def get_snap_status(mnode):
     snap_status_list = []
     for snap in root.findall("snapStatus/snapshots/snapshot"):
         snap_status = {}
-        for element in snap.getchildren():
+        for element in snap:
             if element.tag == "volume":
                 status = {}
                 status["brick"] = []
-                for elmt in element.getchildren():
+                for elmt in element:
                     if elmt.tag == "brick":
                         brick_info = {}
-                        for el in elmt.getchildren():
+                        for el in elmt:
                             brick_info[el.tag] = el.text
                         status["brick"].append(brick_info)
                     else:
@@ -404,13 +404,13 @@ def get_snap_info(mnode):
     snap_info_list = []
     for snap in root.findall("snapInfo/snapshots/snapshot"):
         snap_info = {}
-        for element in snap.getchildren():
+        for element in snap:
             if element.tag == "snapVolume":
                 info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     if elmt.tag == "originVolume":
                         info["originVolume"] = {}
-                        for el in elmt.getchildren():
+                        for el in elmt:
                             info[elmt.tag][el.tag] = el.text
                     else:
                         info[elmt.tag] = elmt.text
@@ -496,10 +496,10 @@ def get_snap_info_by_volname(mnode, volname):
     snap_vol_info = {}
 
     for snap in root.findall("snapInfo"):
-        for element in snap.getchildren():
+        for element in snap:
             if element.tag == "originVolume":
                 info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     info[elmt.tag] = elmt.text
                 snap_vol_info[element.tag] = info
             else:
@@ -508,13 +508,13 @@ def get_snap_info_by_volname(mnode, volname):
     snap_info_list = []
     for snap in root.findall("snapInfo/snapshots/snapshot"):
         snap_info = {}
-        for element in snap.getchildren():
+        for element in snap:
             if element.tag == "snapVolume":
                 info = {}
-                for elmt in element.getchildren():
+                for elmt in element:
                     if elmt.tag == "originVolume":
                         info["originVolume"] = {}
-                        for el in elmt.getchildren():
+                        for el in elmt:
                             info[elmt.tag][el.tag] = el.text
                     else:
                         info[elmt.tag] = elmt.text
@@ -664,14 +664,14 @@ def get_snap_config(mnode, volname=None):
     snap_config = {}
     for config in root.findall("snapConfig/systemConfig"):
         sys_config = {}
-        for element in config.getchildren():
+        for element in config:
             sys_config[element.tag] = element.text
     snap_config["systemConfig"] = sys_config
 
     volume_config = []
     for config in root.findall("snapConfig/volumeConfig/volume"):
         vol_config = {}
-        for element in config.getchildren():
+        for element in config:
             vol_config[element.tag] = element.text
 
         if volname is not None:
