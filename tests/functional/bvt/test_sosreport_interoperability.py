@@ -1,4 +1,4 @@
-#  Copyright (C) 2020  Red Hat, Inc. <http://www.redhat.com>
+#  Copyright (C) 2020-2021  Red Hat, Inc. <http://www.redhat.com>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -129,9 +129,10 @@ class ValidateSosreportBehavior(GlusterBaseClass):
             _ = get_dir_contents(self.servers[1], untardir, recursive=True)
             ret[after] = list(x.split(untar_dirpath, 1)[-1] for x in _)
             if before == gluster_contents_after_sos[2]:
-                self.assertTrue(bool(before == ret[after]), 'gluster '
-                                ' sosreport may be missing as they dont match '
-                                'with actual contents')
+                difference = set(before)-set(ret[after])
+                self.assertEqual(len(difference), 0,
+                                 'gluster sosreport may be missing as they '
+                                 'dont match with actual contents')
             else:
                 # Need this logic for var/log/glusterfs entries as rotated(.gz)
                 # logs are not collected by sos
