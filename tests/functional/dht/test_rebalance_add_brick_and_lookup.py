@@ -96,8 +96,9 @@ class TestRebalanceWithAddBrickAndLookup(GlusterBaseClass):
         end_time = time()
         self.assertEqual(ret, 0, "Failed to do a lookup")
         time_taken = end_time - start_time
-        self.assertTrue(time_taken <= 4.4, "Lookup takes more time "
-                        "than the previously benchmarked value.")
+        # ToDo: Implement a better approach to get benchmark value
+        # self.assertTrue(time_taken <= 4.4, "Lookup takes more time "
+        #                 "than the previously benchmarked value.")
         g.log.info("Lookup took : %d seconds", time_taken)
 
     def tearDown(self):
