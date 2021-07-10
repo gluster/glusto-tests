@@ -41,7 +41,8 @@ class TestVerifyPermissionChanges(GlusterBaseClass):
     def _set_root_dir_permission(self, permission):
         """ Sets the root dir permission to the given value"""
         m_point = self.mounts[0].mountpoint
-        ret = set_file_permissions(self.clients[0], m_point, permission)
+        ret = set_file_permissions(self.mounts[0].client_system,
+                                   m_point, permission)
         self.assertTrue(ret, "Failed to set root dir permissions")
 
     def _get_dir_permissions(self, host, directory):
@@ -69,7 +70,8 @@ class TestVerifyPermissionChanges(GlusterBaseClass):
 
     def _bring_back_brick_online(self, brick):
         """ Brings back down brick from the volume"""
-        ret = bring_bricks_online(self.mnode, self.volname, brick)
+        ret = bring_bricks_online(self.mnode, self.volname, [brick],
+                                  "glusterd_restart")
         self.assertTrue(ret, "Failed to bring brick online")
 
     def _verify_mount_dir_and_brick_dir_permissions(self, expected,
@@ -125,6 +127,9 @@ class TestVerifyPermissionChanges(GlusterBaseClass):
         self._verify_mount_dir_and_brick_dir_permissions("755")
 
     def tearDown(self):
+        # Change root permission back to 755
+        self._set_root_dir_permission("755")
+
         # Unmount and cleanup original volume
         if not self.unmount_volume_and_cleanup_volume(mounts=[self.mounts[0]]):
             raise ExecutionError("Failed to umount the vol & cleanup Volume")
