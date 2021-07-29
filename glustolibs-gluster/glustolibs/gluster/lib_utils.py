@@ -689,12 +689,19 @@ def install_epel(servers):
                 if ret != 0:
                     g.log.error("Epel install failed")
                     rt = False
-            elif (("release 7" in release_string) or
-                  ("Fedora" in release_string)):
+            elif "release 7" in release_string:
                 ret, _, _ = g.run(server,
                                   "yum -y install http://dl.fedoraproject.org/"
                                   "pub/epel/epel-release-latest-7.noarch.rpm")
                 if ret != 0:
+                    g.log.error("Epel install failed")
+                    rt = False
+            elif (("release 8" in release_string) or
+                  ("Fedora" in release_string)):
+                ret, _, _ = g.run(server,
+                                  "yum -y install http://dl.fedoraproject.org/"
+                                  "pub/epel/epel-release-latest-8.noarch.rpm")
+                if ret:
                     g.log.error("Epel install failed")
                     rt = False
             else:
