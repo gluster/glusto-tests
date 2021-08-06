@@ -16,7 +16,6 @@
 
 import os
 import copy
-from socket import gethostbyname
 from glusto.core import Glusto as g
 from glustolibs.gluster.exceptions import ExecutionError
 from glustolibs.gluster.gluster_base_class import GlusterBaseClass, runs_on
@@ -174,13 +173,8 @@ class TestMetadataSelfHealOpenfd(GlusterBaseClass):
         bricks_list = []
         for brick in ret['brickdir_paths']:
             node, brick_path = brick.split(':')
-            if node[0:2].isdigit():
-                nodes_to_check[node] = os.path.dirname(brick_path)
-                path = node + ":" + os.path.dirname(brick_path)
-            else:
-                nodes_to_check[gethostbyname(node)] = (os.path.dirname(
-                    brick_path))
-                path = gethostbyname(node) + ":" + os.path.dirname(brick_path)
+            nodes_to_check[node] = os.path.dirname(brick_path)
+            path = node + ":" + os.path.dirname(brick_path)
             bricks_list.append(path)
         nodes_to_check[client] = m_point
 
