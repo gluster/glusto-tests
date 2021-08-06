@@ -62,7 +62,7 @@ class TestSelfHeal(GlusterBaseClass):
         # Cleanup Volume
         ret = cls.unmount_volume_and_cleanup_volume(cls.mounts)
         if not ret:
-            raise ExecutionError("Failed to create volume")
+            raise ExecutionError("Failed to cleanup volume")
         g.log.info("Successful in cleaning up Volume %s", cls.volname)
 
         cls.get_super_method(cls, 'tearDownClass')()
@@ -70,7 +70,7 @@ class TestSelfHeal(GlusterBaseClass):
     def _test_brick_down_with_file_rename(self, pfile, rfile, brick):
         # Bring brick offline
         g.log.info('Bringing brick %s offline', brick)
-        ret = bring_bricks_offline(self.volname, brick)
+        ret = bring_bricks_offline(self.volname, [brick])
         self.assertTrue(ret, 'Failed to bring brick %s offline'
                         % brick)
 
@@ -91,7 +91,7 @@ class TestSelfHeal(GlusterBaseClass):
         # Bring brick back online
         g.log.info('Bringing brick %s online', brick)
         ret = bring_bricks_online(self.mnode, self.volname,
-                                  brick)
+                                  [brick])
         self.assertTrue(ret, 'Failed to bring brick %s online' %
                         brick)
         g.log.info('Bringing brick %s online is successful', brick)

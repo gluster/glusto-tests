@@ -64,7 +64,7 @@ class TestSelfHealWithFullAlgorithm(GlusterBaseClass):
         client = self.mounts[0].client_system
         bricks_to_bring_offline = []
         subvols = get_subvols(self.mnode, self.volname)['volume_subvols']
-        bricks_list = zip(*subvols)
+        bricks_list = list(zip(*subvols))
 
         bricks_to_bring_offline = list(bricks_list[brick_set])
 

@@ -1228,8 +1228,17 @@ def collect_bricks_arequal(bricks_list):
 
         # Running arequal-checksum on the brick.
         node, brick_path = brick.split(':')
+
+        # Similar to https://github.com/gluster/redant/blob/bb165c60f7/\
+        # common/ops/support_ops/io_ops.py#L490-L498
+        cmd = 'ls -ap {0} | grep .glusterfs-anonymous-inode'.format(brick_path)
+        _, out, _ = g.run(node, cmd)
+        anon_dir_cmd = ""
+        for anon_dir in out.split():
+            anon_dir_cmd = "{0} -i {1}".format(anon_dir_cmd,
+                                               anon_dir.rstrip('/'))
         cmd = ('arequal-checksum -p {} -i .glusterfs -i .landfill -i .trashcan'
-               .format(brick_path))
+               ' {}'.format(brick_path, anon_dir_cmd))
         ret, arequal, _ = g.run(node, cmd)
 
         # Generating list accordingly
