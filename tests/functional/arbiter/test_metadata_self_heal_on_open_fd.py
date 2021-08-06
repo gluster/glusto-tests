@@ -35,8 +35,7 @@ from glustolibs.gluster.lib_utils import (collect_bricks_arequal,
 from glustolibs.io.utils import collect_mounts_arequal
 
 
-@runs_on([['replicated', 'distributed-replicated', 'arbiter',
-           'distributed-arbiter'],
+@runs_on([['replicated'],
           ['glusterfs']])
 class TestMetadataSelfHealOpenfd(GlusterBaseClass):
     def setUp(self):
@@ -174,13 +173,8 @@ class TestMetadataSelfHealOpenfd(GlusterBaseClass):
         bricks_list = []
         for brick in ret['brickdir_paths']:
             node, brick_path = brick.split(':')
-            if node[0:2].isdigit():
-                nodes_to_check[node] = os.path.dirname(brick_path)
-                path = node + ":" + os.path.dirname(brick_path)
-            else:
-                nodes_to_check[gethostbyname(node)] = (os.path.dirname(
-                    brick_path))
-                path = gethostbyname(node) + ":" + os.path.dirname(brick_path)
+            nodes_to_check[node] = os.path.dirname(brick_path)
+            path = node + ":" + os.path.dirname(brick_path)
             bricks_list.append(path)
         nodes_to_check[client] = m_point
 
@@ -239,6 +233,9 @@ class TestMetadataSelfHealOpenfd(GlusterBaseClass):
                                  'checksum among {} is '
                                  'identified'.format(subvol[0:stop]))
                 brick_total = arequal[-1].splitlines()[-1].split(':')[-1]
+                g.log.info("BRICK TOTAL")
+                g.log.info(brick_total)
+                g.log.info("*********")
                 self.assertEqual(brick_total, mount_point_total,
                                  "Arequals for mountpoint and {} "
                                  "are not equal".format(subvol[0:stop]))
