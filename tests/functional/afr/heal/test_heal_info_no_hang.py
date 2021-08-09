@@ -140,7 +140,7 @@ class TestHealInfoNoHang(GlusterBaseClass):
 
         # Restart the down bricks
         ret = bring_bricks_online(self.mnode, self.volname,
-                                  brick_to_bring_offline)
+                                  [brick_to_bring_offline])
         self.assertTrue(ret, 'Failed to bring brick %s online' %
                         brick_to_bring_offline)
         g.log.info('Bringing brick %s online is successful',

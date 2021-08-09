@@ -194,7 +194,9 @@ class TestArbiterToReplicatedConversion(GlusterBaseClass):
         self.assertTrue(ret, 'Unable to set client side heal options')
         ret = trigger_heal(self.mnode, self.volname)
         self.assertTrue(ret, 'Unable to trigger heal on volume')
-        ret = monitor_heal_completion(self.mnode, self.volname)
+        ret = monitor_heal_completion(self.mnode,
+                                      self.volname,
+                                      timeout_period=1800)
         self.assertTrue(ret,
                         'Heal is not completed for {}'.format(self.volname))
 
