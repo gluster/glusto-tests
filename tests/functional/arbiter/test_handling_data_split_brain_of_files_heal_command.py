@@ -23,6 +23,7 @@ from glustolibs.gluster.brick_libs import (bring_bricks_offline,
                                            bring_bricks_online,
                                            are_bricks_offline,
                                            get_all_bricks)
+from glustolibs.gluster.heal_ops import enable_self_heal_daemon
 from glustolibs.gluster.heal_libs import (monitor_heal_completion,
                                           is_heal_complete,
                                           is_volume_in_split_brain)
@@ -321,6 +322,10 @@ class TestArbiterSelfHeal(GlusterBaseClass):
             g.log.info("Heal triggered for %s:%s",
                        mount_obj.client_system, mount_obj.mountpoint)
         g.log.info('Heal triggered for all mountpoints')
+
+        # Enable self-heal daemon
+        ret = enable_self_heal_daemon(self.mnode, self.volname)
+        self.assertTrue(ret, 'Successfully started self heal daemon')
 
         # Monitor heal completion
         ret = monitor_heal_completion(self.mnode, self.volname)
