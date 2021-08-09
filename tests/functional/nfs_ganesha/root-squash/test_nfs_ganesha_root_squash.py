@@ -57,7 +57,7 @@ class TestNfsGaneshaRootSquash(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Successful in setup and mount volume %s", self.volname)
 
-    def test_rootsquash_enable(self):
+    def test_root_squash_enable(self):
         # Start IO on mount point.
         self.all_mounts_procs = []
         cmd = ("for i in {1..10}; do touch %s/file$i; done"

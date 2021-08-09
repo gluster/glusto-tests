@@ -51,7 +51,7 @@ class TestNfsGaneshaRootSquash(GlusterBaseClass):
                                  % self.volname)
         g.log.info("Successful in setup and mount volume %s", self.volname)
 
-    def test_root_squash_enable(self):
+    def test_root_squash_glusterd_restart(self):
         """
         Tests to verify Nfs Ganesha rootsquash functionality when glusterd
         service is restarted
