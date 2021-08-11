@@ -1089,17 +1089,14 @@ class GlusterBaseClass(TestCase):
         if (self.error_or_failure_exists or
                 self._is_error_or_failure_exists()):
             ret = self.scratch_cleanup(self.error_or_failure_exists)
-            g.log.info(ret)
-        return self.get_super_method(self, 'doCleanups')()
+            g.log.warn(ret)
 
     @classmethod
     def doClassCleanups(cls):
-        if (GlusterBaseClass.error_or_failure_exists or
-                cls._is_error_or_failure_exists()):
+        if GlusterBaseClass.error_or_failure_exists:
             ret = cls.scratch_cleanup(
                 GlusterBaseClass.error_or_failure_exists)
-            g.log.info(ret)
-        return cls.get_super_method(cls, 'doClassCleanups')()
+            g.log.warn(ret)
 
     @classmethod
     def delete_nfs_ganesha_cluster(cls):
