@@ -116,14 +116,15 @@ class TestSelfHealWithFullAlgorithm(GlusterBaseClass):
         # Check arequal checksum of all the bricks are same
         for subvol in subvols:
             ret, arequal_from_the_bricks = collect_bricks_arequal(subvol)
-            self.assertFalse(ret, "Failed to collect arequal on the bricks in "
-                                  "subvol {}".format(subvol))
+            self.assertTrue(
+                ret, "Failed to collect arequal on the bricks in "
+                "subvol {}".format(subvol))
             cmd = len(set(arequal_from_the_bricks))
-            if (self.volume_type == "arbiter" or
-                    self.volume_type == "distributed-arbiter"):
+            if (self.volume_type == "arbiter"
+                    or self.volume_type == "distributed-arbiter"):
                 cmd = len(set(arequal_from_the_bricks[:2]))
-            self.assertEqual(cmd, 1, "Arequal is same on all the bricks in the"
-                                     " subvol")
+            self.assertEqual(
+                cmd, 1, "Arequal is same on all the bricks in the subvol")
 
     def test_self_heal_with_full_algorithm(self):
         """
