@@ -351,7 +351,7 @@ def stop_ctdb_service(mnode):
     return True
 
 
-def start_ctdb_service(mnode):
+def start_ctdb_service_prime_node(mnode):
     """Start ctdb service on the specified node.
 
     Args:
@@ -673,7 +673,7 @@ def samba_ad(all_servers, netbios_name, domain_name, ad_admin_user,
             ret = stop_ctdb_service(node)
             if not ret:
                 return ret
-        ret = start_ctdb_service(node)
+        ret = start_ctdb_service_prime_node(node)
         ret = is_ctdb_service_running(node)
         if ret:
             ret = is_smb_service_running(node)
@@ -717,7 +717,7 @@ def samba_ad(all_servers, netbios_name, domain_name, ad_admin_user,
         ret = stop_ctdb_service(node)
         if not ret:
             return False
-        ret = start_ctdb_service(node)
+        ret = start_ctdb_service_prime_node(node)
         ret = is_ctdb_service_running(node)
         if ret:
             count = 0
