@@ -22,7 +22,16 @@ import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.volume_libs import is_volume_exported
 from glustolibs.gluster.mount_ops import GlusterMount
-
+from glustolibs.gluster.ctdb_ops import (
+    edit_hook_script,
+    enable_ctdb_cluster,
+    create_nodes_file,
+    create_public_address_file,
+    start_ctdb_service,
+    is_ctdb_status_healthy)
+from glustolibs.gluster.volume_libs import (
+    setup_volume,
+    wait_for_volume_process_to_be_online)
 
 def start_smb_service(mnode):
     """Start smb service on the specified node.
@@ -433,6 +442,68 @@ def is_winbind_service_running(mnode):
     if "Active: active (running)" in out:
         return True
     return False
+
+def setup_samba_ctdb_cluster(servers, primary_node,ctdb_volname,
+                                ctdb_nodes,ctdb_vips,ctdb_volume_config,
+                                all_servers_info):
+    """
+    Create ctdb-samba cluster if doesn't exists
+
+    Returns:
+        bool: True if successfully setup samba else false
+    """
+    # Check if ctdb setup is up and running
+    if is_ctdb_status_healthy(primary_node):
+        g.log.info("ctdb setup already up skipping "
+                    "ctdb setup creation")
+        return True
+    g.log.info("Proceeding with ctdb setup creation")
+    for mnode in servers:
+        ret = edit_hook_script(mnode, ctdb_volname)
+        if not ret:
+            return False
+        ret = enable_ctdb_cluster(mnode)
+        if not ret:
+            return False
+        ret = create_nodes_file(mnode, ctdb_nodes)
+        if not ret:
+            return False
+        ret = create_public_address_file(mnode, ctdb_vips)
+        if not ret:
+            return False
+    server_info = all_servers_info
+    ctdb_config = ctdb_volume_config
+    g.log.info("Setting up ctdb volume %s", ctdb_volname)
+    ret = setup_volume(mnode=primary_node,
+                        all_servers_info=server_info,
+                        volume_config=ctdb_config)
+    if not ret:
+        g.log.error("Failed to setup ctdb volume %s", ctdb_volname)
+        return False
+    g.log.info("Successful in setting up volume %s", ctdb_volname)
+
+    # Wait for volume processes to be online
+    g.log.info("Wait for volume %s processes to be online",
+                ctdb_volname)
+    ret = wait_for_volume_process_to_be_online(mnode, ctdb_volname)
+    if not ret:
+        g.log.error("Failed to wait for volume %s processes to "
+                    "be online", ctdb_volname)
+        return False
+    g.log.info("Successful in waiting for volume %s processes to be "
+                "online", ctdb_volname)
+
+    # start ctdb services
+    ret = start_ctdb_service(servers)
+    if not ret:
+        return False
+
+    ret = is_ctdb_status_healthy(primary_node)
+    if not ret:
+        g.log.error("CTDB setup creation failed - exiting")
+        return False
+    g.log.info("CTDB setup creation successfull")
+    return True
 
 
 def samba_ad(all_servers, netbios_name, domain_name, ad_admin_user,
