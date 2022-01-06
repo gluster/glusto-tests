@@ -33,6 +33,7 @@ from glustolibs.gluster.volume_libs import (
     setup_volume,
     wait_for_volume_process_to_be_online)
 
+
 def start_smb_service(mnode):
     """Start smb service on the specified node.
 
@@ -443,9 +444,11 @@ def is_winbind_service_running(mnode):
         return True
     return False
 
-def setup_samba_ctdb_cluster(servers, primary_node,ctdb_volname,
-                                ctdb_nodes,ctdb_vips,ctdb_volume_config,
-                                all_servers_info):
+
+def setup_samba_ctdb_cluster(servers, primary_node,
+                             ctdb_volname,
+                             ctdb_nodes, ctdb_vips, ctdb_volume_config,
+                             all_servers_info):
     """
     Create ctdb-samba cluster if doesn't exists
 
@@ -455,7 +458,7 @@ def setup_samba_ctdb_cluster(servers, primary_node,ctdb_volname,
     # Check if ctdb setup is up and running
     if is_ctdb_status_healthy(primary_node):
         g.log.info("ctdb setup already up skipping "
-                    "ctdb setup creation")
+                   "ctdb setup creation")
         return True
     g.log.info("Proceeding with ctdb setup creation")
     for mnode in servers:
@@ -475,8 +478,8 @@ def setup_samba_ctdb_cluster(servers, primary_node,ctdb_volname,
     ctdb_config = ctdb_volume_config
     g.log.info("Setting up ctdb volume %s", ctdb_volname)
     ret = setup_volume(mnode=primary_node,
-                        all_servers_info=server_info,
-                        volume_config=ctdb_config)
+                       all_servers_info=server_info,
+                       volume_config=ctdb_config)
     if not ret:
         g.log.error("Failed to setup ctdb volume %s", ctdb_volname)
         return False
@@ -484,14 +487,14 @@ def setup_samba_ctdb_cluster(servers, primary_node,ctdb_volname,
 
     # Wait for volume processes to be online
     g.log.info("Wait for volume %s processes to be online",
-                ctdb_volname)
+               ctdb_volname)
     ret = wait_for_volume_process_to_be_online(mnode, ctdb_volname)
     if not ret:
         g.log.error("Failed to wait for volume %s processes to "
                     "be online", ctdb_volname)
         return False
     g.log.info("Successful in waiting for volume %s processes to be "
-                "online", ctdb_volname)
+               "online", ctdb_volname)
 
     # start ctdb services
     ret = start_ctdb_service(servers)
