@@ -474,12 +474,10 @@ def setup_samba_ctdb_cluster(servers, primary_node,
         ret = create_public_address_file(mnode, ctdb_vips)
         if not ret:
             return False
-    server_info = all_servers_info
-    ctdb_config = ctdb_volume_config
     g.log.info("Setting up ctdb volume %s", ctdb_volname)
     ret = setup_volume(mnode=primary_node,
-                       all_servers_info=server_info,
-                       volume_config=ctdb_config)
+                       all_servers_info=all_servers_info,
+                       volume_config=ctdb_volume_config)
     if not ret:
         g.log.error("Failed to setup ctdb volume %s", ctdb_volname)
         return False
