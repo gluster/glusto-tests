@@ -20,7 +20,6 @@
 import re
 import time
 from glusto.core import Glusto as g
-from glustolibs.gluster.volume_libs import is_volume_exported
 from glustolibs.gluster.mount_ops import GlusterMount
 from glustolibs.gluster.ctdb_ops import (
     edit_hook_script,
@@ -31,7 +30,8 @@ from glustolibs.gluster.ctdb_ops import (
     is_ctdb_status_healthy)
 from glustolibs.gluster.volume_libs import (
     setup_volume,
-    wait_for_volume_process_to_be_online)
+    wait_for_volume_process_to_be_online,
+    is_volume_exported)
 
 
 def start_smb_service(mnode):
