@@ -451,7 +451,7 @@ def setup_samba_ctdb_cluster(servers, primary_node,
                              ctdb_volname,
                              ctdb_nodes, ctdb_vips, ctdb_volume_config,
                              all_servers_info, smb_share_options,
-                             volname=volname):
+                             volname):
     """
     Create ctdb-samba cluster if doesn't exists
 
