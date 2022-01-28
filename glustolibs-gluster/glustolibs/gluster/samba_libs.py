@@ -21,6 +21,8 @@ import re
 import time
 from glusto.core import Glusto as g
 from glustolibs.gluster.mount_ops import GlusterMount
+from glustolibs.gluster.volume_ops import (
+    set_volume_options)
 from glustolibs.gluster.ctdb_ops import (
     edit_hook_script,
     enable_ctdb_cluster,
@@ -448,7 +450,8 @@ def is_winbind_service_running(mnode):
 def setup_samba_ctdb_cluster(servers, primary_node,
                              ctdb_volname,
                              ctdb_nodes, ctdb_vips, ctdb_volume_config,
-                             all_servers_info):
+                             all_servers_info, smb_share_options,
+                             volname=volname):
     """
     Create ctdb-samba cluster if doesn't exists
 
@@ -493,6 +496,23 @@ def setup_samba_ctdb_cluster(servers, primary_node,
         return False
     g.log.info("Successful in waiting for volume %s processes to be "
                "online", ctdb_volname)
+
+    # Set SMB share specific volume options
+    if smb_share_options:
+        g.log.info("Setting SMB share specific volume options "
+                   "on volume %s", volname)
+        ret = set_volume_options(mnode=primary_node,
+                                 volname=volname,
+                                 options=smb_share_options)
+        if not ret:
+            g.log.error("Failed to set SMB share "
+                        "specific options "
+                        "on volume %s", volname)
+            return False
+
+    g.log.info("Successful in setting SMB \
+                share specific volume options \
+                on volume %s", volname)
 
     # start ctdb services
     ret = start_ctdb_service(servers)
