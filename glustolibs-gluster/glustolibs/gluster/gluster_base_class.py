@@ -46,7 +46,6 @@ from glustolibs.gluster.peer_ops import (
 )
 from glustolibs.gluster.gluster_init import (
     restart_glusterd, stop_glusterd, wait_for_glusterd_to_start)
-from glustolibs.gluster.samba_libs import share_volume_over_smb
 from glustolibs.gluster.shared_storage_ops import is_shared_volume_mounted
 from glustolibs.gluster.volume_libs import (
     cleanup_volume,
@@ -425,30 +424,20 @@ class GlusterBaseClass(TestCase):
                                cls.volname)
 
             if "smb" in cls.mount_type or "cifs" in cls.mount_type:
-                ret = share_volume_over_smb(mnode=cls.mnode,
-                                            volname=cls.volname,
-                                            smb_users_info=cls.smb_users_info)
+                ret = setup_samba_ctdb_cluster(cls.servers, cls.mnode,
+                                               cls.ctdb_volname,
+                                               cls.ctdb_nodes,
+                                               cls.ctdb_vips,
+                                               cls.ctdb_volume_config,
+                                               cls.all_servers_info,
+                                               cls.smb_share_options)
+
                 if not ret:
                     g.log.error("Failed to export volume %s "
                                 "as SMB Share", cls.volname)
                     return False
                 g.log.info("Successful in exporting volume %s as SMB Share",
                            cls.volname)
-
-                # Set SMB share specific volume options
-                if cls.smb_share_options:
-                    g.log.info("Setting SMB share specific volume options "
-                               "on volume %s", cls.volname)
-                    ret = set_volume_options(mnode=cls.mnode,
-                                             volname=cls.volname,
-                                             options=cls.smb_share_options)
-                    if not ret:
-                        g.log.error("Failed to set SMB share "
-                                    "specific options "
-                                    "on volume %s", cls.volname)
-                        return False
-                    g.log.info("Successful in setting SMB share specific "
-                               "volume options on volume %s", cls.volname)
 
         # Log Volume Info and Status
         g.log.info("Log Volume %s Info and Status", cls.volname)
@@ -477,6 +466,8 @@ class GlusterBaseClass(TestCase):
             # For nfs-ganesha, mount is done via vip
             if cls.enable_nfs_ganesha:
                 mount_obj.server_system = cls.vips[0]
+            if cls.enable_samba_ctdb:
+                mount_obj.server_system = cls.ctdb_vips[0]
             g.log.info("Mounting volume '%s:%s' on '%s:%s'",
                        mount_obj.server_system, mount_obj.volname,
                        mount_obj.client_system, mount_obj.mountpoint)
@@ -765,11 +756,28 @@ class GlusterBaseClass(TestCase):
         try:
             cls.smb_users_info = (
                 g.config['gluster']['cluster_config']['smb']['users_info'])
+            cls.ctdb_vips = (
+                g.config['gluster']['cluster_config']
+                        ['smb']['ctdb_vips'])
+            cls.ctdb_nodes = (
+                g.config['gluster']['cluster_config']
+                        ['smb']['ctdb_nodes'])
+            cls.ctdb_volname = (
+                g.config['gluster']['cluster_config']
+                        ['smb']['ctdb_volname'])
+            cls.ctdb_volume_config = (
+                g.config['gluster']['cluster_config']['smb']
+                        ['ctdb_volume_config'])
+            cls.enable_samba_ctdb = (
+                g.config['gluster']['cluster_config']['smb']['enable']
+                in ('TRUE', 'True', 'true', 'YES', 'Yes', 'yes', '1', 1)
+            )
         except KeyError:
             cls.smb_users_info = {}
             cls.smb_users_info['root'] = {}
             cls.smb_users_info['root']['password'] = 'foobar'
             cls.smb_users_info['root']['acl'] = 'rwx'
+            cls.enable_samba_ctdb = False
 
         # NFS-Ganesha Cluster info
         try:
